@@ -4,6 +4,7 @@ import Sidebar from "./Components/common/sidebar";
 import Header from "./Components/common/Header";
 import SignIn from "./Components/signin";
 import StaffRequests from './Components/StaffRequests';
+import EmployeeManagement from './Components/EmployeeManagement';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -59,6 +60,16 @@ function App() {
               } 
             />
             <Route path="/projects" element={<div>Projects</div>} />
+            <Route 
+    path="/manage-employees" 
+    element={
+      user?.isAdmin ? (
+        <EmployeeManagement />
+      ) : (
+        <Navigate to="/dashboard" replace />
+      )
+    } 
+  />
             <Route path="/tickets" element={<div>Tickets</div>} />
             <Route path="/clients" element={<div>Our Clients</div>} />
             <Route path="/accounts" element={<div>Accounts</div>} />

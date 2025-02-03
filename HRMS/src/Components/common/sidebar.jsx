@@ -122,11 +122,17 @@ const Sidebar = () => {
 
           {/* Admin-only Add Staff Button */}
           {isAdmin && (
-            <NavLink to="/staff-requests" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              <UserPlus className="h-5 w-5" />
-              <span>Add Staff</span>
-            </NavLink>
-          )}
+  <>
+    <NavLink to="/staff-requests" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+      <UserPlus className="h-5 w-5" />
+      <span>Staff Requests</span>
+    </NavLink>
+    <NavLink to="/manage-employees" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+      <Users className="h-5 w-5" />
+      <span>Manage Employees</span>
+    </NavLink>
+  </>
+)}
         </nav>
       </div>
       

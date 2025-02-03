@@ -1,0 +1,178 @@
+.staff-requests {
+    padding: 2rem;
+    margin-top: 4rem; /* Account for header height */
+    margin-left: 16rem; /* Account for sidebar width */
+  }
+  
+  .staff-requests-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #1f2937;
+  }
+  
+  .loading-message {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280;
+  }
+  
+  .error-message {
+    padding: 1rem;
+    background-color: #fee2e2;
+    color: #dc2626;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .empty-message {
+    text-align: center;
+    padding: 2rem;
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+    color: #6b7280;
+  }
+  
+  .requests-grid {
+    display: grid;
+    gap: 1rem;
+  }
+  
+  .request-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .request-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .avatar {
+    width: 3rem;
+    height: 3rem;
+    background-color: #474787;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  
+  .user-details h3 {
+    font-weight: 600;
+    font-size: 1.125rem;
+    margin: 0;
+    color: #1f2937;
+  }
+  
+  .user-meta {
+    font-size: 0.875rem;
+    color: #4b5563;
+    margin-top: 0.25rem;
+  }
+  
+  .request-date {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+  }
+  
+  .button-group {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .approve-button,
+  .reject-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+  }
+  
+  .approve-button {
+    background-color: #474787;
+    color: white;
+  }
+  
+  .approve-button:hover {
+    background-color: #5c5c9d;
+  }
+  
+  .reject-button {
+    background-color: #dc2626;
+    color: white;
+  }
+  
+  .reject-button:hover {
+    background-color: #b91c1c;
+  }
+  
+  /* Responsive Styles */
+  @media (max-width: 1024px) {
+    .staff-requests {
+      margin-left: 14rem;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .staff-requests {
+      margin-left: 0;
+      padding: 1rem;
+    }
+  
+    .request-card {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem;
+    }
+  
+    .button-group {
+      width: 100%;
+    }
+  
+    .approve-button,
+    .reject-button {
+      flex: 1;
+      justify-content: center;
+    }
+  
+    .staff-requests-title {
+      font-size: 1.25rem;
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .request-info {
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+    }
+  
+    .avatar {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+  
+    .user-details {
+      width: 100%;
+    }
+  }

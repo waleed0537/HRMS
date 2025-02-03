@@ -1,27 +1,35 @@
 import React, { useState } from 'react';
+import { Mail, Phone, MapPin, Building } from 'lucide-react';
 import '../assets/css/EmployeeDetails.css';
 
 const EmployeeDetails = ({ employee, onClose }) => {
   const [activeTab, setActiveTab] = useState('info');
 
+  // Sample branch transfer history
   const employeeHistory = [
     {
       date: '2024-01-15',
       change: 'Role Change',
-      details: 'Promoted to Senior Developer',
-      branch: 'Main Branch'
+      details: 'Promoted from Junior Developer to Senior Developer',
+      branch: 'Main Branch',
+      impact: 'Led development of new features resulting in 30% efficiency increase',
+      supervisor: 'Jane Smith'
     },
     {
       date: '2023-08-01',
       change: 'Branch Transfer',
-      details: 'Transferred from East Branch to Main Branch',
-      branch: 'East Branch → Main Branch'
+      details: 'Strategic relocation to strengthen Main Branch operations',
+      branch: 'East Branch → Main Branch',
+      impact: 'Successfully integrated new development team, improved delivery time by 25%',
+      supervisor: 'Mike Johnson'
     },
     {
       date: '2023-03-20',
-      change: 'Employment Milestone',
-      details: 'Completed 2 years of service',
-      branch: 'East Branch'
+      change: 'Performance Recognition',
+      details: 'Quarterly Excellence Award',
+      branch: 'East Branch',
+      impact: 'Consistently exceeded targets, mentored 3 junior team members',
+      supervisor: 'Sarah Williams'
     }
   ];
 
@@ -31,10 +39,15 @@ const EmployeeDetails = ({ employee, onClose }) => {
         <button className="close-btn" onClick={onClose}>&times;</button>
         <div className="employee-profile">
           <div className="large-avatar">
-            {employee.firstName[0]}{employee.lastName[0]}
+            {employee.firstName?.[0] || ''}{employee.lastName?.[0] || ''}
           </div>
           <h2>{employee.firstName} {employee.lastName}</h2>
           <p>{employee.role}</p>
+          <div className="status-container">
+            <span className={`status ${employee.status?.toLowerCase()}`}>
+              {employee.status}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -59,21 +72,31 @@ const EmployeeDetails = ({ employee, onClose }) => {
             <div className="info-grid">
               <div className="info-item">
                 <span>Email</span>
-                <p>{employee.email}</p>
+                <p className="info-value">
+                  <Mail className="info-icon" size={16} />
+                  {employee.email}
+                </p>
               </div>
               <div className="info-item">
                 <span>Phone</span>
-                <p>{employee.phone}</p>
+                <p className="info-value">
+                  <Phone className="info-icon" size={16} />
+                  {employee.phone}
+                </p>
               </div>
               <div className="info-item">
-                <span>Status</span>
-                <p className={`status ${employee.status.toLowerCase()}`}>
-                  {employee.status}
+                <span>Branch</span>
+                <p className="info-value">
+                  <Building className="info-icon" size={16} />
+                  {employee.branch}
                 </p>
               </div>
               <div className="info-item">
                 <span>Rating</span>
-                <p>{employee.rating} ★</p>
+                <p className="info-value">
+                  <span className="star">★</span>
+                  {employee.rating}
+                </p>
               </div>
             </div>
           )}
@@ -86,6 +109,10 @@ const EmployeeDetails = ({ employee, onClose }) => {
                   <h4 className="change">{item.change}</h4>
                   <p className="details">{item.details}</p>
                   <p className="branch">{item.branch}</p>
+                  <div className="history-impact">
+                    <p><strong>Impact:</strong> {item.impact}</p>
+                    <p><strong>Supervisor:</strong> {item.supervisor}</p>
+                  </div>
                 </div>
               ))}
             </div>

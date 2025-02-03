@@ -3,20 +3,80 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const User = require('./models/Users');
+const User = require('../Backend/models/Users');
+const Employee = require('../Backend/models/employee');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const JWT_SECRET = 'your-jwt-secret-key';
 
+// Create uploads directory if it doesn't exist
+if (!fs.existsSync('./uploads')) {
+  fs.mkdirSync('./uploads');
+}
+if (!fs.existsSync('./uploads/documents')) {
+  fs.mkdirSync('./uploads/documents');
+}
+
+// Multer Configuration
+const storage = multer.diskStorage({
+  destination: './uploads/documents/',
+  filename: function(req, file, cb) {
+    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 10000000 }, // 10MB limit
+  fileFilter: function(req, file, cb) {
+    checkFileType(file, cb);
+  }
+});
+
+// Check file type
+function checkFileType(file, cb) {
+  const filetypes = /jpeg|jpg|png|gif|pdf|doc|docx/;
+  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = filetypes.test(file.mimetype);
+
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb('Error: Invalid file type!');
+  }
+}
+
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json());
+
+// Authentication Middleware
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) return res.status(401).json({ message: 'Access denied' });
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ message: 'Invalid token' });
+    req.user = user;
+    next();
+  });
+};
 
 // MongoDB Connection
 mongoose.connect('mongodb+srv://hrmsmongo:YWCuBGMkletJv65z@cluster0.hrtxh.mongodb.net/hrms', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-});
+})
+.then(() => console.log('Connected to MongoDB'))
+.catch(err => console.error('MongoDB connection error:', err));
 
 // Create admin user if not exists
 async function createAdminUser() {
@@ -40,22 +100,7 @@ async function createAdminUser() {
 
 createAdminUser();
 
-// Authentication Middleware
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) return res.status(401).json({ message: 'Access denied' });
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ message: 'Invalid token' });
-    req.user = user;
-    next();
-  });
-};
-
 // Routes
-
 // Sign Up
 app.post('/api/signup', async (req, res) => {
   try {
@@ -120,6 +165,85 @@ app.post('/api/signin', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Error signing in', error: error.message });
+  }
+});
+
+// Employee Routes
+// Create new employee
+app.post('/api/employees', authenticateToken, upload.array('documents', 5), async (req, res) => {
+  try {
+    const documents = req.files ? req.files.map(file => ({
+      name: file.originalname,
+      path: file.path
+    })) : [];
+
+    const employeeData = {
+      personalDetails: JSON.parse(req.body.personalDetails),
+      professionalDetails: JSON.parse(req.body.professionalDetails),
+      documents
+    };
+
+    const employee = new Employee(employeeData);
+    await employee.save();
+    res.status(201).json(employee);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get all employees
+app.get('/api/employees', authenticateToken, async (req, res) => {
+  try {
+    const employees = await Employee.find();
+    res.json(employees);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get employee by ID
+app.get('/api/employees/:id', authenticateToken, async (req, res) => {
+  try {
+    const employee = await Employee.findById(req.params.id);
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+    res.json(employee);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Update employee
+app.put('/api/employees/:id', authenticateToken, async (req, res) => {
+  try {
+    const employee = await Employee.findByIdAndUpdate(
+      req.params.id,
+      { 
+        ...req.body,
+        updatedAt: Date.now()
+      },
+      { new: true }
+    );
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+    res.json(employee);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Delete employee
+app.delete('/api/employees/:id', authenticateToken, async (req, res) => {
+  try {
+    const employee = await Employee.findByIdAndDelete(req.params.id);
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+    res.json({ message: 'Employee deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 

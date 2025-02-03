@@ -55,35 +55,59 @@ const EmployeeManagement = () => {
 
   const handleEmployeeSubmit = async (e) => {
     e.preventDefault();
-    // Handle employee submission logic here
-    console.log('Employee data:', employeeData);
-  };
-
-  const handleBranchSubmit = async (e) => {
-    e.preventDefault();
-    if (editingBranch) {
-      // Update existing branch
-      setBranches(branches.map(branch => 
-        branch.id === editingBranch.id 
-          ? { ...branch, ...branchData }
-          : branch
-      ));
-    } else {
-      // Add new branch
-      setBranches([...branches, {
-        id: Date.now(),
-        ...branchData
-      }]);
-    }
     
-    setBranchData({
-      name: '',
-      hrManager: '',
-      t1Member: '',
-      operationalManager: ''
-    });
-    setShowBranchForm(false);
-    setEditingBranch(null);
+    try {
+      const formData = new FormData();
+      
+      // Add personal and professional details
+      formData.append('personalDetails', JSON.stringify(employeeData.personalDetails));
+      formData.append('professionalDetails', JSON.stringify(employeeData.professionalDetails));
+      
+      // Add documents
+      employeeData.documents.forEach(doc => {
+        formData.append('documents', doc);
+      });
+  
+      const response = await fetch('http://localhost:5000/api/employees', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to create employee');
+      }
+  
+      const result = await response.json();
+      console.log('Employee created:', result);
+  
+      // Reset form
+      setEmployeeData({
+        personalDetails: {
+          name: '',
+          id: '',
+          contact: '',
+          email: '',
+          address: ''
+        },
+        professionalDetails: {
+          role: 'agent',
+          branch: '',
+          department: '',
+          status: 'active'
+        },
+        documents: []
+      });
+  
+      // Show success message
+      alert('Employee added successfully!');
+  
+    } catch (error) {
+      console.error('Error creating employee:', error);
+      alert('Failed to create employee. Please try again.');
+    }
   };
 
   const handleEditBranch = (branch) => {

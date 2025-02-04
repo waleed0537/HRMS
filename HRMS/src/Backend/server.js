@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../Backend/models/Users');
 const Employee = require('../Backend/models/employee');
 const multer = require('multer');
+const bcrypt = require('bcryptjs'); // Add this import
 const path = require('path');
 const fs = require('fs');
 const Leave = require('../Backend/models/Leave');
@@ -38,6 +39,56 @@ const upload = multer({
   }
 });
 
+const checkPermission = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Allow access for both admin and HR manager
+    if (user.isAdmin || user.role === 'hr_manager') {
+      req.userRole = user.role;
+      next();
+    } else {
+      // Regular employees can only access their own requests
+      req.userRole = 'employee';
+      next();
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Error checking permissions' });
+  }
+};
+
+async function createTestLeaveRequest() {
+  try {
+    // Find an existing employee
+    const employee = await Employee.findOne();
+    
+    if (!employee) {
+      console.log('No employees found to create test leave request');
+      return;
+    }
+
+    // Create a test leave request
+    const testLeave = new Leave({
+      employeeId: employee.userId,
+      employeeName: employee.personalDetails.name,
+      employeeEmail: employee.personalDetails.email,
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      leaveType: 'annual',
+      reason: 'Test leave request',
+      status: 'pending',
+      documents: []
+    });
+
+    await testLeave.save();
+    console.log('Test leave request created successfully');
+  } catch (error) {
+    console.error('Error creating test leave request:', error);
+  }
+}
 // Check file type
 function checkFileType(file, cb) {
   const filetypes = /jpeg|jpg|png|gif|pdf|doc|docx/;
@@ -120,26 +171,58 @@ app.post('/api/signup', async (req, res) => {
   try {
     const { personalDetails, professionalDetails, password } = req.body;
     
+    // Validate input
+    if (!personalDetails || !professionalDetails || !password) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    // Check if all required fields are present
+    const requiredPersonalFields = ['name', 'email', 'contact', 'address'];
+    const requiredProfessionalFields = ['role', 'branch', 'department', 'status'];
+    
+    const missingPersonalFields = requiredPersonalFields.filter(field => !personalDetails[field]);
+    const missingProfessionalFields = requiredProfessionalFields.filter(field => !professionalDetails[field]);
+    
+    if (missingPersonalFields.length > 0) {
+      return res.status(400).json({ 
+        message: `Missing personal fields: ${missingPersonalFields.join(', ')}` 
+      });
+    }
+
+    if (missingProfessionalFields.length > 0) {
+      return res.status(400).json({ 
+        message: `Missing professional fields: ${missingProfessionalFields.join(', ')}` 
+      });
+    }
+
     // Check if user already exists
     const userExists = await User.findOne({ email: personalDetails.email });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     // Create user account with pending status
     const user = await User.create({
       email: personalDetails.email,
-      password: password,
+      password: hashedPassword, // Use hashed password
       role: professionalDetails.role,
       branchName: professionalDetails.branch,
       status: 'pending'
     });
 
+    // Generate unique employee ID (you can create a more sophisticated method)
+    const generateEmployeeId = () => {
+      return `EMP${Date.now()}`;
+    };
+
     // Create corresponding employee record
     const employee = await Employee.create({
       personalDetails: {
         name: personalDetails.name,
-        id: personalDetails.id,
+        id: generateEmployeeId(), // Add employee ID
         contact: personalDetails.contact,
         email: personalDetails.email,
         address: personalDetails.address
@@ -161,7 +244,7 @@ app.post('/api/signup', async (req, res) => {
     console.error('Signup error:', error);
     res.status(500).json({ 
       message: 'Error creating user account', 
-      error: error.message 
+      error: error.toString() // Use toString to ensure error is serializable
     });
   }
 });
@@ -411,22 +494,30 @@ app.post('/api/leaves', authenticateToken, upload.array('documents', 5), async (
 });
 
 // Get all leave requests (Admin only)
-app.get('/api/leaves', authenticateToken, async (req, res) => {
+app.get('/api/leaves', authenticateToken, checkPermission, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
     let leaveRequests;
-    
-    if (user.isAdmin) {
-      // Admins can see all requests
-      leaveRequests = await Leave.find().sort({ createdAt: -1 });
+    console.log('User role:', req.userRole); // Debug log
+
+    if (req.userRole === 'admin' || req.userRole === 'hr_manager') {
+      // Admins and HR managers can see all requests
+      leaveRequests = await Leave.find()
+        .sort({ createdAt: -1 })
+        .populate('employeeId', 'email name'); // Populate employee details
     } else {
-      // Regular users can only see their own requests
-      leaveRequests = await Leave.find({ employeeId: req.user.id }).sort({ createdAt: -1 });
+      // Regular employees can only see their own requests
+      leaveRequests = await Leave.find({ employeeId: req.user.id })
+        .sort({ createdAt: -1 });
     }
     
+    console.log('Found leave requests:', leaveRequests.length); // Debug log
     res.json(leaveRequests);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error in /api/leaves:', error);
+    res.status(500).json({ 
+      message: 'Error fetching leave requests', 
+      error: error.message 
+    });
   }
 });
 
@@ -449,9 +540,12 @@ app.get('/api/leaves/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Update leave request status (Admin only)
-app.put('/api/leaves/:id/status', authenticateToken, isAdmin, async (req, res) => {
+app.put('/api/leaves/:id/status', authenticateToken, checkPermission, async (req, res) => {
   try {
+    if (req.userRole !== 'admin' && req.userRole !== 'hr_manager') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
     const { status } = req.body;
     if (!['pending', 'approved', 'rejected'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
@@ -471,6 +565,31 @@ app.put('/api/leaves/:id/status', authenticateToken, isAdmin, async (req, res) =
     }
 
     res.json(leaveRequest);
+  } catch (error) {
+    console.error('Error updating leave status:', error);
+    res.status(500).json({ 
+      message: 'Error updating leave request', 
+      error: error.message 
+    });
+  }
+});
+
+app.get('/api/leaves/stats', authenticateToken, checkPermission, async (req, res) => {
+  try {
+    if (req.userRole !== 'admin' && req.userRole !== 'hr_manager') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const stats = await Leave.aggregate([
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    res.json(stats);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -509,29 +628,20 @@ app.delete('/api/leaves/:id', authenticateToken, async (req, res) => {
 
 app.get('/api/leaves', authenticateToken, async (req, res) => {
   try {
-    const { employeeId } = req.query;
-    let query = {};
+    const user = await User.findById(req.user.id);
+    let leaveRequests;
     
-    // If employeeId is provided, filter by it
-    if (employeeId) {
-      query.employeeId = employeeId;
+    if (user.isAdmin) {
+      // Admins can see all requests
+      leaveRequests = await Leave.find().sort({ createdAt: -1 });
+    } else {
+      // Regular users can only see their own requests
+      leaveRequests = await Leave.find({ employeeId: req.user.id }).sort({ createdAt: -1 });
     }
     
-    // If not admin, restrict to viewing own leaves
-    if (!req.user.isAdmin) {
-      query.employeeId = req.user.id;
-    }
-
-    const leaves = await Leave.find(query)
-      .sort({ createdAt: -1 });
-
-    res.json(leaves);
+    res.json(leaveRequests);
   } catch (error) {
-    console.error('Error fetching leaves:', error);
-    res.status(500).json({ 
-      message: 'Error fetching leaves', 
-      error: error.message 
-    });
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -557,6 +667,7 @@ app.get('/api/leaves/employee/:userId', authenticateToken, async (req, res) => {
     });
   }
 });
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

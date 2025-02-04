@@ -1,215 +1,365 @@
 .employee-management-container {
-    padding: 20px;
-    margin-left: 16rem; /* Sidebar width */
-    margin-top: 64px; /* Header height */
-  }
-  
-  .tab-buttons {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-  
-  .tab-button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  
-  .tab-button.active {
-    background-color: #474787;
-    color: white;
-  }
-  
-  .tab-button:not(.active) {
-    background-color: #f0f0f0;
+  padding: 20px;
+  margin-left: 16rem;
+  margin-top: 64px;
+  max-width: 100%;
+  box-sizing: border-box;
+  background-color: #f5f5f5;
+}
+
+.tab-buttons {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.tab-button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tab-button.active {
+  background-color: #474787;
+  color: white;
+}
+
+.tab-button:hover:not(.active) {
+  background-color: #f0f0f0;
+}
+
+.content-card {
+  background: white;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: #333;
+}
+
+.form-section {
+  margin-bottom: 32px;
+  width: 100%;
+  background-color: #f9f9f9;
+  padding: 24px;
+  border-radius: 8px;
+}
+
+.form-section h3 {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 20px;
+  color: #474787;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+  background-color: white;
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #474787;
+  box-shadow: 0 0 0 2px rgba(71, 71, 135, 0.1);
+}
+
+.form-grid textarea {
+  grid-column: 1 / -1;
+  min-height: 120px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.document-upload {
+  border: 2px dashed #ddd;
+  padding: 24px;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 16px;
+  transition: all 0.3s ease;
+}
+
+.document-upload:hover {
+  border-color: #474787;
+  background-color: rgba(71, 71, 135, 0.05);
+}
+
+.upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.upload-hint {
+  font-size: 13px;
+  color: #666;
+}
+
+.document-list {
+  margin-top: 20px;
+  width: 100%;
+}
+
+.document-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8f8f8;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+}
+
+.document-item:hover {
+  background: #f0f0f0;
+}
+
+.hidden {
+  display: none;
+}
+
+.submit-button {
+  width: 100%;
+  max-width: 400px;
+  padding: 14px;
+  background: #474787;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 32px auto 0;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(71, 71, 135, 0.2);
+}
+
+.submit-button:hover {
+  background: #5c5c9d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(71, 71, 135, 0.3);
+}
+
+.branch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.add-branch-button {
+  padding: 12px 24px;
+  background: #474787;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(71, 71, 135, 0.2);
+}
+
+.add-branch-button:hover {
+  background: #5c5c9d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(71, 71, 135, 0.3);
+}
+
+.branch-list {
+  margin-top: 24px;
+  width: 100%;
+}
+
+.branch-item {
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  background: white;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.branch-item:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.branch-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.branch-item-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #474787;
+}
+
+.branch-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.edit-button,
+.delete-button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.edit-button {
+  background: #474787;
+  color: white;
+}
+
+.edit-button:hover {
+  background: #5c5c9d;
+}
+
+.delete-button {
+  background: #ff4444;
+  color: white;
+}
+
+.delete-button:hover {
+  background: #ff6666;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .employee-management-container {
+    margin-left: 0;
+    padding: 16px;
   }
   
   .content-card {
-    background: white;
     padding: 24px;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
-  
-  .section-title {
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 24px;
-  }
-  
+
   .form-section {
-    margin-bottom: 24px;
-  }
-  
-  .form-section h3 {
-    font-size: 18px;
-    font-weight: 500;
-    margin-bottom: 16px;
-  }
-  
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-  }
-  
-  .form-grid textarea {
-    grid-column: span 2;
-  }
-  
-  .form-input,
-  .form-select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 14px;
-  }
-  
-  .form-input:focus,
-  .form-select:focus {
-    outline: none;
-    border-color: #474787;
-  }
-  
-  .document-upload {
-    border: 2px dashed #ddd;
     padding: 20px;
-    border-radius: 8px;
-    text-align: center;
-    cursor: pointer;
+  }
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
   }
   
-  .document-upload:hover {
-    border-color: #474787;
-  }
-  
-  .document-list {
-    margin-top: 16px;
-  }
-  
-  .document-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px;
-    background: #f8f8f8;
-    border-radius: 4px;
-    margin-bottom: 8px;
-  }
-  
-  .submit-button {
+  .tab-buttons {
+    flex-direction: column;
     width: 100%;
-    padding: 12px;
-    background: #474787;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 24px;
   }
   
-  .submit-button:hover {
-    background: #5c5c9d;
+  .tab-button {
+    width: 100%;
+    justify-content: center;
   }
   
   .branch-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
+    flex-direction: column;
+    align-items: stretch;
   }
   
   .add-branch-button {
-    padding: 10px 20px;
-    background: #474787;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  
-  .branch-list {
-    margin-top: 24px;
-  }
-  
-  .branch-item {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 16px;
+    width: 100%;
+    justify-content: center;
   }
   
   .branch-item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
+    flex-direction: column;
+    align-items: stretch;
   }
   
   .branch-actions {
-    display: flex;
-    gap: 8px;
+    justify-content: flex-start;
   }
   
-  .edit-button,
-  .delete-button {
-    padding: 6px 12px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
+  .document-item {
+    flex-direction: column;
+    align-items: flex-start;
   }
-  
-  .edit-button {
-    background: #474787;
-    color: white;
+
+  .submit-button {
+    width: 100%;
+    max-width: none;
   }
-  
-  .delete-button {
-    background: #ff4444;
-    color: white;
+}
+
+@media (max-width: 480px) {
+  .content-card {
+    padding: 16px;
   }
-  
-  /* Responsive Design */
-  @media (max-width: 1024px) {
-    .employee-management-container {
-      margin-left: 0;
-    }
+
+  .form-section {
+    padding: 16px;
   }
-  
-  @media (max-width: 768px) {
-    .form-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .form-grid textarea {
-      grid-column: span 1;
-    }
-    
-    .tab-buttons {
-      flex-direction: column;
-    }
-    
-    .branch-header {
-      flex-direction: column;
-      gap: 16px;
-    }
-    
-    .branch-item-header {
-      flex-direction: column;
-      gap: 12px;
-    }
+
+  .section-title {
+    font-size: 20px;
   }
+
+  .tab-button {
+    padding: 10px 16px;
+  }
+}

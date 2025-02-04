@@ -1,5 +1,3 @@
-
-
 .employee-details {
   position: fixed;
   top: 64px; /* Match header height */
@@ -9,86 +7,90 @@
   background: white;
   box-shadow: -2px 0 5px rgba(0,0,0,0.1);
   z-index: 40;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
-  .details-header {
-    padding: 20px;
-    background: #474787;
-    color: white;
-    position: sticky;
-    top: 0;
-    z-index: 41;
-  }
+.details-header {
+  padding: 20px;
+  background: #474787;
+  color: white;
+  position: relative; /* Changed from sticky to relative */
+  z-index: 41;
+  flex-shrink: 0; /* Prevent header from shrinking */
+}
 
-  .close-btn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: none;
-    border: none;
-    color: white;
-    font-size: 24px;
-    cursor: pointer;
-    z-index: 42;
-  }
+.close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  z-index: 42;
+}
 
-  .employee-profile {
-    text-align: center;
-    padding-bottom: 20px;
-  }
-  .large-avatar {
-    width: 100px;
-    height: 100px;
-    background: white;
-    color: #474787;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 36px;
-    font-weight: bold;
-    margin: 0 auto 15px;
-  }
-  .details-nav {
-    display: flex;
-    gap: 10px;
-    padding: 15px;
-    border-bottom: 1px solid #eee;
-    overflow-x: auto;
-    background: white;
-    position: sticky;
-    /* Update the top position to account for the header height */
-    top: 139px; /* Approximately the height of details-header */
-    z-index: 41;
-  }
+.employee-profile {
+  text-align: center;
+  padding-bottom: 20px;
+}
 
-  .nav-btn {
-    padding: 8px 16px;
-    border: none;
-    background: none;
-    color: #666;
-    cursor: pointer;
-    white-space: nowrap;
-    border-radius: 20px;
-  }
+.large-avatar {
+  width: 100px;
+  height: 100px;
+  background: white;
+  color: #474787;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: bold;
+  margin: 0 auto 15px;
+}
 
-  .nav-btn.active {
-    background: #474787;
-    color: white;
-  }
+.details-nav {
+  display: flex;
+  gap: 10px;
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+  overflow-x: auto;
+  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 41;
+  flex-shrink: 0; /* Prevent nav from shrinking */
+}
 
-  .details-body {
-    padding: 20px;
-    /* Add these properties to create a proper scrolling container */
-    height: calc(100vh - 203px); /* Subtract header + nav heights */
-    overflow-y: auto;
-  }
+.nav-btn {
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  color: #666;
+  cursor: pointer;
+  white-space: nowrap;
+  border-radius: 20px;
+}
+
+.nav-btn.active {
+  background: #474787;
+  color: white;
+}
+
+.details-body {
+  flex: 1; /* Take remaining space */
+  overflow-y: auto; /* Enable scrolling for content */
+  position: relative;
+}
 
 .details-content {
   max-width: 700px;
   margin: 0 auto;
+  padding: 20px;
 }
+
 
 .info-grid {
   display: grid;
@@ -243,8 +245,7 @@
   }
 
   .details-nav {
-      top: 116px; /* Adjust for smaller header on mobile */
-      padding: 10px;
+    padding: 10px;
   }
   
   .nav-btn {
@@ -254,7 +255,6 @@
 
   .details-body {
       padding: 15px;
-      height: calc(100vh - 170px); /* Adjust for smaller header and nav heights */
   }
   
   .history-item {

@@ -5,6 +5,8 @@ import Header from "./Components/common/Header";
 import SignIn from "./Components/signin";
 import StaffRequests from './Components/StaffRequests';
 import EmployeeManagement from './Components/EmployeeManagement';
+import EmployeeCards from './Components/EmployeeCards';
+import './assets/css/global.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

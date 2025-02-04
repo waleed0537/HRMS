@@ -109,10 +109,48 @@ const EmployeeManagement = () => {
       alert('Failed to create employee. Please try again.');
     }
   };
+  const handleBranchSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate form
+    if (!branchData.name || !branchData.hrManager || !branchData.t1Member || !branchData.operationalManager) {
+      alert('Please fill in all branch fields');
+      return;
+    }
+
+    if (editingBranch) {
+      // Update existing branch
+      setBranches(branches.map(branch => 
+        branch.id === editingBranch.id 
+          ? { ...branch, ...branchData }
+          : branch
+      ));
+    } else {
+      // Add new branch
+      setBranches([
+        ...branches,
+        {
+          id: Date.now(), // Simple ID generation
+          ...branchData
+        }
+      ]);
+    }
+
+    // Reset form and state
+    setShowBranchForm(false);
+    setEditingBranch(null);
+    setBranchData({
+      name: '',
+      hrManager: '',
+      t1Member: '',
+      operationalManager: ''
+    });
+  };
 
   const handleEditBranch = (branch) => {
     setEditingBranch(branch);
     setBranchData({
+
       name: branch.name,
       hrManager: branch.hrManager,
       t1Member: branch.t1Member,

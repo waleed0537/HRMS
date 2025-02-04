@@ -49,15 +49,15 @@ const Sidebar = () => {
       </button>
 
       <div className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
-        <div className="logo-section">
-          <div className="logo-icon">
-            <Users className="h-6 w-6 text-[#474787]" />
-          </div>
-          <span className="logo-text">My-Task</span>
-          <button className="close-button" onClick={toggleMobileMenu}>
-            <X className="h-6 w-6" />
-          </button>
-        </div>
+  <div className="logo-section">
+    <div className="logo-icon">
+      <Users className="h-6 w-6 text-[#474787]" />
+    </div>
+    <span className="logo-text">My-Task</span>
+    <button className="close-button" onClick={toggleMobileMenu}>
+      <X className="h-6 w-6" />
+    </button>
+  </div>
 
         <nav className="nav-container">
           <NavLink to="/dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
@@ -119,20 +119,29 @@ const Sidebar = () => {
             <PenSquare className="h-5 w-5" />
             <span>UI Components</span>
           </NavLink>
+          {isAdmin && (
+      <>
+        <NavLink 
+          to="/staff-requests" 
+          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+          onClick={() => setIsMobileMenuOpen(false)} // Close mobile menu when clicked
+        >
+          <UserPlus className="h-5 w-5" />
+          <span>Staff Requests</span>
+        </NavLink>
+        <NavLink 
+          to="/manage-employees" 
+          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+          onClick={() => setIsMobileMenuOpen(false)} // Close mobile menu when clicked
+        >
+          <Users className="h-5 w-5" />
+          <span>Manage Employees</span>
+        </NavLink>
+      </>
+    )}
 
           {/* Admin-only Add Staff Button */}
-          {isAdmin && (
-  <>
-    <NavLink to="/staff-requests" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-      <UserPlus className="h-5 w-5" />
-      <span>Staff Requests</span>
-    </NavLink>
-    <NavLink to="/manage-employees" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-      <Users className="h-5 w-5" />
-      <span>Manage Employees</span>
-    </NavLink>
-  </>
-)}
+        
         </nav>
       </div>
       

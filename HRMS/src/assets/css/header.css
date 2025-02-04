@@ -173,9 +173,13 @@
   
   @media (max-width: 768px) {
     .header {
+      padding-left: 2.5rem;
+      padding-top: 1rem;
       width: 100%;
       left: 0;
+
     }
+
     
     .search-container {
       max-width: none;

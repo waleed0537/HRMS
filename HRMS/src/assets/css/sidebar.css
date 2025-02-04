@@ -1,4 +1,5 @@
 /* sidebar.css */
+
 .sidebar-wrapper {
     position: relative;
   }
@@ -170,16 +171,27 @@
   @media (max-width: 768px) {
     .mobile-menu-button {
       display: flex;
+      padding-top: 1rem ;
     }
-  
+    .nav-container {
+      overflow-y: auto;
+      max-height: calc(100vh - 60px); /* Adjust based on your logo section height */
+      padding-bottom: 20px; /* Add some padding at the bottom */
+    }
+
     .sidebar {
-      transform: translateX(-100%);
+      position: fixed;
+      left: -100%;
+      top: 0;
+      bottom: 0;
+      width: 80%;
+      max-width: 300px;
+      transition: left 0.3s ease;
+      z-index: 50;
     }
-  
     .sidebar.mobile-open {
-      transform: translateX(0);
+      left: 0;
     }
-  
     .close-button {
       display: block;
     }

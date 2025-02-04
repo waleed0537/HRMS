@@ -8,6 +8,8 @@ const Employee = require('../Backend/models/employee');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const Leave = require('../Backend/models/Leave');
+
 
 const app = express();
 const JWT_SECRET = 'your-jwt-secret-key';
@@ -97,6 +99,18 @@ async function createAdminUser() {
     console.error('Error creating admin user:', error);
   }
 }
+const isAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (user && user.isAdmin) {
+      next();
+    } else {
+      res.status(403).json({ message: 'Admin access required' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Error checking admin status' });
+  }
+};
 
 createAdminUser();
 
@@ -285,6 +299,129 @@ app.put('/api/requests/:userId/status', authenticateToken, async (req, res) => {
     res.json(user);
   } catch (error) {
     res.status(500).json({ message: 'Error updating request', error: error.message });
+  }
+});
+
+//Leave management endpoints 
+app.post('/api/leaves', authenticateToken, upload.array('documents', 5), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const documents = req.files ? req.files.map(file => ({
+      name: file.originalname,
+      path: file.path
+    })) : [];
+
+    const leaveRequest = new Leave({
+      employeeId: req.user.id,
+      employeeName: user.name || user.email,
+      employeeEmail: user.email,
+      startDate: req.body.startDate,
+      endDate: req.body.endDate,
+      leaveType: req.body.leaveType,
+      reason: req.body.reason,
+      documents: documents
+    });
+
+    await leaveRequest.save();
+    res.status(201).json(leaveRequest);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get all leave requests (Admin only)
+app.get('/api/leaves', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    let leaveRequests;
+    
+    if (user.isAdmin) {
+      // Admins can see all requests
+      leaveRequests = await Leave.find().sort({ createdAt: -1 });
+    } else {
+      // Regular users can only see their own requests
+      leaveRequests = await Leave.find({ employeeId: req.user.id }).sort({ createdAt: -1 });
+    }
+    
+    res.json(leaveRequests);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get specific leave request
+app.get('/api/leaves/:id', authenticateToken, async (req, res) => {
+  try {
+    const leaveRequest = await Leave.findById(req.params.id);
+    if (!leaveRequest) {
+      return res.status(404).json({ message: 'Leave request not found' });
+    }
+
+    // Check if user has permission to view this request
+    if (!req.user.isAdmin && leaveRequest.employeeId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    res.json(leaveRequest);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Update leave request status (Admin only)
+app.put('/api/leaves/:id/status', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const leaveRequest = await Leave.findByIdAndUpdate(
+      req.params.id,
+      { 
+        status,
+        updatedAt: Date.now()
+      },
+      { new: true }
+    );
+
+    if (!leaveRequest) {
+      return res.status(404).json({ message: 'Leave request not found' });
+    }
+
+    res.json(leaveRequest);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Delete leave request
+app.delete('/api/leaves/:id', authenticateToken, async (req, res) => {
+  try {
+    const leaveRequest = await Leave.findById(req.params.id);
+    
+    if (!leaveRequest) {
+      return res.status(404).json({ message: 'Leave request not found' });
+    }
+
+    // Only allow admin or the request owner to delete
+    if (!req.user.isAdmin && leaveRequest.employeeId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Delete associated documents
+    if (leaveRequest.documents && leaveRequest.documents.length > 0) {
+      leaveRequest.documents.forEach(doc => {
+        if (fs.existsSync(doc.path)) {
+          fs.unlinkSync(doc.path);
+        }
+      });
+    }
+
+    await Leave.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Leave request deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 

@@ -1,4 +1,3 @@
-// sidebar.jsx
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
@@ -13,25 +12,25 @@ import {
   PenSquare, 
   Menu, 
   X,
-  UserPlus 
+  UserPlus,
+  Calendar,
+  FileText 
 } from 'lucide-react';
 import EmployeeCards from '../EmployeeCards';
 import '../../assets/css/sidebar.css';
 
-const Sidebar = () => {
+const Sidebar = ({ user }) => {
   const [employeesOpen, setEmployeesOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Check if user is admin when component mounts
-    const user = JSON.parse(localStorage.getItem('user'));
+    // Check if user is admin when component mounts or user prop changes
     setIsAdmin(user?.isAdmin || false);
-  }, []);
+  }, [user]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
-    // Prevent body scroll when menu is open
     document.body.style.overflow = isMobileMenuOpen ? 'auto' : 'hidden';
   };
 
@@ -49,15 +48,15 @@ const Sidebar = () => {
       </button>
 
       <div className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
-  <div className="logo-section">
-    <div className="logo-icon">
-      <Users className="h-6 w-6 text-[#474787]" />
-    </div>
-    <span className="logo-text">My-Task</span>
-    <button className="close-button" onClick={toggleMobileMenu}>
-      <X className="h-6 w-6" />
-    </button>
-  </div>
+        <div className="logo-section">
+          <div className="logo-icon">
+            <Users className="h-6 w-6 text-[#474787]" />
+          </div>
+          <span className="logo-text">My-Task</span>
+          <button className="close-button" onClick={toggleMobileMenu}>
+            <X className="h-6 w-6" />
+          </button>
+        </div>
 
         <nav className="nav-container">
           <NavLink to="/dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
@@ -95,6 +94,20 @@ const Sidebar = () => {
             )}
           </div>
 
+          {/* Leave Management Section */}
+          <NavLink to="/leave-request" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+            <Calendar className="h-5 w-5" />
+            <span>Request Leave</span>
+          </NavLink>
+
+          {/* Admin and HR Manager can manage leaves */}
+          {(isAdmin || user?.role === 'hr_manager') && (
+            <NavLink to="/manage-leaves" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <FileText className="h-5 w-5" />
+              <span>Manage Leaves</span>
+            </NavLink>
+          )}
+
           <NavLink to="/accounts" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             <CircleDollarSign className="h-5 w-5" />
             <span>Accounts</span>
@@ -119,29 +132,20 @@ const Sidebar = () => {
             <PenSquare className="h-5 w-5" />
             <span>UI Components</span>
           </NavLink>
-          {isAdmin && (
-      <>
-        <NavLink 
-          to="/staff-requests" 
-          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-          onClick={() => setIsMobileMenuOpen(false)} // Close mobile menu when clicked
-        >
-          <UserPlus className="h-5 w-5" />
-          <span>Staff Requests</span>
-        </NavLink>
-        <NavLink 
-          to="/manage-employees" 
-          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-          onClick={() => setIsMobileMenuOpen(false)} // Close mobile menu when clicked
-        >
-          <Users className="h-5 w-5" />
-          <span>Manage Employees</span>
-        </NavLink>
-      </>
-    )}
 
-          {/* Admin-only Add Staff Button */}
-        
+          {/* Admin-only sections */}
+          {isAdmin && (
+            <>
+              <NavLink to="/staff-requests" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <UserPlus className="h-5 w-5" />
+                <span>Staff Requests</span>
+              </NavLink>
+              <NavLink to="/manage-employees" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <Users className="h-5 w-5" />
+                <span>Manage Employees</span>
+              </NavLink>
+            </>
+          )}
         </nav>
       </div>
       

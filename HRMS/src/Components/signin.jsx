@@ -9,13 +9,12 @@ const SignIn = ({ onLogin }) => {
   const [formData, setFormData] = useState({
     // Personal Details
     name: '',
-    id: '',
     contact: '',
     email: '',
     address: '',
     
     // Professional Details
-    role: 'agent',
+    role: 'employee',
     branch: '',
     department: '',
     status: 'active',
@@ -41,8 +40,19 @@ const SignIn = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
-      if (!isLogin && formData.password !== formData.confirmPassword) {
-        throw new Error('Passwords do not match');
+      // Validation for signup
+      if (!isLogin) {
+        // Check for empty fields
+        const requiredFields = ['name', 'contact', 'email', 'address', 'branch', 'department', 'password', 'confirmPassword'];
+        const missingFields = requiredFields.filter(field => !formData[field]);
+        
+        if (missingFields.length > 0) {
+          throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
+        }
+
+        if (formData.password !== formData.confirmPassword) {
+          throw new Error('Passwords do not match');
+        }
       }
 
       const endpoint = isLogin ? '/api/signin' : '/api/signup';
@@ -57,7 +67,6 @@ const SignIn = ({ onLogin }) => {
         } : {
           personalDetails: {
             name: formData.name,
-            id: formData.id,
             contact: formData.contact,
             email: formData.email,
             address: formData.address
@@ -87,8 +96,8 @@ const SignIn = ({ onLogin }) => {
         setError('Signup successful! Please wait for admin approval.');
         setIsLogin(true);
         setFormData({
-          name: '', id: '', contact: '', email: '', address: '',
-          role: 'agent', branch: '', department: '', status: 'active',
+          name: '', contact: '', email: '', address: '',
+          role: 'employee', branch: '', department: '', status: 'active',
           password: '', confirmPassword: ''
         });
       }
@@ -131,20 +140,6 @@ const SignIn = ({ onLogin }) => {
                     placeholder="Full Name"
                   />
                 </div>
-
-                <div className="form-field">
-                  <UserSquare className="field-icon" />
-                  <input
-                    name="id"
-                    type="text"
-                    required
-                    value={formData.id}
-                    onChange={handleChange}
-                    className="form-input"
-                    placeholder="Employee ID"
-                  />
-                </div>
-
                 <div className="form-field">
                   <Phone className="field-icon" />
                   <input
@@ -297,7 +292,7 @@ const SignIn = ({ onLogin }) => {
                 setIsLogin(!isLogin);
                 setError('');
                 setFormData({
-                  name: '', id: '', contact: '', email: '', address: '',
+                  name: '', contact: '', email: '', address: '',
                   role: 'agent', branch: '', department: '', status: 'active',
                   password: '', confirmPassword: ''
                 });

@@ -56,9 +56,7 @@ const Sidebar = ({ user }) => {
             <Users className="h-6 w-6 text-[#474787]" />
           </div>
           <span className="logo-text">My-Task</span>
-          <button className="close-button" onClick={toggleMobileMenu}>
-            <X className="h-6 w-6" />
-          </button>
+      
         </div>
 
         <nav className="nav-container">

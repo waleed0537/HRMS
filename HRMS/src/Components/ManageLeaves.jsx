@@ -5,6 +5,7 @@ import '../assets/css/ManageLeaves.css';
 const ManageLeaves = () => {
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
   const [selectedDocument, setSelectedDocument] = useState(null);
 
@@ -14,36 +15,48 @@ const ManageLeaves = () => {
 
   const fetchLeaveRequests = async () => {
     try {
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user'));
+
+      if (!token || !user) {
+        throw new Error('Authentication required');
+      }
+
       const response = await fetch('http://localhost:5000/api/leaves', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
 
       if (!response.ok) {
+        console.log('Response status:', response.status);
         throw new Error('Failed to fetch leave requests');
       }
 
       const data = await response.json();
+      console.log('Fetched leave requests:', data);
       setLeaveRequests(data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching leave requests:', error);
+      setError(error.message);
       setLoading(false);
     }
   };
 
   const handleStatusUpdate = async (id, status) => {
-    if (!window.confirm(`Are you sure you want to ${status} this leave request?`)) {
-      return;
-    }
-
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
       const response = await fetch(`http://localhost:5000/api/leaves/${id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ status })
       });
@@ -53,7 +66,7 @@ const ManageLeaves = () => {
       }
 
       // Refresh the leave requests list
-      fetchLeaveRequests();
+      await fetchLeaveRequests();
     } catch (error) {
       console.error('Error updating leave request:', error);
       alert('Failed to update leave request. Please try again.');
@@ -66,9 +79,10 @@ const ManageLeaves = () => {
 
   const downloadDocument = async (doc) => {
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/${doc.path}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -111,7 +125,11 @@ const ManageLeaves = () => {
   });
 
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return <div className="loading">Loading leave requests...</div>;
+  }
+
+  if (error) {
+    return <div className="error-message">Error: {error}</div>;
   }
 
   return (

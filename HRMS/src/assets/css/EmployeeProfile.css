@@ -1,0 +1,174 @@
+.profile-container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+  }
+  
+  .profile-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 24px;
+  }
+  
+  .profile-header {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+    background: #474787;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+  }
+  
+  .profile-title h1 {
+    margin: 0;
+    font-size: 24px;
+    color: #333;
+  }
+  
+  .profile-role {
+    color: #666;
+    margin: 4px 0;
+  }
+  
+  .status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    margin-top: 8px;
+  }
+  
+  .status-active {
+    background-color: #e6f4ea;
+    color: #137333;
+  }
+  
+  .status-on_leave {
+    background-color: #fff3cd;
+    color: #856404;
+  }
+  
+  .status-resigned, .status-terminated {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  
+  .profile-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 24px;
+  }
+  
+  .info-section {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+  }
+  
+  .info-section h2 {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    color: #333;
+  }
+  
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  
+  .info-item svg {
+    color: #474787;
+    flex-shrink: 0;
+  }
+  
+  .info-label {
+    font-weight: 500;
+    color: #666;
+    width: 120px;
+  }
+  
+  .info-value {
+    color: #333;
+  }
+  
+  .documents-section {
+    margin-top: 24px;
+  }
+  
+  .documents-section h2 {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    color: #333;
+  }
+  
+  .documents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+  }
+  
+  .document-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+  }
+  
+  .document-item .doc-name {
+    font-size: 14px;
+    color: #333;
+  }
+  
+  .document-item .doc-date {
+    font-size: 12px;
+    color: #666;
+  }
+  
+  .loading, .error {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+  }
+  
+  .error {
+    color: #dc3545;
+  }
+  
+  @media (max-width: 768px) {
+    .profile-header {
+      flex-direction: column;
+      text-align: center;
+    }
+  
+    .profile-content {
+      grid-template-columns: 1fr;
+    }
+  
+    .info-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+  
+    .info-label {
+      width: auto;
+    }
+  }

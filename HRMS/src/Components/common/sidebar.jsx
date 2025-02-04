@@ -3,30 +3,30 @@ import { NavLink } from 'react-router-dom';
 import { 
   Users, 
   LayoutDashboard, 
-  FolderKanban, 
-  Ticket, 
-  UserSquare2, 
   CircleDollarSign, 
   AppWindow, 
-  Files, 
-  PenSquare, 
   Menu, 
   X,
   UserPlus,
   Calendar,
-  FileText 
+  FileText,
+  History,
+  UserSquare2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import EmployeeCards from '../EmployeeCards';
 import '../../assets/css/sidebar.css';
 
 const Sidebar = ({ user }) => {
-  const [employeesOpen, setEmployeesOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isEmployee, setIsEmployee] = useState(false);
+  const [showEmployees, setShowEmployees] = useState(false);
 
   useEffect(() => {
-    // Check if user is admin when component mounts or user prop changes
     setIsAdmin(user?.isAdmin || false);
+    setIsEmployee(user?.role === 'employee' || user?.role === 'agent');
   }, [user]);
 
   const toggleMobileMenu = () => {
@@ -34,7 +34,10 @@ const Sidebar = ({ user }) => {
     document.body.style.overflow = isMobileMenuOpen ? 'auto' : 'hidden';
   };
 
-  // Cleanup effect for body scroll
+  const toggleEmployees = () => {
+    setShowEmployees(!showEmployees);
+  };
+
   useEffect(() => {
     return () => {
       document.body.style.overflow = 'auto';
@@ -59,48 +62,52 @@ const Sidebar = ({ user }) => {
         </div>
 
         <nav className="nav-container">
+          {/* Core Navigation */}
           <NavLink to="/dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             <LayoutDashboard className="h-5 w-5" />
             <span>Dashboard</span>
           </NavLink>
 
-          <NavLink to="/projects" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            <FolderKanban className="h-5 w-5" />
-            <span>Projects</span>
-          </NavLink>
+          {/* Employee Section - Only for admin and HR */}
+          {!isEmployee && (
+            <div className="nav-section">
+              <button 
+                onClick={toggleEmployees} 
+                className={`nav-link employee-toggle ${showEmployees ? 'active' : ''}`}
+              >
+                <Users className="h-5 w-5" />
+                <span>Employees</span>
+              </button>
 
-          <NavLink to="/tickets" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            <Ticket className="h-5 w-5" />
-            <span>Tickets</span>
-          </NavLink>
-
-          <NavLink to="/clients" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            <UserSquare2 className="h-5 w-5" />
-            <span>Our Clients</span>
-          </NavLink>
-
-          <div className={`employee-section ${employeesOpen ? 'active' : ''}`}>
-            <button className="employee-button" onClick={() => setEmployeesOpen(!employeesOpen)}>
-              <Users className="h-5 w-5" />
-              <span>Employees</span>
-            </button>
-
-            {employeesOpen && (
-              <div className="submenu">
-                <div className="submenu-content">
-                  <EmployeeCards />
+              {showEmployees && (
+                <div className="submenu">
+                  <div className="submenu-content">
+                    <EmployeeCards />
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* Leave Management Section */}
-          <NavLink to="/leave-request" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            <Calendar className="h-5 w-5" />
-            <span>Request Leave</span>
-          </NavLink>
+          <div className="section-divider">Leave Management</div>
+          
+          {/* Employee-only views */}
+          {isEmployee && (
+            <>
+              <NavLink to="/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <UserSquare2 className="h-5 w-5" />
+                <span>My Profile</span>
+              </NavLink>
 
-          {/* Admin and HR Manager can manage leaves */}
+              <NavLink to="/leave-request" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <Calendar className="h-5 w-5" />
+                <span>Submit Leave Request</span>
+              </NavLink>
+            </>
+          )}
+
+          {/* Admin and HR Manager leave management */}
           {(isAdmin || user?.role === 'hr_manager') && (
             <NavLink to="/manage-leaves" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <FileText className="h-5 w-5" />
@@ -108,38 +115,40 @@ const Sidebar = ({ user }) => {
             </NavLink>
           )}
 
+          {/* Admin-only leave history */}
+          {isAdmin && (
+            <NavLink to="/leave-history" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <History className="h-5 w-5" />
+              <span>Leave History & Quotas</span>
+            </NavLink>
+          )}
+
+          {/* Finance Section */}
+          <div className="section-divider">Finance</div>
+          
           <NavLink to="/accounts" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             <CircleDollarSign className="h-5 w-5" />
             <span>Accounts</span>
           </NavLink>
 
-          <NavLink to="/payroll" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            <Users className="h-5 w-5" />
-            <span>Payroll</span>
-          </NavLink>
-
+          {/* Additional Features */}
+          <div className="section-divider">Additional Features</div>
+          
           <NavLink to="/app" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             <AppWindow className="h-5 w-5" />
             <span>App</span>
           </NavLink>
 
-          <NavLink to="/other-pages" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            <Files className="h-5 w-5" />
-            <span>Other Pages</span>
-          </NavLink>
-
-          <NavLink to="/ui-components" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            <PenSquare className="h-5 w-5" />
-            <span>UI Components</span>
-          </NavLink>
-
           {/* Admin-only sections */}
           {isAdmin && (
             <>
+              <div className="section-divider">Administration</div>
+              
               <NavLink to="/staff-requests" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <UserPlus className="h-5 w-5" />
                 <span>Staff Requests</span>
               </NavLink>
+              
               <NavLink to="/manage-employees" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <Users className="h-5 w-5" />
                 <span>Manage Employees</span>

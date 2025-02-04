@@ -9,11 +9,12 @@ const LeaveRequest = () => {
     endDate: '',
     leaveType: 'annual',
     reason: '',
-    status: 'pending'
   });
   
   const [documents, setDocuments] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleDocumentUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -27,6 +28,8 @@ const LeaveRequest = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError('');
+    setSuccess('');
 
     try {
       const formData = new FormData();
@@ -41,32 +44,39 @@ const LeaveRequest = () => {
         formData.append('documents', doc);
       });
 
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
       const response = await fetch('http://localhost:5000/api/leaves', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: formData
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit leave request');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to submit leave request');
       }
 
-      // Reset form after successful submission
+      const result = await response.json();
+      setSuccess('Leave request submitted successfully!');
+
+      // Reset form
       setLeaveData({
         startDate: '',
         endDate: '',
         leaveType: 'annual',
         reason: '',
-        status: 'pending'
       });
       setDocuments([]);
-      alert('Leave request submitted successfully!');
 
     } catch (error) {
       console.error('Error submitting leave request:', error);
-      alert('Failed to submit leave request. Please try again.');
+      setError(error.message || 'Failed to submit leave request. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -76,6 +86,18 @@ const LeaveRequest = () => {
     <div className="leave-request-container">
       <div className="leave-form-card">
         <h2 className="leave-title">Submit Leave Request</h2>
+        
+        {error && (
+          <div className="error-message bg-red-100 text-red-700 p-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+        
+        {success && (
+          <div className="success-message bg-green-100 text-green-700 p-3 rounded mb-4">
+            {success}
+          </div>
+        )}
         
         <form onSubmit={handleSubmit}>
           <div className="form-grid">

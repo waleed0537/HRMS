@@ -1,21 +1,42 @@
-// models/Employee.js
 const mongoose = require('mongoose');
 
 const employeeSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   personalDetails: {
-    name: { type: String, required: true },
-    id: { type: String, required: true, unique: true },
-    contact: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    name: { 
+      type: String, 
+      required: true 
+    },
+    id: { 
+      type: String, 
+      required: true, 
+      unique: true 
+    },
+    contact: { 
+      type: String, 
+      required: true 
+    },
+    email: { 
+      type: String, 
+      required: true, 
+      unique: true 
+    },
     address: String
   },
   professionalDetails: {
     role: {
       type: String,
-      enum: ['agent', 'hr_manager', 't1_member', 'operational_manager'],
+      enum: ['employee', 'agent', 'hr_manager', 't1_member', 'operational_manager'],
       required: true
     },
-    branch: { type: String, required: true },
+    branch: { 
+      type: String, 
+      required: true 
+    },
     department: String,
     status: {
       type: String,
@@ -26,12 +47,29 @@ const employeeSchema = new mongoose.Schema({
   documents: [{
     name: String,
     path: String,
-    uploadedAt: { type: Date, default: Date.now }
+    uploadedAt: { 
+      type: Date, 
+      default: Date.now 
+    }
   }],
-  rating: { type: Number, default: 0 },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  rating: { 
+    type: Number, 
+    default: 0 
+  },
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  },
+  updatedAt: { 
+    type: Date, 
+    default: Date.now 
+  }
 });
+
+// Add indexes for better query performance
+employeeSchema.index({ userId: 1 });
+employeeSchema.index({ 'personalDetails.email': 1 });
+employeeSchema.index({ 'personalDetails.id': 1 });
 
 const Employee = mongoose.model('Employee', employeeSchema);
 

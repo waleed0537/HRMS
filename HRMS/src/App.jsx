@@ -7,6 +7,10 @@ import StaffRequests from './Components/StaffRequests';
 import LeaveRequest from './Components/LeaveRequest';
 import ManageLeaves from './Components/ManageLeaves';
 import EmployeeManagement from './Components/EmployeeManagement';
+import EmployeeDetails from './Components/EmployeeDetails';
+import EmployeeCards from './Components/EmployeeCards';
+import LeaveHistory from './Components/LeaveHistory';
+import EmployeeProfile from './Components/EmployeeProfile';
 import '../src/assets/css/global.css';
 
 function App() {
@@ -19,7 +23,7 @@ function App() {
     // Check for existing token and user data on component mount
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
-    
+
     if (token && userData) {
       setIsAuthenticated(true);
       setUser(JSON.parse(userData));
@@ -58,17 +62,18 @@ function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<div>Dashboard</div>} />
-            
+            <Route path="/employees" element={<EmployeeCards />} />
+
             {/* Staff Management Routes */}
-            <Route 
-              path="/staff-requests" 
+            <Route
+              path="/staff-requests"
               element={
                 user?.isAdmin ? (
                   <StaffRequests />
                 ) : (
                   <Navigate to="/dashboard" replace />
                 )
-              } 
+              }
             />
             <Route
               path="/manage-employees"
@@ -95,6 +100,26 @@ function App() {
             />
 
             {/* Other Routes */}
+            <Route
+              path="/leave-history"
+              element={
+                user?.isAdmin ? (
+                  <LeaveHistory />
+                ) : (
+                  <Navigate to="/dashboard" replace />
+                )
+              }
+            />
+            <Route 
+              path="/profile" 
+              element={
+                isAuthenticated ? (
+                  <EmployeeProfile />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              } 
+            />
             <Route path="/projects" element={<div>Projects Page</div>} />
             <Route path="/tickets" element={<div>Tickets Page</div>} />
             <Route path="/clients" element={<div>Clients Page</div>} />

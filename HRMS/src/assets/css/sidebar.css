@@ -118,6 +118,34 @@
   .employee-section {
     position: relative;
   }
+  .employee-toggle {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: white;
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease;
+    border-radius: 0.375rem;
+    margin: 0.25rem 0.5rem;
+  }
+  .employee-toggle.active {
+    background-color: rgba(255, 255, 255, 0.15);
+  }
+  
+  .employee-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .employee-toggle span {
+    margin-right: auto;
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
   
   .employee-section.active .employee-button {
     background-color: #5c5c9d;
@@ -150,6 +178,7 @@
     background-color: #f8f9fa;
     z-index: 40;
     overflow-y: auto;
+    padding-top: 64px; /* Account for header height */
   }
   
   .submenu-content {

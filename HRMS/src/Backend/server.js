@@ -118,24 +118,51 @@ createAdminUser();
 // Sign Up
 app.post('/api/signup', async (req, res) => {
   try {
-    const { email, password, role, branchName } = req.body;
+    const { personalDetails, professionalDetails, password } = req.body;
     
-    const userExists = await User.findOne({ email });
+    // Check if user already exists
+    const userExists = await User.findOne({ email: personalDetails.email });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    // Create user account with pending status
     const user = await User.create({
-      email,
-      password,
-      role,
-      branchName,
-      status: 'pending',
+      email: personalDetails.email,
+      password: password,
+      role: professionalDetails.role,
+      branchName: professionalDetails.branch,
+      status: 'pending'
     });
 
-    res.status(201).json({ message: 'Signup request submitted for approval' });
+    // Create corresponding employee record
+    const employee = await Employee.create({
+      personalDetails: {
+        name: personalDetails.name,
+        id: personalDetails.id,
+        contact: personalDetails.contact,
+        email: personalDetails.email,
+        address: personalDetails.address
+      },
+      professionalDetails: {
+        role: professionalDetails.role,
+        branch: professionalDetails.branch,
+        department: professionalDetails.department,
+        status: professionalDetails.status
+      },
+      userId: user._id // Link employee to user account
+    });
+
+    res.status(201).json({ 
+      message: 'Signup request submitted for approval',
+      userId: user._id 
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error creating user', error: error.message });
+    console.error('Signup error:', error);
+    res.status(500).json({ 
+      message: 'Error creating user account', 
+      error: error.message 
+    });
   }
 });
 
@@ -184,36 +211,47 @@ app.post('/api/signin', async (req, res) => {
 
 // Employee Routes
 // Create new employee
-app.post('/api/employees', authenticateToken, upload.array('documents', 5), async (req, res) => {
-  try {
-    const documents = req.files ? req.files.map(file => ({
-      name: file.originalname,
-      path: file.path
-    })) : [];
-
-    const employeeData = {
-      personalDetails: JSON.parse(req.body.personalDetails),
-      professionalDetails: JSON.parse(req.body.professionalDetails),
-      documents
-    };
-
-    const employee = new Employee(employeeData);
-    await employee.save();
-    res.status(201).json(employee);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Get all employees
 app.get('/api/employees', authenticateToken, async (req, res) => {
   try {
-    const employees = await Employee.find();
+    // Join employees with users collection to get all necessary data
+    const employees = await Employee.aggregate([
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      {
+        $match: {
+          'user.status': 'approved'
+        }
+      },
+      {
+        $project: {
+          personalDetails: 1,
+          professionalDetails: 1,
+          documents: 1,
+          rating: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          _id: 1
+        }
+      }
+    ]);
+
     res.json(employees);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching employees:', error);
+    res.status(500).json({ 
+      message: 'Error fetching employees', 
+      error: error.message 
+    });
   }
 });
+// Get all employees
+
 
 // Get employee by ID
 app.get('/api/employees/:id', authenticateToken, async (req, res) => {
@@ -290,15 +328,58 @@ app.put('/api/requests/:userId/status', authenticateToken, async (req, res) => {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
+    // Update user status
     const user = await User.findByIdAndUpdate(
       req.params.userId,
       { status },
       { new: true }
     ).select('-password');
 
-    res.json(user);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // If approved, create or update the corresponding employee record
+    if (status === 'approved') {
+      // Check if employee record already exists
+      let employee = await Employee.findOne({ userId: user._id });
+      
+      if (!employee) {
+        // Create new employee record
+        employee = new Employee({
+          userId: user._id,
+          personalDetails: {
+            name: user.email.split('@')[0], // Temporary name from email
+            id: `EMP${Date.now()}`, // Generate a unique employee ID
+            contact: 'Not provided',
+            email: user.email,
+            address: 'Not provided'
+          },
+          professionalDetails: {
+            role: user.role,
+            branch: user.branchName,
+            department: 'General',
+            status: 'active'
+          }
+        });
+        await employee.save();
+      } else {
+        // Update existing employee record
+        employee.professionalDetails.status = 'active';
+        await employee.save();
+      }
+    }
+
+    res.json({
+      message: `User ${status} successfully`,
+      user
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error updating request', error: error.message });
+    console.error('Error updating request status:', error);
+    res.status(500).json({ 
+      message: 'Error updating request', 
+      error: error.message 
+    });
   }
 });
 
@@ -422,6 +503,58 @@ app.delete('/api/leaves/:id', authenticateToken, async (req, res) => {
     res.json({ message: 'Leave request deleted' });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+
+app.get('/api/leaves', authenticateToken, async (req, res) => {
+  try {
+    const { employeeId } = req.query;
+    let query = {};
+    
+    // If employeeId is provided, filter by it
+    if (employeeId) {
+      query.employeeId = employeeId;
+    }
+    
+    // If not admin, restrict to viewing own leaves
+    if (!req.user.isAdmin) {
+      query.employeeId = req.user.id;
+    }
+
+    const leaves = await Leave.find(query)
+      .sort({ createdAt: -1 });
+
+    res.json(leaves);
+  } catch (error) {
+    console.error('Error fetching leaves:', error);
+    res.status(500).json({ 
+      message: 'Error fetching leaves', 
+      error: error.message 
+    });
+  }
+});
+
+app.get('/api/leaves/employee/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Check if user has permission to view these leaves
+    if (!req.user.isAdmin && req.user.id !== userId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Find leaves for this user
+    const leaves = await Leave.find({ employeeId: userId })
+      .sort({ createdAt: -1 });
+
+    res.json(leaves);
+  } catch (error) {
+    console.error('Error fetching leaves:', error);
+    res.status(500).json({ 
+      message: 'Error fetching leaves', 
+      error: error.message 
+    });
   }
 });
 

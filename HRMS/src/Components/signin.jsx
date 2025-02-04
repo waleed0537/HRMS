@@ -1,17 +1,28 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, User } from 'lucide-react';
+import { Lock, Mail, User, Phone, MapPin, Building, Briefcase, UserSquare } from 'lucide-react';
 import '../assets/css/signin.css';
 
 const SignIn = ({ onLogin }) => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
+    // Personal Details
+    name: '',
+    id: '',
+    contact: '',
     email: '',
+    address: '',
+    
+    // Professional Details
+    role: 'agent',
+    branch: '',
+    department: '',
+    status: 'active',
+    
+    // Authentication
     password: '',
     confirmPassword: '',
-    role: 'agent',
-    branchName: ''
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -30,17 +41,34 @@ const SignIn = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
+      if (!isLogin && formData.password !== formData.confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
+
       const endpoint = isLogin ? '/api/signin' : '/api/signup';
       const response = await fetch(`http://localhost:5000${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
+        body: JSON.stringify(isLogin ? {
           email: formData.email,
-          password: formData.password,
-          role: formData.role,
-          branchName: formData.branchName
+          password: formData.password
+        } : {
+          personalDetails: {
+            name: formData.name,
+            id: formData.id,
+            contact: formData.contact,
+            email: formData.email,
+            address: formData.address
+          },
+          professionalDetails: {
+            role: formData.role,
+            branch: formData.branch,
+            department: formData.department,
+            status: formData.status
+          },
+          password: formData.password
         }),
       });
 
@@ -51,24 +79,17 @@ const SignIn = ({ onLogin }) => {
       }
 
       if (isLogin) {
-        // Store the token and user data
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        
-        // Call the onLogin callback with the user data
         onLogin(data.user);
-        
-        // Explicit navigation to dashboard
         navigate('/dashboard', { replace: true });
       } else {
         setError('Signup successful! Please wait for admin approval.');
         setIsLogin(true);
         setFormData({
-          email: '',
-          password: '',
-          confirmPassword: '',
-          role: 'agent',
-          branchName: ''
+          name: '', id: '', contact: '', email: '', address: '',
+          role: 'agent', branch: '', department: '', status: 'active',
+          password: '', confirmPassword: ''
         });
       }
     } catch (err) {
@@ -87,49 +108,166 @@ const SignIn = ({ onLogin }) => {
         
         {error && (
           <div className="error-message" style={{ 
-            color: error.includes('successful') ? 'green' : 'red', 
-            textAlign: 'center', 
-            marginTop: '1rem' 
+            color: error.includes('successful') ? 'green' : 'red'
           }}>
             {error}
           </div>
         )}
         
         <form className="auth-form" onSubmit={handleSubmit}>
-          <div className="form-field">
-            <Mail className="field-icon" />
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              value={formData.email}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="Email address"
-            />
-          </div>
-
-          <div className="form-field">
-            <Lock className="field-icon" />
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              value={formData.password}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="Password"
-            />
-          </div>
-
           {!isLogin && (
             <>
+              <div className="form-section">
+                <h3>Personal Details</h3>
+                <div className="form-field">
+                  <User className="field-icon" />
+                  <input
+                    name="name"
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="form-input"
+                    placeholder="Full Name"
+                  />
+                </div>
+
+                <div className="form-field">
+                  <UserSquare className="field-icon" />
+                  <input
+                    name="id"
+                    type="text"
+                    required
+                    value={formData.id}
+                    onChange={handleChange}
+                    className="form-input"
+                    placeholder="Employee ID"
+                  />
+                </div>
+
+                <div className="form-field">
+                  <Phone className="field-icon" />
+                  <input
+                    name="contact"
+                    type="tel"
+                    required
+                    value={formData.contact}
+                    onChange={handleChange}
+                    className="form-input"
+                    placeholder="Contact Number"
+                  />
+                </div>
+
+                <div className="form-field">
+                  <MapPin className="field-icon" />
+                  <input
+                    name="address"
+                    type="text"
+                    required
+                    value={formData.address}
+                    onChange={handleChange}
+                    className="form-input"
+                    placeholder="Address"
+                  />
+                </div>
+              </div>
+
+              <div className="form-section">
+                <h3>Professional Details</h3>
+                <div className="form-field">
+                  <Briefcase className="field-icon" />
+                  <select
+                    name="role"
+                    value={formData.role}
+                    onChange={handleChange}
+                    className="form-input form-select"
+                    required
+                  >
+                    <option value="employee">Employee</option>
+                    <option value="agent">Agent</option>
+                    <option value="hr_manager">HR Manager</option>
+                    <option value="t1_member">T1 Member</option>
+                    <option value="operational_manager">Operational Manager</option>
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <Building className="field-icon" />
+                  <input
+                    name="branch"
+                    type="text"
+                    required
+                    value={formData.branch}
+                    onChange={handleChange}
+                    className="form-input"
+                    placeholder="Branch"
+                  />
+                </div>
+
+                <div className="form-field">
+                  <Building className="field-icon" />
+                  <input
+                    name="department"
+                    type="text"
+                    required
+                    value={formData.department}
+                    onChange={handleChange}
+                    className="form-input"
+                    placeholder="Department"
+                  />
+                </div>
+
+                <div className="form-field">
+                  <User className="field-icon" />
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    className="form-input form-select"
+                    required
+                  >
+                    <option value="active">Active</option>
+                    <option value="resigned">Resigned</option>
+                    <option value="terminated">Terminated</option>
+                    <option value="on_leave">On Leave</option>
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="form-section">
+            <h3>{isLogin ? 'Login Details' : 'Account Details'}</h3>
+            <div className="form-field">
+              <Mail className="field-icon" />
+              <input
+                name="email"
+                type="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                className="form-input"
+                placeholder="Email address"
+              />
+            </div>
+
+            <div className="form-field">
+              <Lock className="field-icon" />
+              <input
+                name="password"
+                type="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="form-input"
+                placeholder="Password"
+              />
+            </div>
+
+            {!isLogin && (
               <div className="form-field">
                 <Lock className="field-icon" />
                 <input
-                  id="confirmPassword"
                   name="confirmPassword"
                   type="password"
                   required
@@ -139,38 +277,8 @@ const SignIn = ({ onLogin }) => {
                   placeholder="Confirm Password"
                 />
               </div>
-
-              <div className="form-field">
-                <User className="field-icon" />
-                <select
-                  id="role"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="form-input form-select"
-                >
-                  <option value="agent">Agent</option>
-                  <option value="hr_manager">HR Manager</option>
-                  <option value="t1_member">T1 Member</option>
-                  <option value="operational_manager">Operational Manager</option>
-                </select>
-              </div>
-
-              <div className="form-field">
-                <User className="field-icon" />
-                <input
-                  id="branchName"
-                  name="branchName"
-                  type="text"
-                  required
-                  value={formData.branchName}
-                  onChange={handleChange}
-                  className="form-input"
-                  placeholder="Branch Name"
-                />
-              </div>
-            </>
-          )}
+            )}
+          </div>
 
           <button 
             type="submit" 
@@ -189,11 +297,9 @@ const SignIn = ({ onLogin }) => {
                 setIsLogin(!isLogin);
                 setError('');
                 setFormData({
-                  email: '',
-                  password: '',
-                  confirmPassword: '',
-                  role: 'agent',
-                  branchName: ''
+                  name: '', id: '', contact: '', email: '', address: '',
+                  role: 'agent', branch: '', department: '', status: 'active',
+                  password: '', confirmPassword: ''
                 });
               }}
               className="toggle-button"

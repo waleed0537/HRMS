@@ -1,0 +1,103 @@
+.employee-dashboard-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .employee-dashboard-container h1 {
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  
+  .status-card, .announcements-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .status-card h2, .announcements-card h2 {
+    color: #444;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+  }
+  
+  .status-grid {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .status-icon {
+    width: 40px;
+    height: 40px;
+    background-size: cover;
+    background-position: center;
+  }
+  
+  .status-clock {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%230000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>');
+  }
+  
+  .status-calendar {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300FF00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>');
+  }
+  
+  .status-book {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23800080" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>');
+  }
+  
+  .status-label {
+    color: #666;
+    font-size: 0.8em;
+    margin-bottom: 5px;
+  }
+  
+  .status-value {
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .no-announcements {
+    color: #888;
+    text-align: center;
+  }
+  
+  .announcements-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .announcement-item {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+  }
+  
+  .announcement-item:last-child {
+    border-bottom: none;
+  }
+  
+  .announcement-item h3 {
+    color: #444;
+    margin-bottom: 5px;
+  }
+  
+  .announcement-item p {
+    color: #666;
+    margin-bottom: 5px;
+  }
+  
+  .announcement-date {
+    color: #888;
+    font-size: 0.8em;
+  }

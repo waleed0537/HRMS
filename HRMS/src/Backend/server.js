@@ -561,6 +561,33 @@ app.put('/api/requests/:userId/status', authenticateToken, async (req, res) => {
   }
 });
 
+// In server.js, keep just one handler:
+// Add this endpoint to server.js
+app.get('/api/leaves/filter/:employeeId', authenticateToken, async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    
+    // Find leave requests for this employee
+    const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+    
+    const leaveRequests = await Leave.find({
+      employeeId: employeeId
+    }).sort({ createdAt: -1 });
+    
+    res.json(leaveRequests);
+    
+  } catch (error) {
+    console.error('Error fetching leaves:', error);
+    res.status(500).json({ 
+      message: 'Error fetching leave requests',
+      error: error.message 
+    });
+  }
+});
+
 //Leave management endpoints 
 app.post('/api/leaves', authenticateToken, upload.array('documents', 5), async (req, res) => {
   try {
@@ -589,23 +616,22 @@ app.post('/api/leaves', authenticateToken, upload.array('documents', 5), async (
 });
 
 // Get all leave requests (Admin only)
-app.get('/api/leaves', authenticateToken, checkPermission, async (req, res) => {
+// Update your existing /api/leaves route
+app.get('/api/leaves', authenticateToken, async (req, res) => {
   try {
-    let leaveRequests;
-    console.log('User role:', req.userRole); // Debug log
-
-    if (req.userRole === 'admin' || req.userRole === 'hr_manager') {
-      // Admins and HR managers can see all requests
-      leaveRequests = await Leave.find()
-        .sort({ createdAt: -1 })
-        .populate('employeeId', 'email name'); // Populate employee details
-    } else {
-      // Regular employees can only see their own requests
-      leaveRequests = await Leave.find({ employeeId: req.user.id })
-        .sort({ createdAt: -1 });
-    }
+    const { employeeId } = req.query;
+    let query = {};
     
-    console.log('Found leave requests:', leaveRequests.length); // Debug log
+    if (employeeId) {
+      query.employeeId = employeeId;
+    } else if (!req.user.isAdmin) {
+      query.employeeId = req.user.id;
+    }
+
+    const leaveRequests = await Leave.find(query)
+      .sort({ createdAt: -1 });
+    
+    console.log('Found leave requests:', leaveRequests); // Debug log
     res.json(leaveRequests);
   } catch (error) {
     console.error('Error in /api/leaves:', error);
@@ -750,7 +776,11 @@ app.get('/api/leaves/employee/:userId', authenticateToken, async (req, res) => {
     }
 
     // Find leaves for this user
-    const leaves = await Leave.find({ employeeId: userId })
+    const employee = await Employee.findOne({ userId: userId });
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+    const leaves = await Leave.find({ employeeId: employee._id })
       .sort({ createdAt: -1 });
 
     res.json(leaves);
@@ -762,7 +792,6 @@ app.get('/api/leaves/employee/:userId', authenticateToken, async (req, res) => {
     });
   }
 });
-
 // Add these routes to server.js
 
 // Create branch
@@ -905,6 +934,90 @@ app.put('/api/branches/:id/role', authenticateToken, async (req, res) => {
   }
 });
 
+// Announcement routes
+const express = require('express');
+const router = express.Router();
+const Announcement = require('./models/Announcement'); // Mongoose model
+const auth = require('./middleware/auth'); // Authentication middleware
+
+// Create a new announcement
+router.post('/api/announcements', auth, async (req, res) => {
+  try {
+    const { title, content, branch, createdBy, expiresAt } = req.body;
+    
+    // Validate input
+    if (!title || !content || !branch) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const newAnnouncement = new Announcement({
+      title,
+      content,
+      branch,
+      createdBy,
+      createdAt: new Date(),
+      expiresAt: expiresAt ? new Date(expiresAt) : null
+    });
+
+    await newAnnouncement.save();
+    res.status(201).json(newAnnouncement);
+  } catch (error) {
+    console.error('Error creating announcement:', error);
+    res.status(500).json({ message: 'Server error creating announcement' });
+  }
+});
+
+// Get announcements for a specific branch
+router.get('/api/announcements/:branch', auth, async (req, res) => {
+  try {
+    const { branch } = req.params;
+    
+    // Find active announcements for the specific branch
+    const announcements = await Announcement.find({
+      branch,
+      expiresAt: { $gt: new Date() } // Only show non-expired announcements
+    }).sort({ createdAt: -1 });
+
+    res.json(announcements);
+  } catch (error) {
+    console.error('Error fetching announcements:', error);
+    res.status(500).json({ message: 'Server error fetching announcements' });
+  }
+});
+
+// Get all announcements (for admin dashboard)
+router.get('/api/announcements', auth, async (req, res) => {
+  try {
+    const announcements = await Announcement.find()
+      .sort({ createdAt: -1 })
+      .limit(50); // Limit to recent 50 announcements
+
+    res.json(announcements);
+  } catch (error) {
+    console.error('Error fetching all announcements:', error);
+    res.status(500).json({ message: 'Server error fetching announcements' });
+  }
+});
+
+// Delete an announcement
+router.delete('/api/announcements/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const announcement = await Announcement.findByIdAndDelete(id);
+    
+    if (!announcement) {
+      return res.status(404).json({ message: 'Announcement not found' });
+    }
+
+    res.json({ message: 'Announcement deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting announcement:', error);
+    res.status(500).json({ message: 'Server error deleting announcement' });
+  }
+});
+
+module.exports = router;
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

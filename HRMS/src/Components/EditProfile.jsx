@@ -4,6 +4,7 @@ import '../assets/css/EditProfile.css';
 
 const EditProfiles = () => {
   const [employees, setEmployees] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,7 +18,27 @@ const EditProfiles = () => {
 
   useEffect(() => {
     fetchEmployees();
+    fetchBranches();
   }, []);
+
+  const fetchBranches = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/branches', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch branches');
+      }
+      
+      const data = await response.json();
+      setBranches(data);
+    } catch (err) {
+      setError('Failed to fetch branches');
+    }
+  };
 
   const fetchEmployees = async () => {
     try {
@@ -74,7 +95,6 @@ const EditProfiles = () => {
   
     const formData = new FormData();
     
-    // Format data for server
     const updateData = {
       professionalDetails: selectedEmployee.professionalDetails
     };
@@ -103,9 +123,6 @@ const EditProfiles = () => {
         throw new Error(error.message || 'Failed to update employee');
       }
   
-      const data = await response.json();
-      console.log('Update successful:', data);
-      
       setMilestone({
         date: '',
         title: '',
@@ -178,9 +195,12 @@ const EditProfiles = () => {
                     }
                   })}
                 >
-                  <option value="Main Branch">Main Branch</option>
-                  <option value="East Branch">East Branch</option>
-                  <option value="West Branch">West Branch</option>
+                  <option value="">Select Branch</option>
+                  {branches.map(branch => (
+                    <option key={branch._id} value={branch.name}>
+                      {branch.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

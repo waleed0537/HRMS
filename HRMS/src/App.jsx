@@ -13,6 +13,7 @@ import LeaveHistory from './Components/LeaveHistory';
 import EmployeeProfile from './Components/EmployeeProfile';
 import EditProfiles from './Components/EditProfile';
 import BranchManagement from './Components/BranchManagement';
+import AdminDashboard from './Components/AdminDashboard'; // Import admin dashboard
 import '../src/assets/css/global.css';
 
 function App() {
@@ -35,7 +36,12 @@ function App() {
   const handleLogin = (userData) => {
     setUser(userData);
     setIsAuthenticated(true);
-    navigate('/dashboard');
+    // Redirect admin to admin dashboard, others to regular dashboard
+    if (userData.isAdmin) {
+      navigate('/admin-dashboard');
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   const handleLogout = () => {
@@ -61,8 +67,19 @@ function App() {
         <Header user={user} onLogout={handleLogout} />
         <main className="p-6 pt-20 ml-64 min-h-screen bg-gray-50">
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={
+              user?.isAdmin 
+                ? <Navigate to="/admin-dashboard" replace /> 
+                : <Navigate to="/dashboard" replace />
+            } />
             <Route path="/dashboard" element={<div>Dashboard</div>} />
+            <Route path="/admin-dashboard" element={
+              user?.isAdmin ? (
+                <AdminDashboard />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            } />
             <Route path="/employees" element={<EmployeeCards />} />
 
             <Route

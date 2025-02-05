@@ -16,7 +16,6 @@ import {
   ChevronUp,
   Building
 } from 'lucide-react';
-import EmployeeCards from '../EmployeeCards';
 import '../../assets/css/sidebar.css';
 
 const Sidebar = ({ user }) => {
@@ -33,10 +32,6 @@ const Sidebar = ({ user }) => {
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
     document.body.style.overflow = isMobileMenuOpen ? 'auto' : 'hidden';
-  };
-
-  const toggleEmployees = () => {
-    setShowEmployees(!showEmployees);
   };
 
   useEffect(() => {
@@ -57,18 +52,30 @@ const Sidebar = ({ user }) => {
             <Users className="h-6 w-6 text-[#474787]" />
           </div>
           <span className="logo-text">My-Task</span>
-      
         </div>
 
         <nav className="nav-container">
           {/* Core Navigation */}
-          <NavLink to="/dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            <LayoutDashboard className="h-5 w-5" />
-            <span>Dashboard</span>
+          {isAdmin ? (
+            <NavLink to="/admin-dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <LayoutDashboard className="h-5 w-5" />
+              <span>Admin Dashboard</span>
+            </NavLink>
+          ) : (
+            <NavLink to="/dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <LayoutDashboard className="h-5 w-5" />
+              <span>Dashboard</span>
+            </NavLink>
+          )}
+
+          {/* Employees Section */}
+          <div className="section-divider">Employees</div>
+          <NavLink to="/employees" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+            <Users className="h-5 w-5" />
+            <span>Employees</span>
           </NavLink>
 
           {/* Employee Section - Only for admin and HR */}
-          {/* Admin and HR sections */}
           {(isAdmin || user?.role === 'hr_manager') && (
             <>
               <div className="section-divider">Administration</div>
@@ -148,28 +155,6 @@ const Sidebar = ({ user }) => {
             <AppWindow className="h-5 w-5" />
             <span>App</span>
           </NavLink>
-
-          {/* Admin-only sections */}
-          {isAdmin && (
-            <>
-              <div className="section-divider">Administration</div>
-              
-              <NavLink to="/staff-requests" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <UserPlus className="h-5 w-5" />
-                <span>Staff Requests</span>
-              </NavLink>
-              
-              <NavLink to="/manage-employees" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <Users className="h-5 w-5" />
-                <span>Manage Employees</span>
-              </NavLink>
-
-              <NavLink to="/branch-management" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <Building className="h-5 w-5" />
-                <span>Branch Management</span>
-              </NavLink>
-            </>
-          )}
         </nav>
       </div>
       

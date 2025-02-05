@@ -25,6 +25,7 @@
     "react-bootstrap": "^2.10.9",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.1.5",
+    "recharts": "^2.15.1",
     "tailwind-merge": "^3.0.1"
   },
   "devDependencies": {

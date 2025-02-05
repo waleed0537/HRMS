@@ -13,7 +13,8 @@ import LeaveHistory from './Components/LeaveHistory';
 import EmployeeProfile from './Components/EmployeeProfile';
 import EditProfiles from './Components/EditProfile';
 import BranchManagement from './Components/BranchManagement';
-import AdminDashboard from './Components/AdminDashboard'; // Import admin dashboard
+import AdminDashboard from './Components/AdminDashboard';
+import EmployeeDashboard from './Components/EmployeeDashboard';
 import '../src/assets/css/global.css';
 
 function App() {
@@ -36,7 +37,6 @@ function App() {
   const handleLogin = (userData) => {
     setUser(userData);
     setIsAuthenticated(true);
-    // Redirect admin to admin dashboard, others to regular dashboard
     if (userData.isAdmin) {
       navigate('/admin-dashboard');
     } else {
@@ -67,12 +67,21 @@ function App() {
         <Header user={user} onLogout={handleLogout} />
         <main className="p-6 pt-20 ml-64 min-h-screen bg-gray-50">
           <Routes>
+            {/* Root redirect based on user role */}
             <Route path="/" element={
               user?.isAdmin 
                 ? <Navigate to="/admin-dashboard" replace /> 
                 : <Navigate to="/dashboard" replace />
             } />
-            <Route path="/dashboard" element={<div>Dashboard</div>} />
+
+            {/* Dashboard routes */}
+            <Route path="/dashboard" element={
+              !user?.isAdmin ? (
+                <EmployeeDashboard />
+              ) : (
+                <Navigate to="/admin-dashboard" replace />
+              )
+            } />
             <Route path="/admin-dashboard" element={
               user?.isAdmin ? (
                 <AdminDashboard />
@@ -80,8 +89,13 @@ function App() {
                 <Navigate to="/dashboard" replace />
               )
             } />
-            <Route path="/employees" element={<EmployeeCards />} />
 
+            {/* Common Routes */}
+            <Route path="/employees" element={<EmployeeCards />} />
+            <Route path="/leave-request" element={<LeaveRequest />} />
+            <Route path="/profile" element={<EmployeeProfile />} />
+
+            {/* Admin Only Routes */}
             <Route
               path="/staff-requests"
               element={
@@ -92,23 +106,11 @@ function App() {
                 )
               }
             />
-
             <Route
               path="/manage-employees"
               element={
                 user?.isAdmin ? (
                   <EmployeeManagement />
-                ) : (
-                  <Navigate to="/dashboard" replace />
-                )
-              }
-            />
-
-            <Route
-              path="/edit-profiles"
-              element={
-                user?.isAdmin || user?.role === 'hr_manager' ? (
-                  <EditProfiles />
                 ) : (
                   <Navigate to="/dashboard" replace />
                 )
@@ -124,8 +126,18 @@ function App() {
                 )
               }
             />
-            <Route path="/leave-request" element={<LeaveRequest />} />
 
+            {/* Admin & HR Manager Routes */}
+            <Route
+              path="/edit-profiles"
+              element={
+                user?.isAdmin || user?.role === 'hr_manager' ? (
+                  <EditProfiles />
+                ) : (
+                  <Navigate to="/dashboard" replace />
+                )
+              }
+            />
             <Route
               path="/manage-leaves"
               element={
@@ -137,6 +149,7 @@ function App() {
               }
             />
 
+            {/* Admin Only Routes */}
             <Route
               path="/leave-history"
               element={
@@ -148,17 +161,7 @@ function App() {
               }
             />
 
-            <Route
-              path="/profile"
-              element={
-                isAuthenticated ? (
-                  <EmployeeProfile />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
-
+            {/* Other Routes */}
             <Route path="/projects" element={<div>Projects Page</div>} />
             <Route path="/tickets" element={<div>Tickets Page</div>} />
             <Route path="/clients" element={<div>Clients Page</div>} />

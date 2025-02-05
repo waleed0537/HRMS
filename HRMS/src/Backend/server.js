@@ -939,36 +939,32 @@ app.put('/api/branches/:id/role', authenticateToken, async (req, res) => {
 
 app.post('/api/announcements', authenticateToken, async (req, res) => {
   try {
-    console.log('Received announcement data:', req.body); // Debug log
     const { title, content, branchId, priority, expiresAt } = req.body;
     
-    // Validate inputs
     if (!title || !content || !branchId || !expiresAt) {
       return res.status(400).json({ 
-        message: 'Missing required fields',
-        received: { title, content, branchId, expiresAt }
+        message: 'Missing required fields' 
       });
     }
 
     const announcement = new Announcement({
       title,
       content,
-      branchId,
+      branchId, // Store as ObjectId
       createdBy: req.user.id,
       priority: priority || 'medium',
       expiresAt: new Date(expiresAt)
     });
 
     await announcement.save();
-    
-    console.log('Announcement created:', announcement); // Debug log
+    console.log('Created announcement:', announcement);
     
     res.status(201).json({
       message: 'Announcement created successfully',
       announcement
     });
   } catch (error) {
-    console.error('Server error creating announcement:', error);
+    console.error('Error creating announcement:', error);
     res.status(500).json({ 
       message: 'Failed to create announcement',
       error: error.message 
@@ -976,20 +972,54 @@ app.post('/api/announcements', authenticateToken, async (req, res) => {
   }
 });
 
-// Get announcements by branch
+// Add this route to your server.js
 app.get('/api/announcements/:branchId', authenticateToken, async (req, res) => {
   try {
-    const announcements = await Announcement.find({
-      branchId: req.params.branchId,
-      expiresAt: { $gt: new Date() }
+    const branchId = req.params.branchId;
+    console.log('Received announcement request for branchId:', branchId);
+    
+    // First check if the branch exists
+    const branch = await Branch.findById(branchId);
+    console.log('Found branch:', branch);
+
+    // Get current time for expiry check
+    const now = new Date();
+    console.log('Current time:', now);
+
+    // Get all announcements first
+    const allAnnouncements = await Announcement.find({ branchId: branchId });
+    console.log('All announcements before expiry filter:', allAnnouncements);
+
+    // Then get active ones
+    const activeAnnouncements = await Announcement.find({
+      branchId: branchId,
+      expiresAt: { $gt: now }
     })
     .populate('createdBy', 'email')
-    .sort('-createdAt');
-    
-    res.json(announcements);
+    .sort({ createdAt: -1 });
+
+    console.log('Active announcements after expiry filter:', activeAnnouncements);
+
+    if (allAnnouncements.length === 0) {
+      console.log('No announcements found for branch');
+    } else if (activeAnnouncements.length === 0) {
+      console.log('All announcements have expired');
+      allAnnouncements.forEach(ann => {
+        console.log('Announcement expiry status:', {
+          title: ann.title,
+          expiresAt: ann.expiresAt,
+          isExpired: ann.expiresAt <= now
+        });
+      });
+    }
+
+    res.json(activeAnnouncements);
   } catch (error) {
     console.error('Error fetching announcements:', error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ 
+      message: 'Error fetching announcements',
+      error: error.message
+    });
   }
 });
 
@@ -1017,6 +1047,76 @@ app.delete('/api/announcements/:id', authenticateToken, async (req, res) => {
     res.json({ message: 'Announcement deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Add this route to your server.js
+app.get('/api/employees/byemail/:email', authenticateToken, async (req, res) => {
+  try {
+    const email = req.params.email;
+    console.log('Looking up employee by email:', email);
+    
+    const employee = await Employee.findOne({
+      'personalDetails.email': email
+    });
+    
+    if (!employee) {
+      console.log('No employee found for email:', email);
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+    
+    console.log('Found employee:', employee);
+    res.json(employee);
+  } catch (error) {
+    console.error('Error finding employee by email:', error);
+    res.status(500).json({ 
+      message: 'Error fetching employee data',
+      error: error.message 
+    });
+  }
+});
+
+// Update this endpoint in server.js
+app.get('/api/leaves/employee/:employeeId', authenticateToken, async (req, res) => {
+  try {
+    const employeeId = req.params.employeeId;
+    console.log('Requesting leaves for employee:', employeeId);
+    
+    // Get the employee to verify permission
+    const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    // Allow access if user is admin, HR manager, or the employee themselves
+    const requestingUser = await User.findById(req.user.id);
+    if (!requestingUser) {
+      return res.status(404).json({ message: 'Requesting user not found' });
+    }
+
+    // Check if the requesting user has permission
+    const hasPermission = 
+      requestingUser.isAdmin || 
+      requestingUser.role === 'hr_manager' || 
+      employee.userId.toString() === requestingUser._id.toString();
+
+    if (!hasPermission) {
+      return res.status(403).json({ message: 'Not authorized to view these leaves' });
+    }
+
+    // If authorized, fetch the leaves
+    const leaves = await Leave.find({ employeeId })
+      .sort({ createdAt: -1 });
+
+    console.log(`Found ${leaves.length} leaves for employee ${employeeId}`);
+    res.json(leaves);
+
+  } catch (error) {
+    console.error('Error fetching employee leaves:', error);
+    res.status(500).json({ 
+      message: 'Error fetching leave history',
+      error: error.message 
+    });
   }
 });
 

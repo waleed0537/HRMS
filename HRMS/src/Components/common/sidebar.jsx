@@ -12,8 +12,6 @@ import {
   FileText,
   History,
   UserSquare2,
-  ChevronDown,
-  ChevronUp,
   Building
 } from 'lucide-react';
 import '../../assets/css/sidebar.css';
@@ -21,12 +19,9 @@ import '../../assets/css/sidebar.css';
 const Sidebar = ({ user }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isEmployee, setIsEmployee] = useState(false);
-  const [showEmployees, setShowEmployees] = useState(false);
 
   useEffect(() => {
     setIsAdmin(user?.isAdmin || false);
-    setIsEmployee(user?.role === 'employee' || user?.role === 'agent');
   }, [user]);
 
   const toggleMobileMenu = () => {
@@ -55,7 +50,7 @@ const Sidebar = ({ user }) => {
         </div>
 
         <nav className="nav-container">
-          {/* Core Navigation */}
+          {/* Dashboard Navigation */}
           {isAdmin ? (
             <NavLink to="/admin-dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <LayoutDashboard className="h-5 w-5" />
@@ -75,7 +70,22 @@ const Sidebar = ({ user }) => {
             <span>Employees</span>
           </NavLink>
 
-          {/* Employee Section - Only for admin and HR */}
+          {/* Profile & Leave Request - For all non-admin users */}
+          {!isAdmin && (
+            <>
+              <NavLink to="/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <UserSquare2 className="h-5 w-5" />
+                <span>My Profile</span>
+              </NavLink>
+
+              <NavLink to="/leave-request" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <Calendar className="h-5 w-5" />
+                <span>Submit Leave Request</span>
+              </NavLink>
+            </>
+          )}
+
+          {/* Admin & HR Section */}
           {(isAdmin || user?.role === 'hr_manager') && (
             <>
               <div className="section-divider">Administration</div>
@@ -103,36 +113,15 @@ const Sidebar = ({ user }) => {
                 <FileText className="h-5 w-5" />
                 <span>Edit Profiles</span>
               </NavLink>
-            </>
-          )}
 
-          {/* Leave Management Section */}
-          <div className="section-divider">Leave Management</div>
-          
-          {/* Employee-only views */}
-          {isEmployee && (
-            <>
-              <NavLink to="/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <UserSquare2 className="h-5 w-5" />
-                <span>My Profile</span>
-              </NavLink>
-
-              <NavLink to="/leave-request" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <Calendar className="h-5 w-5" />
-                <span>Submit Leave Request</span>
+              <NavLink to="/manage-leaves" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <FileText className="h-5 w-5" />
+                <span>Manage Leaves</span>
               </NavLink>
             </>
           )}
 
-          {/* Admin and HR Manager leave management */}
-          {(isAdmin || user?.role === 'hr_manager') && (
-            <NavLink to="/manage-leaves" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              <FileText className="h-5 w-5" />
-              <span>Manage Leaves</span>
-            </NavLink>
-          )}
-
-          {/* Admin-only leave history */}
+          {/* Admin Only Sections */}
           {isAdmin && (
             <NavLink to="/leave-history" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <History className="h-5 w-5" />
@@ -140,17 +129,14 @@ const Sidebar = ({ user }) => {
             </NavLink>
           )}
 
-          {/* Finance Section */}
+          {/* Common Sections */}
           <div className="section-divider">Finance</div>
-          
           <NavLink to="/accounts" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             <CircleDollarSign className="h-5 w-5" />
             <span>Accounts</span>
           </NavLink>
 
-          {/* Additional Features */}
           <div className="section-divider">Additional Features</div>
-          
           <NavLink to="/app" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             <AppWindow className="h-5 w-5" />
             <span>App</span>

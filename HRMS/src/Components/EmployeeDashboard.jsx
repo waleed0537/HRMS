@@ -1,113 +1,290 @@
 import React, { useState, useEffect } from 'react';
-import './EmployeeDashboard.css';
+import { Card, CardHeader, CardTitle, CardContent } from '../Components/ui/card';
+import { Calendar, AlertTriangle, Circle } from 'lucide-react';
 
 const EmployeeDashboard = () => {
-  const [user, setUser] = useState(null);
-  const [leaveStats, setLeaveStats] = useState({
-    total: 0,
-    used: 0,
-    remaining: 0
-  });
   const [announcements, setAnnouncements] = useState([]);
-  const [currentLeaveStatus, setCurrentLeaveStatus] = useState('Active');
+  const [leaveHistory, setLeaveHistory] = useState([]);
+  const [userBranch, setUserBranch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchBranchAnnouncements = async (branchId) => {
+    try {
+      console.log('Fetching announcements for branchId:', branchId);
+      const response = await fetch(`http://localhost:5000/api/announcements/${branchId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch announcements');
+      const data = await response.json();
+      console.log('Received announcements:', data);
+      setAnnouncements(data);
+    } catch (err) {
+      console.error('Error fetching announcements:', err);
+      setError(err.message);
+    }
+  };
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const userData = JSON.parse(localStorage.getItem('user') || '{}');
-        setUser(userData);
-
-        // Fetch leave statistics
-        const leaveResponse = await fetch(`http://localhost:5000/api/leaves/stats/${userData.id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+    const fetchUserData = async () => {
+        try {
+          const userData = JSON.parse(localStorage.getItem('user'));
+          console.log('User data from localStorage:', userData);
+          
+          // First get the employee document using the user's email
+          const empResponse = await fetch(`http://localhost:5000/api/employees/byemail/${userData.email}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+      
+          if (!empResponse.ok) {
+            console.error('Employee response status:', empResponse.status);
+            throw new Error('Failed to fetch user data');
           }
-        });
-        const leaveData = await leaveResponse.json();
-        setLeaveStats(leaveData);
-
-        // Check current leave status
-        const statusResponse = await fetch(`http://localhost:5000/api/employees/leave-status/${userData.id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+          
+          const data = await empResponse.json();
+          console.log('Employee data received:', data);
+      
+          // Get branch data
+          const branchResponse = await fetch(`http://localhost:5000/api/branches`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          
+          if (!branchResponse.ok) throw new Error('Failed to fetch branch data');
+          const branches = await branchResponse.json();
+          console.log('Branches data:', branches);
+          
+          // Find the branch by name
+          const userBranch = branches.find(branch => branch.name === data.professionalDetails.branch);
+          console.log('Found user branch:', userBranch);
+          
+          if (userBranch) {
+            setUserBranch(data.professionalDetails.branch);
+            fetchBranchAnnouncements(userBranch._id);
+          } else {
+            console.warn('No matching branch found for:', data.professionalDetails.branch);
           }
-        });
-        const statusData = await statusResponse.json();
-        setCurrentLeaveStatus(statusData.status);
+        } catch (err) {
+          console.error('Error in fetchUserData:', err);
+          setError(err.message);
+        }
+      };
 
-        // Fetch branch-specific announcements
-        const announcementsResponse = await fetch(`http://localhost:5000/api/announcements/${userData.branch}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        const announcementsData = await announcementsResponse.json();
-        setAnnouncements(announcementsData);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      }
-    };
-
-    fetchDashboardData();
+    fetchUserData();
   }, []);
 
-  return (
-    <div className="employee-dashboard-container">
-      <h1>Employee Dashboard</h1>
+  useEffect(() => {
+    const fetchLeaveHistory = async () => {
+        try {
+          const userData = JSON.parse(localStorage.getItem('user'));
+          console.log('Fetching leave history for user:', userData.email);
+      
+          // First get the employee document to get the employee ID
+          const empResponse = await fetch(`http://localhost:5000/api/employees/byemail/${userData.email}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+      
+          if (!empResponse.ok) {
+            throw new Error('Failed to fetch employee data for leave history');
+          }
+      
+          const empData = await empResponse.json();
+          console.log('Got employee data for leave history:', empData);
+      
+          // Now fetch leave history using employee ID
+          const leaveResponse = await fetch(`http://localhost:5000/api/leaves/employee/${empData._id}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+      
+          if (!leaveResponse.ok) {
+            const errorData = await leaveResponse.json();
+            throw new Error(errorData.message || 'Failed to fetch leave history');
+          }
+      
+          const leaves = await leaveResponse.json();
+          console.log('Received leave history:', leaves);
+          setLeaveHistory(leaves);
+        } catch (err) {
+          console.error('Error fetching leave history:', err);
+          // Don't set error state for leave history issues - just show empty state
+          setLeaveHistory([]);
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+    fetchLeaveHistory();
+  }, []);
 
-      {/* Personal Stats Card */}
-      <div className="status-card">
-        <h2>My Status</h2>
-        <div className="status-grid">
-          <div className="status-item">
-            <div className="status-icon status-clock"></div>
-            <div>
-              <p className="status-label">Current Status</p>
-              <p className="status-value">{currentLeaveStatus}</p>
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusColor = (priority) => {
+    switch (priority) {
+      case 'high': return '#dc2626';
+      case 'medium': return '#f59e0b';
+      case 'low': return '#10b981';
+      default: return '#6b7280';
+    }
+  };
+
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-screen -mt-16">
+      <div className="text-xl text-gray-600">Loading...</div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="dashboard-container">
+      <div className="bg-red-50 p-4 rounded-lg">
+        <div className="text-red-600">{error}</div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="dashboard-container">
+      <style>{`
+        .dashboard-container {
+          padding: 20px;
+          margin: 64px 0 0 16rem;
+          background-color: #f5f5f5;
+          min-height: calc(100vh - 64px);
+        }
+
+        .announcements-section, .leave-section {
+          margin-bottom: 2rem;
+        }
+
+        .announcements-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 1rem;
+          margin-top: 1rem;
+        }
+
+        .announcement-card {
+          background: white;
+          padding: 1.5rem;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          transition: transform 0.2s;
+        }
+
+        .announcement-card:hover {
+          transform: translateY(-2px);
+        }
+
+        .announcement-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 1rem;
+        }
+
+        .priority-badge {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.875rem;
+        }
+
+        .announcement-title {
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: #1f2937;
+          margin-bottom: 0.5rem;
+        }
+
+        .announcement-content {
+          color: #4b5563;
+          margin-bottom: 1rem;
+        }
+
+        .announcement-footer {
+          font-size: 0.875rem;
+          color: #6b7280;
+        }
+      `}</style>
+
+      <div className="announcements-section">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold">Branch Announcements</h2>
+          {userBranch && (
+            <div className="text-gray-600">
+              Branch: {userBranch}
             </div>
-          </div>
-          <div className="status-item">
-            <div className="status-icon status-calendar"></div>
-            <div>
-              <p className="status-label">Leave Days</p>
-              <p className="status-value">{leaveStats.total} Total</p>
+          )}
+        </div>
+        <div className="announcements-grid">
+          {announcements.length === 0 ? (
+            <div className="announcement-card">
+              <div className="text-gray-500 text-center">
+                No announcements at this time for {userBranch || 'your branch'}.
+              </div>
             </div>
-          </div>
-          <div className="status-item">
-            <div className="status-icon status-book"></div>
-            <div>
-              <p className="status-label">Remaining Leaves</p>
-              <p className="status-value">{leaveStats.remaining}</p>
-            </div>
-          </div>
+          ) : (
+            announcements.map((announcement) => (
+              <div key={announcement._id} className="announcement-card">
+                <div className="announcement-header">
+                  <div className="priority-badge">
+                    <Circle size={8} fill={getStatusColor(announcement.priority)} />
+                    {announcement.priority.charAt(0).toUpperCase() + announcement.priority.slice(1)} Priority
+                  </div>
+                </div>
+                <h3 className="announcement-title">{announcement.title}</h3>
+                <p className="announcement-content">{announcement.content}</p>
+                <div className="announcement-footer">
+                  Expires: {formatDate(announcement.expiresAt)}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
-      {/* Announcements Section */}
-      <div className="announcements-card">
-        <h2>Branch Announcements</h2>
-        <div className="announcements-content">
-          {announcements.length === 0 ? (
-            <p className="no-announcements">No current announcements</p>
-          ) : (
-            <div className="announcements-list">
-              {announcements.map((announcement) => (
-                <div 
-                  key={announcement.id} 
-                  className="announcement-item"
-                >
-                  <h3>{announcement.title}</h3>
-                  <p>{announcement.content}</p>
-                  <p className="announcement-date">
-                    {new Date(announcement.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              ))}
+      <div className="leave-section">
+        <h2 className="section-title">Recent Leave Requests</h2>
+        <div className="leave-grid">
+          {leaveHistory.length === 0 ? (
+            <div className="leave-card">
+              No leave history found.
             </div>
+          ) : (
+            leaveHistory.map((leave) => (
+              <div key={leave._id} className="leave-card">
+                <div className="leave-header">
+                  <span className="leave-type">
+                    {leave.leaveType.charAt(0).toUpperCase() + leave.leaveType.slice(1)} Leave
+                  </span>
+                  <span className={`status-badge ${leave.status}`}>
+                    {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
+                  </span>
+                </div>
+                <div className="leave-dates">
+                  <Calendar size={16} />
+                  {formatDate(leave.startDate)} - {formatDate(leave.endDate)}
+                </div>
+                <p className="leave-reason">{leave.reason}</p>
+              </div>
+            ))
           )}
         </div>
       </div>

@@ -39,7 +39,7 @@ const employeeSchema = new mongoose.Schema({
 });
 
 employeeSchema.index({ userId: 1 });
-
+employeeSchema.index({ 'personalDetails.email': 1 });
 const Employee = mongoose.model('Employee', employeeSchema);
 
 module.exports = Employee;

@@ -1,0 +1,142 @@
+/* AnnouncementsList.css */
+.announcements-list {
+    margin-top: 24px;
+  }
+  
+  .announcement-item {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .announcement-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .announcement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  
+  .announcement-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+  }
+  
+  .announcement-priority {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+  
+  .priority-high {
+    background-color: #fee2e2;
+    color: #dc2626;
+  }
+  
+  .priority-medium {
+    background-color: #fef3c7;
+    color: #d97706;
+  }
+  
+  .priority-low {
+    background-color: #dcfce7;
+    color: #15803d;
+  }
+  
+  .announcement-content {
+    color: #4b5563;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 16px;
+    white-space: pre-wrap;
+  }
+  
+  .announcement-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .announcement-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #6b7280;
+    font-size: 12px;
+  }
+  
+  .announcement-meta span {
+    white-space: nowrap;
+  }
+  
+  .delete-button {
+    background: none;
+    border: none;
+    padding: 6px;
+    color: #ef4444;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .delete-button:hover {
+    background-color: #fee2e2;
+  }
+  
+  .loading,
+  .error,
+  .empty {
+    text-align: center;
+    padding: 24px;
+    color: #6b7280;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .error {
+    color: #dc2626;
+    background-color: #fee2e2;
+  }
+  
+  @media (max-width: 640px) {
+    .announcement-header {
+      flex-direction: column;
+      gap: 8px;
+    }
+  
+    .announcement-priority {
+      align-self: flex-start;
+    }
+  
+    .announcement-footer {
+      flex-direction: column;
+      gap: 12px;
+    }
+  
+    .announcement-meta {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+  
+    .delete-button {
+      align-self: flex-end;
+    }
+  }

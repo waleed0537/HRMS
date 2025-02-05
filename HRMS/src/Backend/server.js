@@ -11,6 +11,7 @@ const path = require('path');
 const fs = require('fs');
 const Leave = require('../Backend/models/Leave');
 const Branch = require('../Backend/models/branch');
+const Announcement = require('../Backend/models/Announcement'); // Make sure to import the model
 
 
 const app = express();
@@ -934,90 +935,90 @@ app.put('/api/branches/:id/role', authenticateToken, async (req, res) => {
   }
 });
 
-// Announcement routes
-const express = require('express');
-const router = express.Router();
-const Announcement = require('./models/Announcement'); // Mongoose model
-const auth = require('./middleware/auth'); // Authentication middleware
+// Add to server.js
 
-// Create a new announcement
-router.post('/api/announcements', auth, async (req, res) => {
+app.post('/api/announcements', authenticateToken, async (req, res) => {
   try {
-    const { title, content, branch, createdBy, expiresAt } = req.body;
+    console.log('Received announcement data:', req.body); // Debug log
+    const { title, content, branchId, priority, expiresAt } = req.body;
     
-    // Validate input
-    if (!title || !content || !branch) {
-      return res.status(400).json({ message: 'Missing required fields' });
+    // Validate inputs
+    if (!title || !content || !branchId || !expiresAt) {
+      return res.status(400).json({ 
+        message: 'Missing required fields',
+        received: { title, content, branchId, expiresAt }
+      });
     }
 
-    const newAnnouncement = new Announcement({
+    const announcement = new Announcement({
       title,
       content,
-      branch,
-      createdBy,
-      createdAt: new Date(),
-      expiresAt: expiresAt ? new Date(expiresAt) : null
+      branchId,
+      createdBy: req.user.id,
+      priority: priority || 'medium',
+      expiresAt: new Date(expiresAt)
     });
 
-    await newAnnouncement.save();
-    res.status(201).json(newAnnouncement);
+    await announcement.save();
+    
+    console.log('Announcement created:', announcement); // Debug log
+    
+    res.status(201).json({
+      message: 'Announcement created successfully',
+      announcement
+    });
   } catch (error) {
-    console.error('Error creating announcement:', error);
-    res.status(500).json({ message: 'Server error creating announcement' });
+    console.error('Server error creating announcement:', error);
+    res.status(500).json({ 
+      message: 'Failed to create announcement',
+      error: error.message 
+    });
   }
 });
 
-// Get announcements for a specific branch
-router.get('/api/announcements/:branch', auth, async (req, res) => {
+// Get announcements by branch
+app.get('/api/announcements/:branchId', authenticateToken, async (req, res) => {
   try {
-    const { branch } = req.params;
-    
-    // Find active announcements for the specific branch
     const announcements = await Announcement.find({
-      branch,
-      expiresAt: { $gt: new Date() } // Only show non-expired announcements
-    }).sort({ createdAt: -1 });
-
+      branchId: req.params.branchId,
+      expiresAt: { $gt: new Date() }
+    })
+    .populate('createdBy', 'email')
+    .sort('-createdAt');
+    
     res.json(announcements);
   } catch (error) {
     console.error('Error fetching announcements:', error);
-    res.status(500).json({ message: 'Server error fetching announcements' });
+    res.status(500).json({ message: error.message });
   }
 });
 
-// Get all announcements (for admin dashboard)
-router.get('/api/announcements', auth, async (req, res) => {
+// Get announcements by branch
+app.get('/api/announcements', authenticateToken, async (req, res) => {
   try {
     const announcements = await Announcement.find()
-      .sort({ createdAt: -1 })
-      .limit(50); // Limit to recent 50 announcements
-
+      .populate('createdBy', 'email')
+      .populate('branchId', 'name')
+      .sort('-createdAt');
+    
     res.json(announcements);
   } catch (error) {
-    console.error('Error fetching all announcements:', error);
-    res.status(500).json({ message: 'Server error fetching announcements' });
+    res.status(500).json({ message: error.message });
   }
 });
 
-// Delete an announcement
-router.delete('/api/announcements/:id', auth, async (req, res) => {
+// Delete announcement
+app.delete('/api/announcements/:id', authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    const announcement = await Announcement.findByIdAndDelete(id);
-    
+    const announcement = await Announcement.findByIdAndDelete(req.params.id);
     if (!announcement) {
       return res.status(404).json({ message: 'Announcement not found' });
     }
-
     res.json({ message: 'Announcement deleted successfully' });
   } catch (error) {
-    console.error('Error deleting announcement:', error);
-    res.status(500).json({ message: 'Server error deleting announcement' });
+    res.status(500).json({ message: error.message });
   }
 });
-
-module.exports = router;
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Card, CardHeader, CardTitle, CardContent } from '../Components/ui/card';
+import { Bell, CheckCircle, XCircle } from 'lucide-react';
+import AnnouncementModal from './AnnouncementModal';
+import AnnouncementsList from './AnnouncementsList';
+import '../assets/css/AdminDashboard.css';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const AdminDashboard = () => {
+  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [notificationType, setNotificationType] = useState('');
   const [leaveStats, setLeaveStats] = useState([]);
   const [teamPerformance, setTeamPerformance] = useState([]);
   const [employeeStats, setEmployeeStats] = useState({
@@ -13,10 +20,54 @@ const AdminDashboard = () => {
     onLeave: 0,
     departments: []
   });
+  const [selectedBranch, setSelectedBranch] = useState(null);
+
+  useEffect(() => {
+    if (notificationMessage) {
+      const timer = setTimeout(() => {
+        setNotificationMessage('');
+        setNotificationType('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notificationMessage]);
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  // Update this function in your AdminDashboard.jsx
+
+const handleCreateAnnouncement = async (announcementData) => {
+    try {
+      console.log('Sending announcement data:', announcementData); // Debug log
+      
+      const response = await fetch('http://localhost:5000/api/announcements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(announcementData)
+      });
+  
+      // Get the actual error message from the server
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create announcement');
+      }
+  
+      setNotificationMessage('Announcement created successfully!');
+      setNotificationType('success');
+      setIsAnnouncementModalOpen(false);
+      setSelectedBranch(announcementData.branchId);
+    } catch (error) {
+      console.error('Error details:', error);
+      setNotificationMessage(error.message || 'Failed to create announcement. Please try again.');
+      setNotificationType('error');
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -26,11 +77,9 @@ const AdminDashboard = () => {
         'Content-Type': 'application/json'
       };
 
-      // Fetch employees data
       const employeesResponse = await fetch('http://localhost:5000/api/employees', { headers });
       const employeesData = await employeesResponse.json();
 
-      // Fetch leaves data
       const leavesResponse = await fetch('http://localhost:5000/api/leaves', { headers });
       const leavesData = await leavesResponse.json();
 
@@ -39,6 +88,8 @@ const AdminDashboard = () => {
       processTeamPerformance(employeesData);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      setNotificationMessage('Failed to fetch dashboard data');
+      setNotificationType('error');
     }
   };
 
@@ -46,7 +97,6 @@ const AdminDashboard = () => {
     const active = employees.filter(emp => emp.professionalDetails.status === 'active').length;
     const onLeave = employees.filter(emp => emp.professionalDetails.status === 'on_leave').length;
     
-    // Group by department
     const departments = employees.reduce((acc, emp) => {
       const dept = emp.professionalDetails.department || 'Unassigned';
       acc[dept] = (acc[dept] || 0) + 1;
@@ -105,57 +155,45 @@ const AdminDashboard = () => {
     setTeamPerformance(performanceData);
   };
 
-  const styles = {
-    container: {
-      padding: '20px',
-      maxWidth: '1200px',
-      margin: '0 auto',
-      marginTop: '64px'
-    },
-    grid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-      gap: '20px',
-      marginBottom: '20px'
-    },
-    statCard: {
-      padding: '20px',
-      borderRadius: '8px',
-      backgroundColor: 'white',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-    },
-    chartContainer: {
-      width: '100%',
-      height: '300px',
-      marginBottom: '20px'
-    },
-    title: {
-      fontSize: '24px',
-      fontWeight: 'bold',
-      marginBottom: '20px',
-      color: '#333'
-    }
-  };
-
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Admin Dashboard</h1>
-      
-      <div style={styles.grid}>
+    <div className="admin-dashboard">
+      {notificationMessage && (
+        <div className={`notification-banner ${notificationType}`}>
+          {notificationType === 'success' ? (
+            <CheckCircle size={20} className="notification-icon" />
+          ) : (
+            <XCircle size={20} className="notification-icon" />
+          )}
+          {notificationMessage}
+        </div>
+      )}
+
+      <div className="dashboard-header">
+        <h1>Admin Dashboard</h1>
+        <button 
+          className="announcement-button"
+          onClick={() => setIsAnnouncementModalOpen(true)}
+        >
+          <Bell size={20} />
+          Create Announcement
+        </button>
+      </div>
+
+      <div className="stats-grid">
         <Card>
           <CardHeader>
             <CardTitle>Total Employees</CardTitle>
           </CardHeader>
           <CardContent>
-            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{employeeStats.total}</div>
-            <div style={{ color: '#666' }}>
+            <div className="stats-value">{employeeStats.total}</div>
+            <div className="stats-detail">
               Active: {employeeStats.active} | On Leave: {employeeStats.onLeave}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div style={styles.chartContainer}>
+      <div className="chart-container">
         <Card>
           <CardHeader>
             <CardTitle>Leave Trends</CardTitle>
@@ -175,7 +213,7 @@ const AdminDashboard = () => {
         </Card>
       </div>
 
-      <div style={styles.grid}>
+      <div className="stats-grid">
         <Card>
           <CardHeader>
             <CardTitle>Team Performance</CardTitle>
@@ -221,6 +259,14 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {selectedBranch && <AnnouncementsList branchId={selectedBranch} />}
+
+      <AnnouncementModal
+        isOpen={isAnnouncementModalOpen}
+        onClose={() => setIsAnnouncementModalOpen(false)}
+        onSubmit={handleCreateAnnouncement}
+      />
     </div>
   );
 };

@@ -13,7 +13,8 @@ import {
   History,
   UserSquare2,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Building
 } from 'lucide-react';
 import EmployeeCards from '../EmployeeCards';
 import '../../assets/css/sidebar.css';
@@ -67,24 +68,35 @@ const Sidebar = ({ user }) => {
           </NavLink>
 
           {/* Employee Section - Only for admin and HR */}
-          {!isEmployee && (
-            <div className="nav-section">
-              <button 
-                onClick={toggleEmployees} 
-                className={`nav-link employee-toggle ${showEmployees ? 'active' : ''}`}
-              >
-                <Users className="h-5 w-5" />
-                <span>Employees</span>
-              </button>
+          {/* Admin and HR sections */}
+          {(isAdmin || user?.role === 'hr_manager') && (
+            <>
+              <div className="section-divider">Administration</div>
+              
+              {isAdmin && (
+                <>
+                  <NavLink to="/staff-requests" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                    <UserPlus className="h-5 w-5" />
+                    <span>Staff Requests</span>
+                  </NavLink>
+                  
+                  <NavLink to="/manage-employees" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                    <Users className="h-5 w-5" />
+                    <span>Manage Employees</span>
+                  </NavLink>
 
-              {showEmployees && (
-                <div className="submenu">
-                  <div className="submenu-content">
-                    <EmployeeCards />
-                  </div>
-                </div>
+                  <NavLink to="/branch-management" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                    <Building className="h-5 w-5" />
+                    <span>Branch Management</span>
+                  </NavLink>
+                </>
               )}
-            </div>
+
+              <NavLink to="/edit-profiles" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <FileText className="h-5 w-5" />
+                <span>Edit Profiles</span>
+              </NavLink>
+            </>
           )}
 
           {/* Leave Management Section */}
@@ -150,6 +162,11 @@ const Sidebar = ({ user }) => {
               <NavLink to="/manage-employees" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <Users className="h-5 w-5" />
                 <span>Manage Employees</span>
+              </NavLink>
+
+              <NavLink to="/branch-management" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <Building className="h-5 w-5" />
+                <span>Branch Management</span>
               </NavLink>
             </>
           )}

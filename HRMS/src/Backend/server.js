@@ -10,6 +10,7 @@ const bcrypt = require('bcryptjs'); // Add this import
 const path = require('path');
 const fs = require('fs');
 const Leave = require('../Backend/models/Leave');
+const Branch = require('../Backend/models/branch');
 
 
 const app = express();
@@ -350,20 +351,114 @@ app.get('/api/employees/:id', authenticateToken, async (req, res) => {
 });
 
 // Update employee
-app.put('/api/employees/:id', authenticateToken, async (req, res) => {
+app.put('/api/employees/:id', authenticateToken, upload.array('documents', 5), async (req, res) => {
   try {
-    const employee = await Employee.findByIdAndUpdate(
-      req.params.id,
-      { 
-        ...req.body,
-        updatedAt: Date.now()
-      },
-      { new: true }
-    );
+    const updateData = JSON.parse(req.body.employeeData);
+    const documents = req.files ? req.files.map(file => ({
+      name: file.originalname,
+      path: file.path,
+      uploadedAt: new Date()
+    })) : [];
+
+    // Find employee
+    const employee = await Employee.findById(req.params.id);
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
     }
-    res.json(employee);
+
+    // First update User collection
+    const userUpdate = await User.findByIdAndUpdate(
+      employee.userId,
+      {
+        role: updateData.professionalDetails.role,
+        branchName: updateData.professionalDetails.branch,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (!userUpdate) {
+      throw new Error('Failed to update user data');
+    }
+
+    // Then update Employee collection
+    const updates = {
+      professionalDetails: updateData.professionalDetails,
+      updatedAt: new Date()
+    };
+
+    if (documents.length > 0) {
+      updates.$push = { documents: { $each: documents } };
+    }
+
+    if (updateData.milestones && updateData.milestones.length > 0) {
+      if (!updates.$push) updates.$push = {};
+      updates.$push.milestones = { $each: updateData.milestones };
+    }
+
+    const updatedEmployee = await Employee.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true }
+    );
+
+    res.json(updatedEmployee);
+
+  } catch (error) {
+    console.error('Update error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get('/api/employees/:id/documents', authenticateToken, async (req, res) => {
+  try {
+    const employee = await Employee.findById(req.params.id);
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    res.json(employee.documents);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get('/api/employees/:id/milestones', authenticateToken, async (req, res) => {
+  try {
+    const employee = await Employee.findById(req.params.id);
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    res.json(employee.milestones || []);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+app.delete('/api/employees/:id/documents/:documentId', authenticateToken, async (req, res) => {
+  try {
+    const employee = await Employee.findById(req.params.id);
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    const document = employee.documents.id(req.params.documentId);
+    if (!document) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+
+    // Delete file from storage
+    if (fs.existsSync(document.path)) {
+      fs.unlinkSync(document.path);
+    }
+
+    // Remove document from employee record
+    employee.documents.pull(req.params.documentId);
+    await employee.save();
+
+    res.json({ message: 'Document deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -665,6 +760,148 @@ app.get('/api/leaves/employee/:userId', authenticateToken, async (req, res) => {
       message: 'Error fetching leaves', 
       error: error.message 
     });
+  }
+});
+
+// Add these routes to server.js
+
+// Create branch
+app.post('/api/branches', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const { name, hrManager, t1Member, operationalManager } = req.body;
+    
+    // Update employee roles
+    await Employee.findByIdAndUpdate(hrManager, {
+      'professionalDetails.role': 'hr_manager'
+    });
+    await Employee.findByIdAndUpdate(t1Member, {
+      'professionalDetails.role': 't1_member'
+    });
+    await Employee.findByIdAndUpdate(operationalManager, {
+      'professionalDetails.role': 'operational_manager'
+    });
+
+    const branch = new Branch({
+      name,
+      hrManager,
+      t1Member,
+      operationalManager
+    });
+
+    await branch.save();
+    res.status(201).json(branch);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get('/api/branches', authenticateToken, async (req, res) => {
+  try {
+    const branches = await Branch.find().lean();
+    console.log('Raw branches:', branches);
+    
+    const employeeIds = branches.reduce((ids, branch) => {
+      ids.push(branch.hrManager, branch.t1Member, branch.operationalManager);
+      return ids;
+    }, []);
+    
+    console.log('Employee IDs to fetch:', employeeIds);
+    
+    const employees = await Employee.find({
+      _id: { $in: employeeIds }
+    }).lean();
+
+    console.log('Found employees:', employees);
+
+    const employeeMap = employees.reduce((map, emp) => {
+      map[emp._id.toString()] = emp.personalDetails.name;
+      return map;
+    }, {});
+
+    console.log('Employee map:', employeeMap);
+
+    const branchesWithNames = branches.map(branch => ({
+      ...branch,
+      hrManagerName: employeeMap[branch.hrManager.toString()] || 'Not Assigned',
+      t1MemberName: employeeMap[branch.t1Member.toString()] || 'Not Assigned',
+      operationalManagerName: employeeMap[branch.operationalManager.toString()] || 'Not Assigned'
+    }));
+
+    console.log('Final branches with names:', branchesWithNames);
+
+    res.json(branchesWithNames);
+  } catch (error) {
+    console.error('Error fetching branches:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+app.put('/api/branches/:id', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const branch = await Branch.findById(req.params.id);
+    if (!branch) {
+      return res.status(404).json({ message: 'Branch not found' });
+    }
+
+    const { hrManager, t1Member, operationalManager } = req.body;
+
+    // Reset roles of previous position holders if they're being replaced
+    if (branch.hrManager.toString() !== hrManager) {
+      await Employee.findByIdAndUpdate(branch.hrManager, {
+        'professionalDetails.role': 'employee'
+      });
+      await Employee.findByIdAndUpdate(hrManager, {
+        'professionalDetails.role': 'hr_manager'
+      });
+    }
+
+    if (branch.t1Member.toString() !== t1Member) {
+      await Employee.findByIdAndUpdate(branch.t1Member, {
+        'professionalDetails.role': 'employee'
+      });
+      await Employee.findByIdAndUpdate(t1Member, {
+        'professionalDetails.role': 't1_member'
+      });
+    }
+
+    if (branch.operationalManager.toString() !== operationalManager) {
+      await Employee.findByIdAndUpdate(branch.operationalManager, {
+        'professionalDetails.role': 'employee'
+      });
+      await Employee.findByIdAndUpdate(operationalManager, {
+        'professionalDetails.role': 'operational_manager'
+      });
+    }
+
+    const updatedBranch = await Branch.findByIdAndUpdate(
+      req.params.id,
+      { 
+        ...req.body,
+        updatedAt: Date.now()
+      },
+      { new: true }
+    );
+
+    res.json(updatedBranch);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+// Add to your routes file
+app.put('/api/branches/:id/role', authenticateToken, async (req, res) => {
+  try {
+    const { role, employeeId } = req.body;
+    const branch = await Branch.findById(req.params.id);
+    
+    if (!branch) {
+      return res.status(404).json({ message: 'Branch not found' });
+    }
+
+    branch[role] = employeeId;
+    await branch.save();
+
+    res.json(branch);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 

@@ -11,6 +11,8 @@ import EmployeeDetails from './Components/EmployeeDetails';
 import EmployeeCards from './Components/EmployeeCards';
 import LeaveHistory from './Components/LeaveHistory';
 import EmployeeProfile from './Components/EmployeeProfile';
+import EditProfiles from './Components/EditProfile';
+import BranchManagement from './Components/BranchManagement';
 import '../src/assets/css/global.css';
 
 function App() {
@@ -20,7 +22,6 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing token and user data on component mount
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
 
@@ -64,7 +65,6 @@ function App() {
             <Route path="/dashboard" element={<div>Dashboard</div>} />
             <Route path="/employees" element={<EmployeeCards />} />
 
-            {/* Staff Management Routes */}
             <Route
               path="/staff-requests"
               element={
@@ -75,6 +75,7 @@ function App() {
                 )
               }
             />
+
             <Route
               path="/manage-employees"
               element={
@@ -86,8 +87,28 @@ function App() {
               }
             />
 
-            {/* Leave Management Routes */}
+            <Route
+              path="/edit-profiles"
+              element={
+                user?.isAdmin || user?.role === 'hr_manager' ? (
+                  <EditProfiles />
+                ) : (
+                  <Navigate to="/dashboard" replace />
+                )
+              }
+            />
+            <Route
+              path="/branch-management"
+              element={
+                user?.isAdmin ? (
+                  <BranchManagement />
+                ) : (
+                  <Navigate to="/dashboard" replace />
+                )
+              }
+            />
             <Route path="/leave-request" element={<LeaveRequest />} />
+
             <Route
               path="/manage-leaves"
               element={
@@ -99,7 +120,6 @@ function App() {
               }
             />
 
-            {/* Other Routes */}
             <Route
               path="/leave-history"
               element={
@@ -110,16 +130,18 @@ function App() {
                 )
               }
             />
-            <Route 
-              path="/profile" 
+
+            <Route
+              path="/profile"
               element={
                 isAuthenticated ? (
                   <EmployeeProfile />
                 ) : (
                   <Navigate to="/" replace />
                 )
-              } 
+              }
             />
+
             <Route path="/projects" element={<div>Projects Page</div>} />
             <Route path="/tickets" element={<div>Tickets Page</div>} />
             <Route path="/clients" element={<div>Clients Page</div>} />

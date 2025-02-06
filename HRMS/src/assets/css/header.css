@@ -1,21 +1,23 @@
 .header {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: calc(100% - 16rem);
-    background: #474787;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    z-index: 600; /* Increased z-index */
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: calc(100% - 16rem);
+  background: #474787;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 50;
 }
-  
-  .header-container {
-    height: 64px;
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  
+.notification-container {
+  position: relative;
+  z-index: 52;
+}
+.header-container {
+  height: 64px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
   .search-container {
     flex: 1;
     max-width: 600px;
@@ -49,11 +51,10 @@
     display: flex;
     align-items: center;
     gap: 16px;
+    z-index: 51;
   }
   
-  .notification-container {
-    position: relative;
-  }
+
   
   .notification-btn {
     padding: 8px;
@@ -80,6 +81,8 @@
   
   .profile-container {
     position: relative;
+    top: -60px;
+    left: 0px;
   }
   
   .profile-btn {
@@ -91,10 +94,11 @@
     border: none;
     border-radius: 8px;
     cursor: pointer;
+    color: white;
   }
   
   .profile-btn:hover {
-    background: #f0f0f0;
+    background: rgba(255, 255, 255, 0.1);
   }
   
   .profile-info {
@@ -141,6 +145,44 @@
   font-weight: 500;
   margin: 0;
 }
+.notification-btn {
+  position: relative;
+  padding: 8px;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: white;
+  transition: background-color 0.2s;
+}
+
+.notification-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.notification-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #ff4444;
+  color: white;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropdown-overlay {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: 40;
+}
 
 .header-profile-role {
   font-size: 12px;
@@ -160,7 +202,6 @@
   font-weight: 600;
 }
 
-/* EmployeeProfile.css remains the same, as it's already scoped under .profile-container */
   
   .profile-avatar {
     width: 40px !important;
@@ -183,7 +224,7 @@
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     padding: 4px;
-    z-index: 30;
+    z-index: 53;
   }
   
   .dropdown-item {
@@ -222,15 +263,34 @@
   
   @media (max-width: 768px) {
     .header {
-      padding-left: 2.5rem;
-      padding-top: 1rem;
       width: 100%;
       left: 0;
-
+      padding: 0;
+      z-index: 40;
     }
-
-    
+  
+    .header-container {
+      padding: 0 1rem;
+      margin-left: 3.5rem;
+    }
+  
     .search-container {
       max-width: none;
+      margin-right: 1rem;
+    }
+  
+    .profile-container {
+      position: relative;
+      top: 0;
+      left: 0;
+    }
+  
+    .profile-dropdown {
+      right: -1rem;
+      top: calc(100% + 0.5rem);
+    }
+  
+    .notification-container {
+      margin-right: 0.5rem;
     }
   }

@@ -12,6 +12,7 @@ const fs = require('fs');
 const Leave = require('../Backend/models/Leave');
 const Branch = require('../Backend/models/branch');
 const Announcement = require('../Backend/models/Announcement'); // Make sure to import the model
+const Notification =  require('../Backend/models/Notification');
 
 
 const app = express();
@@ -517,6 +518,13 @@ app.put('/api/requests/:userId/status', authenticateToken, async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+    const notification = new Notification({
+      userId: req.params.userId,
+      title: 'Account Status Update',
+      message: `Your account has been ${status}`,
+      type: 'account'
+    });
+    await notification.save();
 
     // If approved, create or update the corresponding employee record
     if (status === 'approved') {
@@ -696,11 +704,22 @@ app.put('/api/leaves/:id/status', authenticateToken, checkPermission, async (req
         updatedAt: Date.now()
       },
       { new: true }
-    );
+    ).populate('employeeId');
 
     if (!leaveRequest) {
       return res.status(404).json({ message: 'Leave request not found' });
     }
+
+    // Create notification
+    const notification = new Notification({
+      userId: leaveRequest.employeeId,
+      title: 'Leave Request Update',
+      message: `Your ${leaveRequest.leaveType} leave request has been ${status}`,
+      type: 'leave'
+    });
+    await notification.save();
+
+    // Socket notification could be added here if implementing real-time updates
 
     res.json(leaveRequest);
   } catch (error) {
@@ -1210,6 +1229,62 @@ app.get('/api/employees/:id/history', authenticateToken, async (req, res) => {
   }
 });
 
+// Add to server.js - Notification Routes
+app.post('/api/notifications', authenticateToken, async (req, res) => {
+  try {
+    const notification = new Notification({
+      userId: req.body.userId,
+      title: req.body.title,
+      message: req.body.message,
+      type: req.body.type
+    });
+    await notification.save();
+    res.status(201).json(notification);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get('/api/notifications', authenticateToken, async (req, res) => {
+  try {
+    const notifications = await Notification.find({ 
+      userId: req.user.id 
+    })
+    .sort({ createdAt: -1 })
+    .limit(20);
+
+    console.log('Found notifications:', notifications); // Debug log
+    res.json(notifications);
+  } catch (error) {
+    console.error('Notification fetch error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch notifications',
+      details: error.message 
+    });
+  }
+});
+
+app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
+  try {
+    const notification = await Notification.findByIdAndUpdate(
+      req.params.id,
+      { read: true },
+      { new: true }
+    );
+    
+    if (!notification) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+    
+    res.json(notification);
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+    res.status(500).json({ 
+      error: 'Failed to update notification',
+      details: error.message 
+    });
+  }
+});
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

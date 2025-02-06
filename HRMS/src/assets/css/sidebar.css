@@ -229,33 +229,61 @@
 @media (max-width: 768px) {
   .mobile-menu-button {
     display: flex;
+    top: 0.75rem;
+    left: 0.75rem;
+    padding: 0.5rem;
+    z-index: 60;
+    background-color: #474787;
   }
 
   .sidebar {
     transform: translateX(-100%);
+    top: 0;
     width: 85%;
     max-width: 320px;
+    z-index: 55;
   }
 
   .sidebar.mobile-open {
     transform: translateX(0);
   }
 
-  .nav-container {
-    padding: 1rem;
+  .overlay {
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 45;
   }
 
-  .submenu {
-    left: 0;
-    width: 100%;
+  .overlay.visible {
+    display: block;
   }
 
-  .close-button:hover {
-    color: white;
-    transform: scale(1.1);
+  /* Content adjustments */
+  .employee-cards-container,
+  .edit-profiles-container,
+  .leave-history-container,
+  .employee-dashboard-container,
+  .admin-dashboard {
+    margin-left: 0 !important;
+    padding-top: 80px !important;
+  }
+}
+
+/* Additional responsive fixes */
+@media (max-width: 480px) {
+  .header-container {
+    height: 56px;
   }
 
-  body.menu-open {
-    overflow: hidden;
+  .search-input {
+    height: 36px;
+  }
+
+  .profile-info {
+    display: none;
+  }
+
+  .notification-dot {
+    top: 2px;
+    right: 2px;
   }
 }

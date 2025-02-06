@@ -19,9 +19,11 @@ import '../../assets/css/sidebar.css';
 const Sidebar = ({ user }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState('');
 
   useEffect(() => {
     setIsAdmin(user?.isAdmin || false);
+    setUserRole(user?.role || '');
   }, [user]);
 
   const toggleMobileMenu = () => {
@@ -64,11 +66,15 @@ const Sidebar = ({ user }) => {
           )}
 
           {/* Employees Section */}
-          <div className="section-divider">Employees</div>
-          <NavLink to="/employees" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            <Users className="h-5 w-5" />
-            <span>Employees</span>
-          </NavLink>
+          {userRole !== 'employee' && (
+            <>
+              <div className="section-divider">Employees</div>
+              <NavLink to="/employees" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <Users className="h-5 w-5" />
+                <span>Employees</span>
+              </NavLink>
+            </>
+          )}
 
           {/* Profile & Leave Request - For all non-admin users */}
           {!isAdmin && (

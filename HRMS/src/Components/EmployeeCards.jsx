@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import EmployeeDetails from './EmployeeDetails';
 import { Mail, Phone, Download, FilterIcon } from 'lucide-react';
 import '../assets/css/EmployeeCards.css';
-import Header from '../Components/common/Header';
 
 const EmployeeCards = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -121,7 +120,7 @@ const EmployeeCards = () => {
 
   return (
     <div className="employee-cards-container">
-      <Header />
+      {/* Removed Header component as it's now handled by the parent App.jsx */}
       {showCards && (
         <>
           <div className="filter-section">

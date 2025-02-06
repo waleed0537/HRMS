@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Card, CardHeader, CardTitle, CardContent } from '../Components/ui/card';
-import { Bell, CheckCircle, XCircle } from 'lucide-react';
+import { Bell, CheckCircle, XCircle, Download } from 'lucide-react';
 import AnnouncementModal from './AnnouncementModal';
 import AnnouncementsList from './AnnouncementsList';
 import '../assets/css/AdminDashboard.css';
@@ -9,6 +8,39 @@ import '../assets/css/AdminDashboard.css';
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const AdminDashboard = () => {
+  const generateReport = () => {
+    const reportContent = [
+      'Administrative Dashboard Report',
+      `Generated on: ${new Date().toLocaleDateString()}\n`,
+      'Employee Statistics:',
+      `Total Employees: ${employeeStats.total}`,
+      `Active Employees: ${employeeStats.active}`,
+      `Employees on Leave: ${employeeStats.onLeave}\n`,
+      'Department Distribution:',
+      ...employeeStats.departments.map(dept => 
+        `${dept.name}: ${dept.value} employees`
+      ),
+      '\nTeam Performance Metrics:',
+      ...teamPerformance.map(team =>
+        `${team.name}: ${team.rating} average rating`
+      ),
+      '\nLeave Statistics:',
+      ...leaveStats.map(stat =>
+        `${stat.month}: ${stat.leaves} leave requests`
+      )
+    ].join('\n');
+
+    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `admin_dashboard_report_${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [notificationType, setNotificationType] = useState('');
@@ -36,11 +68,9 @@ const AdminDashboard = () => {
     fetchDashboardData();
   }, []);
 
-  // Update this function in your AdminDashboard.jsx
-
-const handleCreateAnnouncement = async (announcementData) => {
+  const handleCreateAnnouncement = async (announcementData) => {
     try {
-      console.log('Sending announcement data:', announcementData); // Debug log
+      console.log('Sending announcement data:', announcementData);
       
       const response = await fetch('http://localhost:5000/api/announcements', {
         method: 'POST',
@@ -51,7 +81,6 @@ const handleCreateAnnouncement = async (announcementData) => {
         body: JSON.stringify(announcementData)
       });
   
-      // Get the actual error message from the server
       const data = await response.json();
       
       if (!response.ok) {
@@ -170,94 +199,85 @@ const handleCreateAnnouncement = async (announcementData) => {
 
       <div className="dashboard-header">
         <h1>Admin Dashboard</h1>
-        <button 
-          className="announcement-button"
-          onClick={() => setIsAnnouncementModalOpen(true)}
-        >
-          <Bell size={20} />
-          Create Announcement
-        </button>
+        <div className="dashboard-actions">
+          <button 
+            className="report-button"
+            onClick={generateReport}
+          >
+            <Download size={20} />
+            Download Report
+          </button>
+          <button 
+            className="announcement-button"
+            onClick={() => setIsAnnouncementModalOpen(true)}
+          >
+            <Bell size={20} />
+            Create Announcement
+          </button>
+        </div>
       </div>
 
       <div className="stats-grid">
-        <Card>
-          <CardHeader>
-            <CardTitle>Total Employees</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="stats-value">{employeeStats.total}</div>
-            <div className="stats-detail">
-              Active: {employeeStats.active} | On Leave: {employeeStats.onLeave}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="stats-card">
+          <h3 className="card-title">Total Employees</h3>
+          <div className="stats-value">{employeeStats.total}</div>
+          <div className="stats-detail">
+            Active: {employeeStats.active} | On Leave: {employeeStats.onLeave}
+          </div>
+        </div>
       </div>
 
-      <div className="chart-container">
-        <Card>
-          <CardHeader>
-            <CardTitle>Leave Trends</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={leaveStats}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="leaves" stroke="#474787" />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+      <div className="charts-grid">
+        <div className="stats-card">
+          <h3 className="card-title">Leave Trends</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={leaveStats}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="leaves" stroke="#474787" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
 
-      <div className="stats-grid">
-        <Card>
-          <CardHeader>
-            <CardTitle>Team Performance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={teamPerformance}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis domain={[0, 5]} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="rating" stroke="#474787" />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <div className="stats-card">
+          <h3 className="card-title">Team Performance</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={teamPerformance}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis domain={[0, 5]} />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="rating" stroke="#474787" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Department Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={employeeStats.departments}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  label
-                >
-                  {employeeStats.departments.map((entry, index) => (
-                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <div className="stats-card">
+          <h3 className="card-title">Department Distribution</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={employeeStats.departments}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                label
+              >
+                {employeeStats.departments.map((entry, index) => (
+                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {selectedBranch && <AnnouncementsList branchId={selectedBranch} />}

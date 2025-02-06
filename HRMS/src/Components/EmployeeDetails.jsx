@@ -1,37 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, Building } from 'lucide-react';
 import '../assets/css/EmployeeDetails.css';
 
 const EmployeeDetails = ({ employee, onClose }) => {
   const [activeTab, setActiveTab] = useState('info');
+  const [employeeHistory, setEmployeeHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Sample branch transfer history
-  const employeeHistory = [
-    {
-      date: '2024-01-15',
-      change: 'Role Change',
-      details: 'Promoted from Junior Developer to Senior Developer',
-      branch: 'Main Branch',
-      impact: 'Led development of new features resulting in 30% efficiency increase',
-      supervisor: 'Jane Smith'
-    },
-    {
-      date: '2023-08-01',
-      change: 'Branch Transfer',
-      details: 'Strategic relocation to strengthen Main Branch operations',
-      branch: 'East Branch → Main Branch',
-      impact: 'Successfully integrated new development team, improved delivery time by 25%',
-      supervisor: 'Mike Johnson'
-    },
-    {
-      date: '2023-03-20',
-      change: 'Performance Recognition',
-      details: 'Quarterly Excellence Award',
-      branch: 'East Branch',
-      impact: 'Consistently exceeded targets, mentored 3 junior team members',
-      supervisor: 'Sarah Williams'
+  useEffect(() => {
+    if (employee?._id || employee?.personalDetails?._id) {
+      const employeeId = employee._id || employee.personalDetails._id;
+      fetchEmployeeHistory(employeeId);
     }
-  ];
+  }, [employee]);
+
+  const fetchEmployeeHistory = async (employeeId) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/employees/${employeeId}/history`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch history');
+      }
+
+      const data = await response.json();
+      setEmployeeHistory(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
   return (
     <div className="employee-details">
@@ -103,18 +115,29 @@ const EmployeeDetails = ({ employee, onClose }) => {
 
           {activeTab === 'history' && (
             <div className="history-list">
-              {employeeHistory.map((item, index) => (
-                <div key={index} className="history-item">
-                  <p className="date">{item.date}</p>
-                  <h4 className="change">{item.change}</h4>
-                  <p className="details">{item.details}</p>
-                  <p className="branch">{item.branch}</p>
-                  <div className="history-impact">
-                    <p><strong>Impact:</strong> {item.impact}</p>
-                    <p><strong>Supervisor:</strong> {item.supervisor}</p>
+              {loading ? (
+                <div className="loading-message">Loading history...</div>
+              ) : error ? (
+                <div className="error-message">{error}</div>
+              ) : employeeHistory.length > 0 ? (
+                employeeHistory.map((item, index) => (
+                  <div key={index} className="history-item">
+                    <p className="date">{formatDate(item.date)}</p>
+                    <h4 className="change">{item.change}</h4>
+                    <p className="details">{item.details}</p>
+                    {item.branch && <p className="branch">{item.branch}</p>}
+                    {item.impact && (
+                      <div className="history-impact">
+                        <p><strong>Impact:</strong> {item.impact}</p>
+                      </div>
+                    )}
                   </div>
+                ))
+              ) : (
+                <div className="no-history">
+                  No history records found.
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>

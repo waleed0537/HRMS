@@ -81,48 +81,31 @@ const EmployeeDashboard = () => {
 
   useEffect(() => {
     const fetchLeaveHistory = async () => {
-        try {
-          const userData = JSON.parse(localStorage.getItem('user'));
-          console.log('Fetching leave history for user:', userData.email);
-      
-          // First get the employee document to get the employee ID
-          const empResponse = await fetch(`http://localhost:5000/api/employees/byemail/${userData.email}`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          });
-      
-          if (!empResponse.ok) {
-            throw new Error('Failed to fetch employee data for leave history');
+      try {
+        const userData = JSON.parse(localStorage.getItem('user'));
+        console.log('Fetching leave history for user:', userData.email);
+        
+        const response = await fetch(`http://localhost:5000/api/leaves?employeeEmail=${encodeURIComponent(userData.email)}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
-      
-          const empData = await empResponse.json();
-          console.log('Got employee data for leave history:', empData);
-      
-          // Now fetch leave history using employee ID
-          const leaveResponse = await fetch(`http://localhost:5000/api/leaves/employee/${empData._id}`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          });
-      
-          if (!leaveResponse.ok) {
-            const errorData = await leaveResponse.json();
-            throw new Error(errorData.message || 'Failed to fetch leave history');
-          }
-      
-          const leaves = await leaveResponse.json();
-          console.log('Received leave history:', leaves);
-          setLeaveHistory(leaves);
-        } catch (err) {
-          console.error('Error fetching leave history:', err);
-          // Don't set error state for leave history issues - just show empty state
-          setLeaveHistory([]);
-        } finally {
-          setLoading(false);
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch leave history');
         }
-      };
-  
+
+        const data = await response.json();
+        console.log('Received leave history:', data);
+        setLeaveHistory(data);
+      } catch (err) {
+        console.error('Error fetching leave history:', err);
+        setLeaveHistory([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchLeaveHistory();
   }, []);
 

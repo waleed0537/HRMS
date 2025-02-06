@@ -1,94 +1,128 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, FileText } from 'lucide-react';
+import { Mail, Phone, MapPin, Building, User, Briefcase, FileText } from 'lucide-react';
+import '../assets/css/EmployeeProfile.css';
 
-const LeaveHistory = ({ employeeId }) => {
-  const [leaveHistory, setLeaveHistory] = useState([]);
-  const [loading, setLoading] = useState(false);
+const EmployeeProfile = () => {
+  const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (employeeId) {
-      fetchLeaveHistory();
-    }
-  }, [employeeId]);
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
-  const fetchLeaveHistory = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`http://localhost:5000/api/leaves/filter/${employeeId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch leave history');
+        if (!response.ok) throw new Error('Failed to fetch profile');
+        const data = await response.json();
+        setProfile(data);
+      } catch (err) {
+        setError(err.message);
       }
+    };
+    fetchProfile();
+  }, []);
 
-      const data = await response.json();
-      setLeaveHistory(data);
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
+  if (error) return <div className="error-container">Error loading profile: {error}</div>;
+  if (!profile) return <div className="loading-container">Loading...</div>;
+
+  const getInitials = (name) => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase();
   };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  if (loading) {
-    return <div className="p-4 text-center">Loading leave history...</div>;
-  }
-
-  if (error) {
-    return <div className="p-4 text-red-500">Error: {error}</div>;
-  }
-
-  if (leaveHistory.length === 0) {
-    return <div className="p-4 text-center">No leave history found.</div>;
-  }
 
   return (
-    <div className="space-y-4">
-      {leaveHistory.map((leave, index) => (
-        <div key={index} className="bg-white p-4 rounded-lg shadow">
-          <div className="flex justify-between items-center mb-2">
-            <span className={`px-3 py-1 rounded-full text-sm ${
-              leave.status === 'approved' ? 'bg-green-100 text-green-800' :
-              leave.status === 'rejected' ? 'bg-red-100 text-red-800' :
-              'bg-yellow-100 text-yellow-800'
-            }`}>
-              {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
-            </span>
-            <span className="flex items-center text-gray-600 text-sm">
-              <Calendar className="w-4 h-4 mr-1" />
-              {formatDate(leave.startDate)} - {formatDate(leave.endDate)}
+    <div className="profile-container">
+      <div className="profile-header-card">
+        <div className="profile-header-content">
+          <div className="profile-avatar">
+            {getInitials(profile.personalDetails.name)}
+          </div>
+          <div className="profile-overview">
+            <h1>{profile.personalDetails.name}</h1>
+            <p className="profile-id">ID: {profile.personalDetails.id}</p>
+            <span className={`status-badge status-${profile.professionalDetails.status}`}>
+              {profile.professionalDetails.status}
             </span>
           </div>
-          
-          <h4 className="font-semibold mb-2">
-            {leave.leaveType.charAt(0).toUpperCase() + leave.leaveType.slice(1)} Leave
-          </h4>
-          
-          <p className="text-gray-600 text-sm mb-2">{leave.reason}</p>
-          
-          {leave.documents?.length > 0 && (
-            <div className="flex items-center text-sm text-gray-500">
-              <FileText className="w-4 h-4 mr-1" />
-              <span>{leave.documents.length} document(s) attached</span>
+          <div className="profile-key-info">
+            <div className="key-info-item">
+              <label>Department</label>
+              <span>{profile.professionalDetails.department}</span>
             </div>
-          )}
+            <div className="key-info-item">
+              <label>Role</label>
+              <span>{profile.professionalDetails.role}</span>
+            </div>
+            <div className="key-info-item">
+              <label>Branch</label>
+              <span>{profile.professionalDetails.branch}</span>
+            </div>
+          </div>
         </div>
-      ))}
+      </div>
+
+      <div className="profile-details-grid">
+        <div className="details-card">
+          <div className="card-title">
+            <User size={20} />
+            <h2>Personal Information</h2>
+          </div>
+          <div className="details-content">
+            <div className="details-row">
+              <div className="detail-item">
+                <label><Mail size={16} /> Email</label>
+                <span>{profile.personalDetails.email}</span>
+              </div>
+              <div className="detail-item">
+                <label><Phone size={16} /> Contact</label>
+                <span>{profile.personalDetails.contact}</span>
+              </div>
+            </div>
+            <div className="detail-item full-width">
+              <label><MapPin size={16} /> Address</label>
+              <span>{profile.personalDetails.address}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="details-card">
+          <div className="card-title">
+            <Briefcase size={20} />
+            <h2>Professional Details</h2>
+          </div>
+          <div className="details-content">
+            <div className="details-row">
+              <div className="detail-item">
+                <label><Building size={16} /> Department</label>
+                <span>{profile.professionalDetails.department}</span>
+              </div>
+              <div className="detail-item">
+                <label><FileText size={16} /> Status</label>
+                <span className="status-text">{profile.professionalDetails.status}</span>
+              </div>
+            </div>
+            <div className="details-row">
+              <div className="detail-item">
+                <label><User size={16} /> Role</label>
+                <span>{profile.professionalDetails.role}</span>
+              </div>
+              <div className="detail-item">
+                <label><Building size={16} /> Branch</label>
+                <span>{profile.professionalDetails.branch}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default LeaveHistory;
+export default EmployeeProfile;

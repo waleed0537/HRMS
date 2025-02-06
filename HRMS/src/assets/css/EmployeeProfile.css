@@ -1,174 +1,228 @@
 .profile-container {
-    max-width: 1200px;
-    margin: 20px auto;
-    padding: 20px;
-  }
-  
-  .profile-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    padding: 24px;
-  }
-  
-  .profile-header {
-    display: flex;
-    align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  padding-top: 150px;
+}
+
+.profile-header-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+}
+
+.profile-header-content {
+  padding: 32px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 32px;
+  align-items: center;
+}
+
+.profile-avatar {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, #474787 0%, #2c2c54 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 32px;
+  font-weight: 600;
+}
+
+.profile-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-overview h1 {
+  margin: 0;
+  font-size: 24px;
+  color: #2c2c54;
+}
+
+.profile-id {
+  color: #666;
+  margin: 0;
+  font-size: 14px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  width: fit-content;
+}
+
+.status-active {
+  background-color: #e6f4ea;
+  color: #137333;
+}
+
+.status-on_leave {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-resigned, .status-terminated {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.profile-key-info {
+  display: grid;
+  gap: 16px;
+  padding-left: 24px;
+  border-left: 1px solid #eee;
+}
+
+.key-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.key-info-item label {
+  font-size: 12px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.key-info-item span {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.profile-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.details-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eee;
+}
+
+.card-title h2 {
+  margin: 0;
+  font-size: 16px;
+  color: #2c2c54;
+}
+
+.details-content {
+  padding: 20px;
+}
+
+.details-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.details-row:last-child {
+  margin-bottom: 0;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.detail-item label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 13px;
+}
+
+.detail-item span {
+  color: #333;
+  font-size: 14px;
+}
+
+.status-text {
+  text-transform: capitalize;
+}
+
+.error-container,
+.loading-container {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.error-container {
+  color: #dc3545;
+}
+
+@media (max-width: 968px) {
+  .profile-header-content {
+    grid-template-columns: 1fr;
+    text-align: center;
     gap: 24px;
-    margin-bottom: 32px;
   }
-  
+
   .profile-avatar {
-    width: 100px;
-    height: 100px;
-    background: #474787;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 24px;
-    font-weight: bold;
+    margin: 0 auto;
   }
-  
-  .profile-title h1 {
-    margin: 0;
-    font-size: 24px;
-    color: #333;
+
+  .profile-key-info {
+    padding: 24px 0 0;
+    border-left: none;
+    border-top: 1px solid #eee;
+    grid-template-columns: repeat(3, 1fr);
   }
-  
-  .profile-role {
-    color: #666;
-    margin: 4px 0;
+}
+
+@media (max-width: 640px) {
+  .profile-container {
+    padding: 16px;
   }
-  
-  .status-badge {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 500;
-    margin-top: 8px;
+
+  .profile-key-info {
+    grid-template-columns: 1fr;
   }
-  
-  .status-active {
-    background-color: #e6f4ea;
-    color: #137333;
-  }
-  
-  .status-on_leave {
-    background-color: #fff3cd;
-    color: #856404;
-  }
-  
-  .status-resigned, .status-terminated {
-    background-color: #f8d7da;
-    color: #721c24;
-  }
-  
-  .profile-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    margin-top: 24px;
-  }
-  
-  .info-section {
-    padding: 20px;
-    background: #f8f9fa;
-    border-radius: 8px;
-  }
-  
-  .info-section h2 {
-    margin: 0 0 20px 0;
-    font-size: 18px;
-    color: #333;
-  }
-  
-  .info-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-  
-  .info-item svg {
-    color: #474787;
-    flex-shrink: 0;
-  }
-  
-  .info-label {
-    font-weight: 500;
-    color: #666;
-    width: 120px;
-  }
-  
-  .info-value {
-    color: #333;
-  }
-  
-  .documents-section {
-    margin-top: 24px;
-  }
-  
-  .documents-section h2 {
-    margin: 0 0 20px 0;
-    font-size: 18px;
-    color: #333;
-  }
-  
-  .documents-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+
+  .details-row {
+    grid-template-columns: 1fr;
     gap: 16px;
   }
-  
-  .document-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
-    background: #f8f9fa;
-    border-radius: 8px;
+
+  .card-title {
+    padding: 16px;
   }
-  
-  .document-item .doc-name {
-    font-size: 14px;
-    color: #333;
+
+  .details-content {
+    padding: 16px;
   }
-  
-  .document-item .doc-date {
-    font-size: 12px;
-    color: #666;
-  }
-  
-  .loading, .error {
-    text-align: center;
-    padding: 40px;
-    color: #666;
-  }
-  
-  .error {
-    color: #dc3545;
-  }
-  
-  @media (max-width: 768px) {
-    .profile-header {
-      flex-direction: column;
-      text-align: center;
-    }
-  
-    .profile-content {
-      grid-template-columns: 1fr;
-    }
-  
-    .info-item {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 4px;
-    }
-  
-    .info-label {
-      width: auto;
-    }
-  }
+}

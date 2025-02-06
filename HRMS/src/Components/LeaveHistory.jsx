@@ -47,35 +47,45 @@ const LeaveHistory = () => {
     }
   };
 
-  const fetchLeaveHistory = async (employeeId) => {
+  // In LeaveHistory.jsx, update the fetchLeaveHistory function:
+  const fetchLeaveHistory = async (email) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`http://localhost:5000/api/leaves?employeeId=${employeeId}`, {
+      const response = await fetch(`http://localhost:5000/api/leaves?employeeEmail=${encodeURIComponent(email)}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+  
       if (!response.ok) {
         throw new Error('Failed to fetch leave history');
       }
-
+  
       const data = await response.json();
-      setLeaveHistory(data);
+      // Verify the leaves belong to the selected employee
+      const filteredData = data.filter(leave => leave.employeeEmail === email);
+      setLeaveHistory(filteredData);
     } catch (error) {
-      console.error('Error fetching leave history:', error);
-      setError('Failed to fetch leave history');
-      setLeaveHistory([]);
+      console.error('Error:', error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleEmployeeChange = (e) => {
-    const value = e.target.value;
-    setSelectedEmployee(value);
-    if (!value) {
+    const selectedId = e.target.value;
+    setSelectedEmployee(selectedId);
+    
+    if (selectedId) {
+      const employee = employees.find(emp => emp._id === selectedId);
+      if (employee) {
+        fetchLeaveHistory(employee.personalDetails.email);
+      } else {
+        setLeaveHistory([]);
+      }
+    } else {
       setLeaveHistory([]);
     }
   };
@@ -118,11 +128,11 @@ const LeaveHistory = () => {
         `Pending: ${leaveStats.pending}`,
         `Rejected: ${leaveStats.rejected}\n`,
         'Leaves by Type:',
-        ...Object.entries(leaveStats.byType).map(([type, count]) => 
+        ...Object.entries(leaveStats.byType).map(([type, count]) =>
           `${type}: ${count}`
         ),
         '\nDetailed Leave History:',
-        ...leaveHistory.map(leave => 
+        ...leaveHistory.map(leave =>
           `\n${leave.leaveType} Leave (${leave.status})` +
           `\nFrom: ${new Date(leave.startDate).toLocaleDateString()}` +
           `\nTo: ${new Date(leave.endDate).toLocaleDateString()}` +
@@ -159,7 +169,7 @@ const LeaveHistory = () => {
     <div className="leave-history-container">
       <div className="leave-history-header">
         <h2>Leave History & Quotas</h2>
-        <button 
+        <button
           className="generate-report-btn"
           onClick={generateReport}
         >
@@ -197,13 +207,21 @@ const LeaveHistory = () => {
           <div className="employee-select">
             <select
               value={selectedEmployee}
-              onChange={handleEmployeeChange}
+              onChange={(e) => {
+                const employee = employees.find(emp => emp._id === e.target.value);
+                setSelectedEmployee(e.target.value);
+                if (employee) {
+                  fetchLeaveHistory(employee.personalDetails.email);
+                } else {
+                  setLeaveHistory([]);
+                }
+              }}
               className="employee-dropdown"
             >
               <option value="">Select Employee</option>
               {employees.map(emp => (
                 <option key={emp._id} value={emp._id}>
-                  {emp.personalDetails.name}
+                  {emp.personalDetails?.name || emp.personalDetails?.email}
                 </option>
               ))}
             </select>

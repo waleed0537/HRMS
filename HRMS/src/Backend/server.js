@@ -615,31 +615,47 @@ app.post('/api/leaves', authenticateToken, upload.array('documents', 5), async (
     res.status(500).json({ message: error.message });
   }
 });
-
-// Get all leave requests (Admin only)
-// Update your existing /api/leaves route
 app.get('/api/leaves', authenticateToken, async (req, res) => {
   try {
-    const { employeeId } = req.query;
-    let query = {};
+    const { employeeEmail } = req.query;
     
-    if (employeeId) {
-      query.employeeId = employeeId;
+    // Build query based on email and user role
+    const query = {};
+    if (employeeEmail) {
+      query.employeeEmail = employeeEmail;
     } else if (!req.user.isAdmin) {
-      query.employeeId = req.user.id;
+      query.employeeEmail = req.user.email;
     }
 
     const leaveRequests = await Leave.find(query)
       .sort({ createdAt: -1 });
-    
-    console.log('Found leave requests:', leaveRequests); // Debug log
+
     res.json(leaveRequests);
   } catch (error) {
-    console.error('Error in /api/leaves:', error);
-    res.status(500).json({ 
-      message: 'Error fetching leave requests', 
-      error: error.message 
+    console.error('Error fetching leaves:', error);
+    res.status(500).json({ message: 'Error fetching leave requests' });
+  }
+});
+
+app.get('/api/leaves/debug/:email', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const { email } = req.params;
+    
+    const leaves = await Leave.find({ employeeEmail: email }).lean();
+    const employee = await Employee.findOne({ 'personalDetails.email': email }).lean();
+    
+    res.json({
+      leaves,
+      employee,
+      leaveCount: leaves.length,
+      employeeFound: !!employee
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -1076,6 +1092,35 @@ app.get('/api/employees/byemail/:email', authenticateToken, async (req, res) => 
   }
 });
 
+// Add this endpoint in server.js
+app.get('/api/profile', authenticateToken, async (req, res) => {
+  try {
+    const employee = await Employee.findOne({ userId: req.user.id });
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee profile not found' });
+    }
+
+    // Get the user data as well
+    const user = await User.findById(req.user.id).select('-password');
+    
+    // Combine employee and user data
+    const profile = {
+      ...employee.toObject(),
+      email: user.email,
+      role: user.role,
+      isAdmin: user.isAdmin
+    };
+
+    res.json(profile);
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    res.status(500).json({ 
+      message: 'Error fetching profile data',
+      error: error.message 
+    });
+  }
+});
+
 // Update this endpoint in server.js
 app.get('/api/leaves/employee/:employeeId', authenticateToken, async (req, res) => {
   try {
@@ -1117,6 +1162,51 @@ app.get('/api/leaves/employee/:employeeId', authenticateToken, async (req, res) 
       message: 'Error fetching leave history',
       error: error.message 
     });
+  }
+});
+
+
+app.get('/api/employees/:id/history', authenticateToken, async (req, res) => {
+  try {
+    const employee = await Employee.findById(req.params.id).lean();
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    const history = [];
+
+    // Add milestones
+    if (employee.milestones) {
+      employee.milestones.forEach(milestone => {
+        history.push({
+          date: milestone.date,
+          change: milestone.title,
+          details: milestone.description,
+          branch: milestone.branch || employee.professionalDetails.branch,
+          impact: milestone.impact,
+          type: 'milestone'
+        });
+      });
+    }
+
+    // Add document uploads
+    if (employee.documents) {
+      employee.documents.forEach(doc => {
+        history.push({
+          date: doc.uploadedAt,
+          change: 'Document Upload',
+          details: `New document uploaded: ${doc.name}`,
+          type: 'document'
+        });
+      });
+    }
+
+    // Sort by date descending
+    history.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    res.json(history);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 

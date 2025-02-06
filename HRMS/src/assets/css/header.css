@@ -112,6 +112,55 @@
     color: #666;
     margin: 0;
   }
+  /* Update in header.css */
+.header-profile-container {
+  position: relative;
+}
+
+.header-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.header-profile-btn:hover {
+  background: #f0f0f0;
+}
+
+.header-profile-info {
+  text-align: right;
+}
+
+.header-profile-name {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.header-profile-role {
+  font-size: 12px;
+  color: #666;
+  margin: 0;
+}
+
+.header-profile-avatar {
+  width: 40px !important;
+  height: 40px !important;
+  background: #474787;
+  color: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+/* EmployeeProfile.css remains the same, as it's already scoped under .profile-container */
   
   .profile-avatar {
     width: 40px !important;

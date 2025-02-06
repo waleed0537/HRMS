@@ -41,16 +41,16 @@ const Header = ({ user, onLogout }) => {
             </button>
           </div>
 
-          <div className="profile-container">
+          <div className="header-profile-container">
             <button
-              className="profile-btn"
+              className="header-profile-btn"
               onClick={() => setShowProfile(!showProfile)}
             >
-              <div className="profile-info">
-                <p className="profile-name">{user?.email || 'User'}</p>
-                <p className="profile-role">{user?.role || 'Role'}</p>
+              <div className="header-profile-info">
+                <p className="header-profile-name">{user?.email || 'User'}</p>
+                <p className="header-profile-role">{user?.role || 'Role'}</p>
               </div>
-              <div className="profile-avatar">
+              <div className="header-profile-avatar">
                 <span>{user ? getInitials(user.email) : 'U'}</span>
               </div>
             </button>
@@ -69,7 +69,7 @@ const Header = ({ user, onLogout }) => {
                     🚪 Logout
                   </button>
                 </div>
-                <div 
+                <div
                   className="dropdown-overlay"
                   onClick={() => setShowProfile(false)}
                 ></div>

@@ -81,7 +81,8 @@
   
   .profile-container {
     position: relative;
-    top: -60px;
+    max-height: 10px;
+    top: -90px;
     left: 0px;
   }
   

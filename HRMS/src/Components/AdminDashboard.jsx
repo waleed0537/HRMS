@@ -8,6 +8,132 @@ import '../assets/css/AdminDashboard.css';
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const AdminDashboard = () => {
+  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [notificationType, setNotificationType] = useState('');
+  const [leaveStats, setLeaveStats] = useState([]);
+  const [teamPerformance, setTeamPerformance] = useState([]);
+  const [employeeStats, setEmployeeStats] = useState({
+    total: 0,
+    active: 0,
+    onLeave: 0,
+    departments: []
+  });
+  const [selectedBranch, setSelectedBranch] = useState(null);
+
+  useEffect(() => {
+    if (notificationMessage) {
+      const timer = setTimeout(() => {
+        setNotificationMessage('');
+        setNotificationType('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notificationMessage]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const employeesResponse = await fetch('http://localhost:5000/api/employees', { headers });
+      const employeesData = await employeesResponse.json();
+
+      const leavesResponse = await fetch('http://localhost:5000/api/leaves', { headers });
+      const leavesData = await leavesResponse.json();
+
+      processEmployeeStats(employeesData, leavesData);
+      processLeaveStats(leavesData);
+      processTeamPerformance(employeesData);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setNotificationMessage('Failed to fetch dashboard data');
+      setNotificationType('error');
+    }
+  };
+
+  const processEmployeeStats = (employees, leaves) => {
+    const active = employees.filter(emp => 
+      emp.professionalDetails?.status === 'active'
+    ).length;
+
+    const currentDate = new Date();
+    const onLeave = leaves.filter(leave => {
+      if (leave.status !== 'approved') return false;
+      const startDate = new Date(leave.startDate);
+      const endDate = new Date(leave.endDate);
+      return currentDate >= startDate && currentDate <= endDate;
+    }).length;
+
+    const departments = employees.reduce((acc, emp) => {
+      const dept = emp.professionalDetails?.department || 'Unassigned';
+      acc[dept] = (acc[dept] || 0) + 1;
+      return acc;
+    }, {});
+
+    const departmentData = Object.entries(departments).map(([name, count]) => ({
+      name,
+      value: count
+    }));
+
+    console.log('Status counts:', { active, onLeave, total: employees.length });
+
+    setEmployeeStats({
+      total: employees.length,
+      active,
+      onLeave,
+      departments: departmentData
+    });
+  };
+
+  const processLeaveStats = (leaves) => {
+    const monthlyStats = leaves.reduce((acc, leave) => {
+      const month = new Date(leave.startDate).toLocaleString('default', { month: 'short' });
+      acc[month] = (acc[month] || 0) + 1;
+      return acc;
+    }, {});
+
+    const leaveData = Object.entries(monthlyStats).map(([month, count]) => ({
+      month,
+      leaves: count
+    }));
+
+    setLeaveStats(leaveData);
+  };
+
+  const processTeamPerformance = (employees) => {
+    const branchPerformance = employees.reduce((acc, emp) => {
+      const branch = emp.professionalDetails?.branch;
+      if (!branch) return acc;
+      
+      if (!acc[branch]) {
+        acc[branch] = {
+          name: branch,
+          performance: emp.rating || 0,
+          count: 1
+        };
+      } else {
+        acc[branch].performance += emp.rating || 0;
+        acc[branch].count += 1;
+      }
+      return acc;
+    }, {});
+
+    const performanceData = Object.values(branchPerformance).map(({ name, performance, count }) => ({
+      name,
+      rating: (performance / count).toFixed(1)
+    }));
+
+    setTeamPerformance(performanceData);
+  };
+
   const generateReport = () => {
     const reportContent = [
       'Administrative Dashboard Report',
@@ -41,37 +167,8 @@ const AdminDashboard = () => {
     document.body.removeChild(a);
   };
 
-  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
-  const [notificationMessage, setNotificationMessage] = useState('');
-  const [notificationType, setNotificationType] = useState('');
-  const [leaveStats, setLeaveStats] = useState([]);
-  const [teamPerformance, setTeamPerformance] = useState([]);
-  const [employeeStats, setEmployeeStats] = useState({
-    total: 0,
-    active: 0,
-    onLeave: 0,
-    departments: []
-  });
-  const [selectedBranch, setSelectedBranch] = useState(null);
-
-  useEffect(() => {
-    if (notificationMessage) {
-      const timer = setTimeout(() => {
-        setNotificationMessage('');
-        setNotificationType('');
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [notificationMessage]);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
   const handleCreateAnnouncement = async (announcementData) => {
     try {
-      console.log('Sending announcement data:', announcementData);
-      
       const response = await fetch('http://localhost:5000/api/announcements', {
         method: 'POST',
         headers: {
@@ -96,92 +193,6 @@ const AdminDashboard = () => {
       setNotificationMessage(error.message || 'Failed to create announcement. Please try again.');
       setNotificationType('error');
     }
-  };
-
-  const fetchDashboardData = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-
-      const employeesResponse = await fetch('http://localhost:5000/api/employees', { headers });
-      const employeesData = await employeesResponse.json();
-
-      const leavesResponse = await fetch('http://localhost:5000/api/leaves', { headers });
-      const leavesData = await leavesResponse.json();
-
-      processEmployeeStats(employeesData);
-      processLeaveStats(leavesData);
-      processTeamPerformance(employeesData);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      setNotificationMessage('Failed to fetch dashboard data');
-      setNotificationType('error');
-    }
-  };
-
-  const processEmployeeStats = (employees) => {
-    const active = employees.filter(emp => emp.professionalDetails.status === 'active').length;
-    const onLeave = employees.filter(emp => emp.professionalDetails.status === 'on_leave').length;
-    
-    const departments = employees.reduce((acc, emp) => {
-      const dept = emp.professionalDetails.department || 'Unassigned';
-      acc[dept] = (acc[dept] || 0) + 1;
-      return acc;
-    }, {});
-
-    const departmentData = Object.entries(departments).map(([name, count]) => ({
-      name,
-      value: count
-    }));
-
-    setEmployeeStats({
-      total: employees.length,
-      active,
-      onLeave,
-      departments: departmentData
-    });
-  };
-
-  const processLeaveStats = (leaves) => {
-    const monthlyStats = leaves.reduce((acc, leave) => {
-      const month = new Date(leave.startDate).toLocaleString('default', { month: 'short' });
-      acc[month] = (acc[month] || 0) + 1;
-      return acc;
-    }, {});
-
-    const leaveData = Object.entries(monthlyStats).map(([month, count]) => ({
-      month,
-      leaves: count
-    }));
-
-    setLeaveStats(leaveData);
-  };
-
-  const processTeamPerformance = (employees) => {
-    const branchPerformance = employees.reduce((acc, emp) => {
-      const branch = emp.professionalDetails.branch;
-      if (!acc[branch]) {
-        acc[branch] = {
-          name: branch,
-          performance: emp.rating || 0,
-          count: 1
-        };
-      } else {
-        acc[branch].performance += emp.rating || 0;
-        acc[branch].count += 1;
-      }
-      return acc;
-    }, {});
-
-    const performanceData = Object.values(branchPerformance).map(({ name, performance, count }) => ({
-      name,
-      rating: (performance / count).toFixed(1)
-    }));
-
-    setTeamPerformance(performanceData);
   };
 
   return (

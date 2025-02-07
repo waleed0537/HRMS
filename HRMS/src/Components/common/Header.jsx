@@ -85,7 +85,7 @@ const Header = ({ user, onLogout }) => {
             )}
           </div>
   
-          <div className="profile-container" style={{ zIndex: showProfile ? 602 : 601 }}>
+          <div className="profile-container" >
             <button
               className="profile-btn"
               onClick={() => setShowProfile(!showProfile)}

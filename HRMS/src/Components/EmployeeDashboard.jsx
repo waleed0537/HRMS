@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../Components/ui/card';
 import { Calendar, AlertTriangle, Circle } from 'lucide-react';
+import '../assets/css/EmployeeDashboard.css';
 
 const EmployeeDashboard = () => {
   const [announcements, setAnnouncements] = useState([]);
@@ -144,68 +145,6 @@ const EmployeeDashboard = () => {
 
   return (
     <div className="dashboard-container">
-      <style>{`
-        .dashboard-container {
-          padding: 20px;
-          margin: 64px 0 0 16rem;
-          background-color: #f5f5f5;
-          min-height: calc(100vh - 64px);
-        }
-
-        .announcements-section, .leave-section {
-          margin-bottom: 2rem;
-        }
-
-        .announcements-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-          gap: 1rem;
-          margin-top: 1rem;
-        }
-
-        .announcement-card {
-          background: white;
-          padding: 1.5rem;
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          transition: transform 0.2s;
-        }
-
-        .announcement-card:hover {
-          transform: translateY(-2px);
-        }
-
-        .announcement-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 1rem;
-        }
-
-        .priority-badge {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.875rem;
-        }
-
-        .announcement-title {
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: #1f2937;
-          margin-bottom: 0.5rem;
-        }
-
-        .announcement-content {
-          color: #4b5563;
-          margin-bottom: 1rem;
-        }
-
-        .announcement-footer {
-          font-size: 0.875rem;
-          color: #6b7280;
-        }
-      `}</style>
 
       <div className="announcements-section">
         <div className="flex justify-between items-center mb-4">

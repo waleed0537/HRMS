@@ -2,7 +2,10 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px;
-  padding-top: 150px;
+  margin-top: 140px; /* Changed from padding-top */
+  margin-left: 240px; /* Add space for sidebar */
+  position: relative;
+  z-index: 1;
 }
 
 .profile-header-card {
@@ -186,6 +189,10 @@
 }
 
 @media (max-width: 968px) {
+  .profile-container {
+    margin-left: 0; /* Remove sidebar margin on mobile */
+  }
+  
   .profile-header-content {
     grid-template-columns: 1fr;
     text-align: center;
@@ -207,6 +214,7 @@
 @media (max-width: 640px) {
   .profile-container {
     padding: 16px;
+    margin-top: 48px; /* Smaller top margin on mobile */
   }
 
   .profile-key-info {

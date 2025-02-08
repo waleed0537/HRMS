@@ -111,9 +111,10 @@ function checkFileType(file, cb) {
 
 // Middleware
 app.use(cors({
-  origin: ['https://hrms-sxi4.onrender.com', 'http://localhost:5173'],
+  origin: ['https://hrms-sxi4.onrender.com', 'http://localhost:5173', 'https://www.hrrive.com', 'https://hrrive.com'],
   credentials: true
 }));
+
 app.use(express.json());
 
 // Authentication Middleware

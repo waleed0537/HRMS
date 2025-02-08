@@ -1,40 +1,19 @@
-import express from 'express';
-import mongoose from 'mongoose';
-import cors from 'cors';
-import jwt from 'jsonwebtoken';
-import multer from 'multer';
-import bcrypt from 'bcryptjs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import fs from 'fs';
-// Get current file directory path (ES modules equivalent of __dirname)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// server.js
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const User = require('../Backend/models/Users');
+const Employee = require('../Backend/models/employee');
+const multer = require('multer');
+const bcrypt = require('bcryptjs'); // Add this import
+const path = require('path');
+const fs = require('fs');
+const Leave = require('../Backend/models/Leave');
+const Branch = require('../Backend/models/branch');
+const Announcement = require('../Backend/models/Announcement'); // Make sure to import the model
+const Notification =  require('../Backend/models/Notification');
 
-// Import models - make sure these files are also using ES module syntax
-import User from '../Backend/models/Users.js';
-import Employee from '../Backend/models/employee.js';
-import Leave from '../Backend/models/Leave.js';
-import Branch from '../Backend/models/branch.js';
-import Announcement from '../Backend/models/Announcement.js';
-import Notification from '../Backend/models/Notification.js';
-
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:4173', // Vite preview port
-  'https://hrms-sxi4.onrender.com' // Replace with your Render frontend URL
-];
-
-app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}));
 
 const app = express();
 const JWT_SECRET = 'your-jwt-secret-key';

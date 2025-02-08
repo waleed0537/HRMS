@@ -1,8 +1,8 @@
 // BranchController.js
-import Branch from './branch.js';
-import Employee from './employee.js';
+const Branch = require('./branch');
+const Employee = require('./employee');
 
-export const createBranch = async (req, res) => {
+exports.createBranch = async (req, res) => {
   try {
     const { name, hrManager, t1Member, operationalManager } = req.body;
 
@@ -36,7 +36,7 @@ export const createBranch = async (req, res) => {
   }
 };
 
-export const getAllBranches = async (req, res) => {
+exports.getAllBranches = async (req, res) => {
   try {
     const branches = await Branch.find()
       .populate('hrManager', 'personalDetails.name')
@@ -48,7 +48,7 @@ export const getAllBranches = async (req, res) => {
   }
 };
 
-export const updateBranchRole = async (req, res) => {
+exports.updateBranchRole = async (req, res) => {
   try {
     const { id } = req.params;
     const { role, employeeId } = req.body;
@@ -83,7 +83,7 @@ export const updateBranchRole = async (req, res) => {
   }
 };
 
-export const deleteBranch = async (req, res) => {
+exports.deleteBranch = async (req, res) => {
   try {
     const { id } = req.params;
     const branch = await Branch.findById(id);

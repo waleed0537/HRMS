@@ -18,5 +18,5 @@ export interface BranchAnnouncement {
   
     // Delete an announcement
     deleteAnnouncement(announcementId: string): Promise<void>;
-    updateBranchRole(announcementId: string, role: string): Promise<void>;
+    
   }

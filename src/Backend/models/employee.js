@@ -1,5 +1,5 @@
 // models/employee.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const employeeSchema = new mongoose.Schema({
   userId: {

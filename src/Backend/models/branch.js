@@ -1,5 +1,5 @@
 // models/Branch.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const branchSchema = new mongoose.Schema({
   name: {

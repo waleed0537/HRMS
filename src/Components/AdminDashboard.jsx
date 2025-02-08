@@ -4,7 +4,7 @@ import { Bell, CheckCircle, XCircle, Download } from 'lucide-react';
 import AnnouncementModal from './AnnouncementModal';
 import AnnouncementsList from './AnnouncementsList';
 import '../assets/css/AdminDashboard.css';
-
+import API_BASE_URL from '../config/api.js';
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const AdminDashboard = () => {

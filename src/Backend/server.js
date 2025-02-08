@@ -18,6 +18,10 @@ const Notification =  require('../Backend/models/Notification');
 const app = express();
 const JWT_SECRET = 'your-jwt-secret-key';
 
+app.get('/', (req, res) => {
+  res.json({ message: 'HRMS API is running' });
+});
+
 // Create uploads directory if it doesn't exist
 if (!fs.existsSync('./uploads')) {
   fs.mkdirSync('./uploads');
@@ -107,7 +111,7 @@ function checkFileType(file, cb) {
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: ['https://hrms-sxi4.onrender.com', 'http://localhost:5173'],
   credentials: true
 }));
 app.use(express.json());

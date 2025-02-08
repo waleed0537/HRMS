@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, User, Phone, MapPin, Building, Briefcase, UserSquare } from 'lucide-react';
 import '../assets/css/signin.css';
+import API_BASE_URL from '../config/api.js';
 
 const SignIn = ({ onLogin }) => {
   const navigate = useNavigate();
@@ -56,7 +57,7 @@ const SignIn = ({ onLogin }) => {
       }
 
       const endpoint = isLogin ? '/api/signin' : '/api/signup';
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

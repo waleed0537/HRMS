@@ -3,6 +3,7 @@
     margin: 64px 0 0 16rem;
     background-color: #f8fafc;
     min-height: calc(100vh - 64px);
+    z-index: 40;
   }
   
   .attendance-card {

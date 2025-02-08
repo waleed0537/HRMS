@@ -12,7 +12,7 @@ const AttendanceManagement = () => {
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(null);
   const [department, setDepartment] = useState('');
   const [departments, setDepartments] = useState([]);
 
@@ -61,23 +61,16 @@ const AttendanceManagement = () => {
       
       // More flexible data extraction
       let attendanceArray = [];
-      if (Array.isArray(responseData)) {
+      if (responseData.data && Array.isArray(responseData.data)) {
+        attendanceArray = responseData.data;
+      } else if (Array.isArray(responseData)) {
         attendanceArray = responseData;
-      } else if (responseData.data) {
-        attendanceArray = Array.isArray(responseData.data) 
-          ? responseData.data 
-          : [responseData.data];
       } else if (responseData.success && responseData.data) {
         attendanceArray = responseData.data;
       }
 
       console.log('Processed attendance array:', attendanceArray);
       console.log('Attendance array length:', attendanceArray.length);
-
-      // Validate data
-      if (attendanceArray.length === 0) {
-        console.warn('No attendance records found');
-      }
 
       setAttendanceData(attendanceArray);
       
@@ -112,43 +105,81 @@ const AttendanceManagement = () => {
   };
 
   const exportToCSV = () => {
-    const headers = ['Department', 'Name', 'No.', 'Date/Time', 'Location ID', 'ID Number', 'VerifyCode', 'CardNo'];
-    const csvData = filteredData.map(record => [
-      record.department,
-      record.employeeName,
-      record.employeeNumber,
-      formatDateTime(record.date || record.timeIn),
-      record.location,
-      record._id,
-      record.verifyMethod,
-      'N/A'
-    ]);
+    try {
+      const headers = ['Department', 'Name', 'No.', 'Date/Time', 'Location ID', 'VerifyCode', 'CardNo'];
+      const csvData = filteredData.map(record => [
+        record.department,
+        record.employeeName,
+        record.employeeNumber,
+        formatDateTime(record.date || record.timeIn),
+        record.location,
+        record.verifyMethod,
+        'N/A'
+      ]);
 
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
+      const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `attendance_${format(selectedDate, 'yyyy-MM-dd')}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `attendance_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (error) {
+      console.error('Error in exportToCSV:', error);
+      alert('Failed to export CSV. Please check the console for details.');
     }
   };
 
-  // Debugging render states
-  console.log('Render State:', {
-    loading,
-    error,
-    attendanceDataLength: attendanceData.length,
-    filteredDataLength: filteredData.length
-  });
+  // Filtering function
+  const applyFilters = () => {
+    console.log('Applying filters:', { searchTerm, department, selectedDate });
+    
+    let result = [...attendanceData];
+
+    // Filter by search term (name or employee number)
+    if (searchTerm) {
+      const searchTermLower = searchTerm.toLowerCase();
+      result = result.filter(record => 
+        record.employeeName.toLowerCase().includes(searchTermLower) ||
+        record.employeeNumber.toString().includes(searchTermLower)
+      );
+    }
+
+    // Filter by department
+    if (department) {
+      result = result.filter(record => record.department === department);
+    }
+
+    // Filter by date
+    if (selectedDate) {
+      const selectedDateObj = new Date(selectedDate);
+      result = result.filter(record => {
+        const recordDate = new Date(record.date || record.timeIn);
+        return (
+          recordDate.getFullYear() === selectedDateObj.getFullYear() &&
+          recordDate.getMonth() === selectedDateObj.getMonth() &&
+          recordDate.getDate() === selectedDateObj.getDate()
+        );
+      });
+    }
+
+    console.log('Filtered result:', result);
+    setFilteredData(result);
+  };
+
+  // Apply filters whenever dependencies change
+  useEffect(() => {
+    applyFilters();
+  }, [searchTerm, department, selectedDate, attendanceData]);
 
   if (loading) {
     return (
@@ -162,32 +193,6 @@ const AttendanceManagement = () => {
     return (
       <div className="error-container">
         <div className="error-message">Error: {error}</div>
-      </div>
-    );
-  }
-
-  // Extensive logging for no records scenario
-  useEffect(() => {
-    if (filteredData.length === 0) {
-      console.warn('No records after filtering');
-      console.log('Original attendance data:', attendanceData);
-    }
-  }, [filteredData, attendanceData]);
-
-  // If no data, show a detailed message
-  if (filteredData.length === 0) {
-    return (
-      <div className="attendance-container">
-        <div className="attendance-card">
-          <div className="card-header">
-            <h2>No Attendance Records Found</h2>
-            <div>
-              <p>Attendance Data Length: {attendanceData.length}</p>
-              <p>Filtered Data Length: {filteredData.length}</p>
-              <p>Departments: {departments.join(', ')}</p>
-            </div>
-          </div>
-        </div>
       </div>
     );
   }
@@ -222,8 +227,11 @@ const AttendanceManagement = () => {
             </select>
             <input
               type="date"
-              value={format(selectedDate, 'yyyy-MM-dd')}
-              onChange={(e) => setSelectedDate(new Date(e.target.value))}
+              value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''}
+              onChange={(e) => {
+                const newDate = e.target.value ? new Date(e.target.value) : null;
+                setSelectedDate(newDate);
+              }}
               className="date-input"
             />
             <button onClick={exportToCSV} className="export-button">
@@ -234,40 +242,58 @@ const AttendanceManagement = () => {
         </div>
         <div className="card-content">
           <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Department</th>
-                  <th>Name</th>
-                  <th>No.</th>
-                  <th>Date/Time</th>
-                  <th>Location ID</th>
-                  <th>ID Number</th>
-                  <th>VerifyCode</th>
-                  <th>CardNo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredData.map((record) => (
-                  <tr key={record._id}>
-                    <td>{record.department}</td>
-                    <td>
-                      <div className="employee-info">
-                        <div className="employee-name">{record.employeeName}</div>
-                      </div>
-                    </td>
-                    <td>{record.employeeNumber}</td>
-                    <td>{formatDateTime(record.date || record.timeIn)}</td>
-                    <td>{record.location}</td>
-                    <td>{record._id}</td>
-                    <td>
-                      <span className="verify-method">{record.verifyMethod}</span>
-                    </td>
-                    <td>N/A</td>
+            {filteredData.length === 0 ? (
+              <div className="no-records">
+                <p>No records found. Try adjusting your filters.</p>
+                <p>Total Records: {attendanceData.length}</p>
+                <p>Current Filters:</p>
+                <ul>
+                  {searchTerm && <li>Search Term: {searchTerm}</li>}
+                  {department && <li>Department: {department}</li>}
+                  {selectedDate && <li>Date: {format(selectedDate, 'dd/MM/yyyy')}</li>}
+                </ul>
+                <button onClick={() => {
+                  setSearchTerm('');
+                  setDepartment('');
+                  setSelectedDate(null);
+                }}>
+                  Reset Filters
+                </button>
+              </div>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Department</th>
+                    <th>Name</th>
+                    <th>No.</th>
+                    <th>Date/Time</th>
+                    <th>Location ID</th>
+                    <th>VerifyCode</th>
+                    <th>CardNo</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredData.map((record) => (
+                    <tr key={record._id}>
+                      <td>{record.department}</td>
+                      <td>
+                        <div className="employee-info">
+                          <div className="employee-name">{record.employeeName}</div>
+                        </div>
+                      </td>
+                      <td>{record.employeeNumber}</td>
+                      <td>{formatDateTime(record.date || record.timeIn)}</td>
+                      <td>{record.location}</td>
+                      <td>
+                        <span className="verify-method">{record.verifyMethod}</span>
+                      </td>
+                      <td>N/A</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>

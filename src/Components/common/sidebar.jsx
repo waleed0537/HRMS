@@ -12,7 +12,8 @@ import {
   FileText,
   History,
   UserSquare2,
-  Building
+  Building,
+  Clock
 } from 'lucide-react';
 import '../../assets/css/sidebar.css';
 
@@ -114,6 +115,11 @@ const Sidebar = ({ user }) => {
                   </NavLink>
                 </>
               )}
+
+              <NavLink to="/attendance" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <Clock className="h-5 w-5" />
+                <span>Attendance</span>
+              </NavLink>
 
               <NavLink to="/edit-profiles" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <FileText className="h-5 w-5" />

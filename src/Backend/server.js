@@ -14,6 +14,8 @@ const Branch = require('../Backend/models/branch');
 const Announcement = require('../Backend/models/Announcement'); // Make sure to import the model
 const Notification =  require('../Backend/models/Notification');
 
+const Attendance = require('../Backend/models/Attendance');
+
 
 const app = express();
 const JWT_SECRET = 'your-jwt-secret-key';
@@ -1290,6 +1292,75 @@ app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
     });
   }
 });
+// Attendance Routes
+// In server.js, update the attendance endpoint
+
+app.get('/api/attendance', authenticateToken, async (req, res) => {
+  try {
+    const { date } = req.query;
+    console.log('Received date parameter:', date);
+    
+    let query = {};
+    
+    if (date) {
+      // Convert the date to start and end of day in UTC
+      const queryDate = new Date(date);
+      const startOfDay = new Date(queryDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(queryDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+      
+      console.log('Query date range:', {
+        startOfDay: startOfDay.toISOString(),
+        endOfDay: endOfDay.toISOString()
+      });
+      
+      query.date = { 
+        $gte: startOfDay,
+        $lte: endOfDay
+      };
+    }
+
+    console.log('Final MongoDB query:', JSON.stringify(query, null, 2));
+
+    // First, get total count
+    const totalCount = await Attendance.countDocuments(query);
+    console.log('Total matching records:', totalCount);
+
+    // Then get the actual records
+    const attendanceRecords = await Attendance.find(query)
+      .sort({ timeIn: 1 })
+      .lean();
+    
+    console.log(`Found ${attendanceRecords.length} attendance records`);
+    console.log('Sample record:', attendanceRecords[0]);
+
+    // Send detailed response
+    res.json({
+      success: true,
+      count: attendanceRecords.length,
+      totalRecords: totalCount,
+      date: date || 'all',
+      data: attendanceRecords
+    });
+
+  } catch (error) {
+    console.error('Error fetching attendance records:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error fetching attendance records',
+      error: error.message 
+    });
+  }
+});
+// Add this endpoint to server.js
+
+
+
+
+// Add this route to server.js after your other attendance routes
+
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

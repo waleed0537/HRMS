@@ -1,0 +1,226 @@
+.attendance-container {
+    padding: 24px;
+    margin: 64px 0 0 16rem;
+    background-color: #f8fafc;
+    min-height: calc(100vh - 64px);
+  }
+  
+  .attendance-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  .card-header {
+    padding: 24px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  .card-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .card-title h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+  }
+  
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  
+  .search-box {
+    position: relative;
+    min-width: 250px;
+  }
+  
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: #64748b;
+  }
+  
+  .search-box input {
+    width: 100%;
+    padding: 8px 12px 8px 36px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  
+  .department-select {
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+    min-width: 150px;
+  }
+  
+  .date-input {
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  
+  .export-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #474787;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .export-button:hover {
+    background: #373769;
+  }
+  
+  .card-content {
+    padding: 24px;
+  }
+  
+  .table-container {
+    overflow-x: auto;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+  }
+  
+  th, td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  th {
+    background-color: #f8fafc;
+    font-weight: 600;
+    color: #475569;
+  }
+  
+  .employee-info {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .employee-name {
+    font-weight: 500;
+    color: #1e293b;
+  }
+  
+  .employee-number {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+  }
+  
+  .time-info, .location-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .time-in {
+    color: #22c55e;
+  }
+  
+  .time-out {
+    color: #ef4444;
+  }
+  
+  .icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .verify-method {
+    display: inline-block;
+    padding: 4px 12px;
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  
+  .loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 64px);
+  }
+  
+  .loading-text {
+    font-size: 18px;
+    color: #64748b;
+  }
+  
+  .error-container {
+    padding: 16px;
+    background-color: #fef2f2;
+    border-radius: 8px;
+    margin: 24px;
+  }
+  
+  .error-message {
+    color: #dc2626;
+  }
+  
+  @media (max-width: 1024px) {
+    .attendance-container {
+      margin-left: 0;
+      padding: 16px;
+    }
+  
+    .card-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  
+    .header-actions {
+      flex-direction: column;
+    }
+  
+    .search-box {
+      width: 100%;
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .card-header {
+      padding: 16px;
+    }
+  
+    .card-content {
+      padding: 16px;
+    }
+  
+    th, td {
+      padding: 12px;
+    }
+  }

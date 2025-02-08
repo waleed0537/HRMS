@@ -14,6 +14,7 @@ import EmployeeProfile from './Components/EmployeeProfile';
 import EditProfiles from './Components/EditProfile';
 import BranchManagement from './Components/BranchManagement';
 import AdminDashboard from './Components/AdminDashboard';
+import AttendanceManagement from './Components/AttendanceManagement';
 import EmployeeDashboard from './Components/EmployeeDashboard';
 import '../src/assets/css/global.css';
 
@@ -89,7 +90,17 @@ function App() {
                 <Navigate to="/dashboard" replace />
               )
             } />
-
+            {/* Attendance Management Route */}
+            <Route
+              path="/attendance"
+              element={
+                user?.isAdmin || user?.role === 'hr_manager' ? (
+                  <AttendanceManagement />
+                ) : (
+                  <Navigate to="/dashboard" replace />
+                )
+              }
+            />
             {/* Common Routes */}
             <Route path="/employees" element={<EmployeeCards />} />
             <Route path="/leave-request" element={<LeaveRequest />} />

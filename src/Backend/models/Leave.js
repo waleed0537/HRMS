@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import {mongoose} from 'mongoose';
 
 const leaveSchema = new mongoose.Schema({
   employeeId: {

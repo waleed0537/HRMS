@@ -1,10 +1,12 @@
-import { mongoose } from 'mongoose';
+// models/Branch.js
+import mongoose from 'mongoose';
 
 const branchSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    trim: true
   },
   hrManager: {
     type: mongoose.Schema.Types.ObjectId,
@@ -31,6 +33,12 @@ const branchSchema = new mongoose.Schema({
   }
 });
 
+// Update timestamp on save
+branchSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
 const Branch = mongoose.model('Branch', branchSchema);
 
-export default Branch;
+module.exports = Branch;

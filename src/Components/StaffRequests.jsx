@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserCheck, UserX } from 'lucide-react';
 import '../assets/css/StaffRequests.css';
-
+import API_BASE_URL from '../config/api.js';
 const StaffRequests = () => {
   const [requests, setRequests] = useState([]);
   const [error, setError] = useState('');
@@ -15,7 +15,7 @@ const StaffRequests = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch('http://localhost:5000/api/pending-requests', {
+      const response = await fetch(`${API_BASE_URL}/api/pending-requests`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -47,7 +47,7 @@ const StaffRequests = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch(`http://localhost:5000/api/requests/${userId}/status`, {
+      const response = await fetch(`${API_BASE_URL}/api/requests/${userId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

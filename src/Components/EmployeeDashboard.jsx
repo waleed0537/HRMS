@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../Components/ui/card';
 import { Calendar, AlertTriangle, Circle } from 'lucide-react';
 import '../assets/css/EmployeeDashboard.css';
-
+import API_BASE_URL from '../config/api.js';
 const EmployeeDashboard = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [leaveHistory, setLeaveHistory] = useState([]);
@@ -13,7 +13,7 @@ const EmployeeDashboard = () => {
   const fetchBranchAnnouncements = async (branchId) => {
     try {
       console.log('Fetching announcements for branchId:', branchId);
-      const response = await fetch(`http://localhost:5000/api/announcements/${branchId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/announcements/${branchId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -36,7 +36,7 @@ const EmployeeDashboard = () => {
           console.log('User data from localStorage:', userData);
           
           // First get the employee document using the user's email
-          const empResponse = await fetch(`http://localhost:5000/api/employees/byemail/${userData.email}`, {
+          const empResponse = await fetch(`${API_BASE_URL}/api/employees/byemail/${userData.email}`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
@@ -51,7 +51,7 @@ const EmployeeDashboard = () => {
           console.log('Employee data received:', data);
       
           // Get branch data
-          const branchResponse = await fetch(`http://localhost:5000/api/branches`, {
+          const branchResponse = await fetch(`${API_BASE_URL}/api/branches`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
@@ -86,7 +86,7 @@ const EmployeeDashboard = () => {
         const userData = JSON.parse(localStorage.getItem('user'));
         console.log('Fetching leave history for user:', userData.email);
         
-        const response = await fetch(`http://localhost:5000/api/leaves?employeeEmail=${encodeURIComponent(userData.email)}`, {
+        const response = await fetch(`${API_BASE_URL}/api/leaves?employeeEmail=${encodeURIComponent(userData.email)}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }

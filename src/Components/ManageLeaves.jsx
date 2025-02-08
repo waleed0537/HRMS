@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Check, X, FileText, Download, Eye } from 'lucide-react';
 import '../assets/css/ManageLeaves.css';
-
+import API_BASE_URL from '../config/api.js';
 const ManageLeaves = () => {
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +22,7 @@ const ManageLeaves = () => {
         throw new Error('Authentication required');
       }
 
-      const response = await fetch('http://localhost:5000/api/leaves', {
+      const response = await fetch(`${API_BASE_URL}/api/leaves`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -52,7 +52,7 @@ const ManageLeaves = () => {
         throw new Error('Authentication required');
       }
 
-      const response = await fetch(`http://localhost:5000/api/leaves/${id}/status`, {
+      const response = await fetch(`${API_BASE_URL}/api/leaves/${id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -80,7 +80,7 @@ const ManageLeaves = () => {
   const downloadDocument = async (doc) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/${doc.path}`, {
+      const response = await fetch(`${API_BASE_URL}/${doc.path}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -247,7 +247,7 @@ const ManageLeaves = () => {
           <div className="preview-content" onClick={(e) => e.stopPropagation()}>
             {selectedDocument.path.match(/\.(jpg|jpeg|png|gif)$/i) ? (
               <img
-                src={`http://localhost:5000/${selectedDocument.path}`}
+                src={`${API_BASE_URL}/${selectedDocument.path}`}
                 alt="Document preview"
                 style={{ maxWidth: '100%', maxHeight: '80vh' }}
               />

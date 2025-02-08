@@ -43,10 +43,10 @@ const AdminDashboard = () => {
         'Content-Type': 'application/json'
       };
 
-      const employeesResponse = await fetch('http://localhost:5000/api/employees', { headers });
+      const employeesResponse = await fetch(`${API_BASE_URL}/api/employees`, { headers });
       const employeesData = await employeesResponse.json();
 
-      const leavesResponse = await fetch('http://localhost:5000/api/leaves', { headers });
+      const leavesResponse = await fetch(`${API_BASE_URL}/api/leaves`, { headers });
       const leavesData = await leavesResponse.json();
 
       processEmployeeStats(employeesData, leavesData);
@@ -169,7 +169,7 @@ const AdminDashboard = () => {
 
   const handleCreateAnnouncement = async (announcementData) => {
     try {
-      const response = await fetch('http://localhost:5000/api/announcements', {
+      const response = await fetch(`${API_BASE_URL}/api/announcements`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

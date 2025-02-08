@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import EmployeeDetails from './EmployeeDetails';
 import { Mail, Phone, Download, FilterIcon } from 'lucide-react';
 import '../assets/css/EmployeeCards.css';
-
+import API_BASE_URL from '../config/api.js';
 const EmployeeCards = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [showCards, setShowCards] = useState(true);
@@ -19,7 +19,7 @@ const EmployeeCards = () => {
 
   const fetchBranches = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/branches', {
+      const response = await fetch(`${API_BASE_URL}/api/branches`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -34,7 +34,7 @@ const EmployeeCards = () => {
 
   const fetchEmployees = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/employees', {
+      const response = await fetch(`${API_BASE_URL}/api/employees`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

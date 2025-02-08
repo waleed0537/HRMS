@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Building, Plus, Edit2, Save, X, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import '../assets/css/BranchManagement.css';
-
+import API_BASE_URL from '../config/api.js';
 const BranchManagement = () => {
   const [employees, setEmployees] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -24,7 +24,7 @@ const BranchManagement = () => {
 
   const fetchEmployees = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/employees', {
+      const response = await fetch(`${API_BASE_URL}/api/employees`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -40,7 +40,7 @@ const BranchManagement = () => {
 
   const fetchBranches = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/branches', {
+      const response = await fetch(`${API_BASE_URL}/api/branches`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -61,8 +61,8 @@ const BranchManagement = () => {
     
     try {
       const url = editingBranch 
-        ? `http://localhost:5000/api/branches/${editingBranch._id}`
-        : 'http://localhost:5000/api/branches';
+        ? `${API_BASE_URL}/api/branches/${editingBranch._id}`
+        : `${API_BASE_URL}/api/branches`;
       
       const method = editingBranch ? 'PUT' : 'POST';
       
@@ -94,7 +94,7 @@ const BranchManagement = () => {
 
   const handleRoleChange = async (branchId, role, employeeId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/branches/${branchId}/role`, {
+      const response = await fetch(`${API_BASE_URL}/api/branches/${branchId}/role`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -117,7 +117,7 @@ const BranchManagement = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/branches/${branchId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/branches/${branchId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

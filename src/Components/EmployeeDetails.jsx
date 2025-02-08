@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, Building } from 'lucide-react';
 import '../assets/css/EmployeeDetails.css';
-
+import API_BASE_URL from '../config/api.js';
 const EmployeeDetails = ({ employee, onClose }) => {
   const [activeTab, setActiveTab] = useState('info');
   const [employeeHistory, setEmployeeHistory] = useState([]);
@@ -18,7 +18,7 @@ const EmployeeDetails = ({ employee, onClose }) => {
   const fetchEmployeeHistory = async (employeeId) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/employees/${employeeId}/history`, {
+      const response = await fetch(`${API_BASE_URL}/api/employees/${employeeId}/history`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

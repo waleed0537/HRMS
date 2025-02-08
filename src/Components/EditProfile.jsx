@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, X, Save, Building, Calendar } from 'lucide-react';
 import '../assets/css/EditProfile.css';
-
+import API_BASE_URL from '../config/api.js';
 const EditProfiles = () => {
   const [employees, setEmployees] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -23,7 +23,7 @@ const EditProfiles = () => {
 
   const fetchBranches = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/branches', {
+      const response = await fetch(`${API_BASE_URL}/api/branches`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -42,7 +42,7 @@ const EditProfiles = () => {
 
   const fetchEmployees = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/employees', {
+      const response = await fetch(`${API_BASE_URL}/api/employees`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -63,7 +63,7 @@ const EditProfiles = () => {
 
   const handleEmployeeSelect = async (employeeId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/employees/${employeeId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/employees/${employeeId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -110,7 +110,7 @@ const EditProfiles = () => {
     });
   
     try {
-      const response = await fetch(`http://localhost:5000/api/employees/${selectedEmployee._id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/employees/${selectedEmployee._id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

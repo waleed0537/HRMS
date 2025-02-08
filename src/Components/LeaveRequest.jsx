@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Calendar, Upload, X } from 'lucide-react';
 import '../assets/css/LeaveRequest.css';
-
+import API_BASE_URL from '../config/api.js';
 const LeaveRequest = () => {
   const [leaveData, setLeaveData] = useState({
     startDate: '',
@@ -49,7 +49,7 @@ const LeaveRequest = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch('http://localhost:5000/api/leaves', {
+      const response = await fetch(`${API_BASE_URL}/api/leaves`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

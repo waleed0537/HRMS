@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import '../assets/css/AnnouncementsList.css';
-
+import API_BASE_URL from '../config/api.js';
 const AnnouncementsList = ({ branchId }) => {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +16,7 @@ const AnnouncementsList = ({ branchId }) => {
 
   const fetchAnnouncements = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/announcements/${branchId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/announcements/${branchId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -41,7 +41,7 @@ const AnnouncementsList = ({ branchId }) => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/announcements/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/announcements/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

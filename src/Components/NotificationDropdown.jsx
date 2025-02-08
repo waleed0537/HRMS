@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, CheckCircle, UserCheck, Calendar } from 'lucide-react';
 import '../assets/css/NotificationDropdown.css';
-
+import API_BASE_URL from '../config/api.js';
 const NotificationDropdown = ({ onClose }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +12,7 @@ const NotificationDropdown = ({ onClose }) => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/notifications', {
+      const response = await fetch(`${API_BASE_URL}/api/notifications`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Accept': 'application/json'
@@ -35,7 +35,7 @@ const NotificationDropdown = ({ onClose }) => {
 
   const markAsRead = async (id) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+      const response = await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

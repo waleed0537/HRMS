@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import '../assets/css/AnnouncementModal.css';
-
+import API_BASE_URL from '../config/api.js';
 const AnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
   const [branches, setBranches] = useState([]);
   const [formData, setFormData] = useState({
@@ -19,7 +19,7 @@ const AnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
 
   const fetchBranches = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/branches', {
+      const response = await fetch(`${API_BASE_URL}/api/branches`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

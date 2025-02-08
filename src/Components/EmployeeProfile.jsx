@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, Building, User, Briefcase, FileText } from 'lucide-react';
 import '../assets/css/EmployeeProfile.css';
-
+import API_BASE_URL from '../config/api.js';
 const EmployeeProfile = () => {
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
@@ -10,7 +10,7 @@ const EmployeeProfile = () => {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/profile', {
+        const response = await fetch(`${API_BASE_URL}/api/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Save, Building, Users, Edit, Trash, X } from 'lucide-react';
 import '../assets/css/EmployeeManagement.css';
-
+import API_BASE_URL from '../config/api.js';
 const EmployeeManagement = () => {
   const [activeTab, setActiveTab] = useState('employees');
   const [showBranchForm, setShowBranchForm] = useState(false);
@@ -68,7 +68,7 @@ const EmployeeManagement = () => {
         formData.append('documents', doc);
       });
   
-      const response = await fetch('http://localhost:5000/api/employees', {
+      const response = await fetch(`${API_BASE_URL}/api/employees`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

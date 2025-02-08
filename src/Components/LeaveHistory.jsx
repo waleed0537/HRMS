@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Download, FileText } from 'lucide-react';
 import '../assets/css/LeaveHistory.css';
+import API_BASE_URL from '../config/api.js';
 const LeaveHistory = () => {
   const [employees, setEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState('');
@@ -33,7 +34,7 @@ const LeaveHistory = () => {
 
   const fetchEmployees = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/employees', {
+      const response = await fetch(`${API_BASE_URL}/api/employees`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -52,7 +53,7 @@ const LeaveHistory = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`http://localhost:5000/api/leaves?employeeEmail=${encodeURIComponent(email)}`, {
+      const response = await fetch(`${API_BASE_URL}/api/leaves?employeeEmail=${encodeURIComponent(email)}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

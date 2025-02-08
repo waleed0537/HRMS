@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import '../assets/css/BranchAnnouncementForm.css';
-
+import API_BASE_URL from '../config/api.js';
 const BranchAnnouncementForm = ({ user, onAnnouncementCreated }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -14,7 +14,7 @@ const BranchAnnouncementForm = ({ user, onAnnouncementCreated }) => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/announcements', {
+      const response = await fetch(`${API_BASE_URL}/api/announcements`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

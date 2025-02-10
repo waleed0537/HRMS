@@ -13,6 +13,7 @@ const Leave = require('../Backend/models/Leave');
 const Branch = require('../Backend/models/branch');
 const Announcement = require('../Backend/models/Announcement'); // Make sure to import the model
 const Notification =  require('../Backend/models/Notification');
+const Holiday = require('../Backend/models/Holiday');
 
 const Attendance = require('../Backend/models/Attendance');
 
@@ -1353,12 +1354,56 @@ app.get('/api/attendance', authenticateToken, async (req, res) => {
     });
   }
 });
-// Add this endpoint to server.js
 
+// Add to server.js
 
+// Get all holidays
+app.get('/api/holidays', authenticateToken, async (req, res) => {
+  try {
+    const holidays = await Holiday.find().sort({ holidayDate: 1 });
+    res.json(holidays);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
+// Add new holiday
+app.post('/api/holidays', authenticateToken, checkPermission, async (req, res) => {
+  try {
+    const { holidayName, holidayDate } = req.body;
+    
+    // Convert date string to Date object
+    const date = new Date(holidayDate);
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const holidayDay = days[date.getDay()];
 
-// Add this route to server.js after your other attendance routes
+    const holiday = new Holiday({
+      holidayName,
+      holidayDate: date,
+      holidayDay
+    });
+
+    const newHoliday = await holiday.save();
+    res.status(201).json(newHoliday);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Delete holiday
+app.delete('/api/holidays/:id', authenticateToken, checkPermission, async (req, res) => {
+  try {
+    const holiday = await Holiday.findById(req.params.id);
+    if (!holiday) {
+      return res.status(404).json({ message: 'Holiday not found' });
+    }
+    await holiday.remove();
+    res.json({ message: 'Holiday deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 
 
 const PORT = process.env.PORT || 5000;

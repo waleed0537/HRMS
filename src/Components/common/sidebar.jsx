@@ -110,13 +110,19 @@ const Sidebar = ({ user }) => {
               </NavLink>
             </>
           )}
-
+  
           {isAdmin && (
             <NavLink to="/leave-history" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <History className="h-5 w-5" />
               <span>Leave History & Quotas</span>
             </NavLink>
           )}
+          {(isAdmin || user?.role === 'hr_manager') && (
+  <NavLink to="/holidays" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+    <Calendar className="h-5 w-5" />
+    <span>Holidays</span>
+  </NavLink>
+)}
 
           <div className="section-divider">Finance</div>
           <NavLink to="/accounts" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>

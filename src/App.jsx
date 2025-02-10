@@ -16,6 +16,7 @@ import BranchManagement from './Components/BranchManagement';
 import AdminDashboard from './Components/AdminDashboard';
 import AttendanceManagement from './Components/AttendanceManagement';
 import EmployeeDashboard from './Components/EmployeeDashboard';
+import Holiday from './Components/Holiday';
 import '../src/assets/css/global.css';
 
 function App() {
@@ -127,6 +128,16 @@ function App() {
                 )
               }
             />
+            <Route
+  path="/holidays"
+  element={
+    user?.isAdmin || user?.role === 'hr_manager' ? (
+      <Holiday />
+    ) : (
+      <Navigate to="/dashboard" replace />
+    )
+  }
+/>
             <Route
               path="/branch-management"
               element={

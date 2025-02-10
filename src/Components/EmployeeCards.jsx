@@ -71,9 +71,10 @@ const EmployeeCards = () => {
   };
 
   const getInitials = (name) => {
+    if (!name) return '';
     return name
       .split(' ')
-      .map(word => word[0])
+      .map(part => part[0])
       .join('')
       .toUpperCase();
   };
@@ -149,9 +150,9 @@ const EmployeeCards = () => {
             {filteredEmployees.map((emp) => (
               <div key={emp._id} className="employee-card">
                 <div className="employee-header">
-                  <div className="employee-avatar">
-                    {getInitials(emp.personalDetails.name)}
-                  </div>
+                <div className="employee-avatar">
+  {getInitials(emp.personalDetails.name)}
+</div>
                   <div className="employee-info">
                     <h3>{emp.personalDetails.name}</h3>
                     <p className="role">{emp.professionalDetails.role}</p>

@@ -1,19 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
-  Users, 
-  LayoutDashboard, 
-  CircleDollarSign, 
-  AppWindow, 
-  Menu, 
-  X,
-  UserPlus,
-  Calendar,
-  FileText,
-  History,
-  UserSquare2,
-  Building,
-  Clock
+  Users, LayoutDashboard, CircleDollarSign, AppWindow, Menu, X,
+  UserPlus, Calendar, FileText, History, UserSquare2, Building, Clock
 } from 'lucide-react';
 import '../../assets/css/sidebar.css';
 
@@ -48,12 +37,11 @@ const Sidebar = ({ user }) => {
         <div className="logo-section">
           <div className="logo-icon">
             <Users className="h-6 w-6 text-[#474787]" />
+            <span className="logo-text">My-Task</span>
           </div>
-          <span className="logo-text">My-Task</span>
         </div>
 
         <nav className="nav-container">
-          {/* Dashboard Navigation */}
           {isAdmin ? (
             <NavLink to="/admin-dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <LayoutDashboard className="h-5 w-5" />
@@ -66,7 +54,6 @@ const Sidebar = ({ user }) => {
             </NavLink>
           )}
 
-          {/* Employees Section */}
           {userRole !== 'employee' && (
             <>
               <div className="section-divider">Employees</div>
@@ -77,14 +64,12 @@ const Sidebar = ({ user }) => {
             </>
           )}
 
-          {/* Profile & Leave Request - For all non-admin users */}
           {!isAdmin && (
             <>
               <NavLink to="/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <UserSquare2 className="h-5 w-5" />
                 <span>My Profile</span>
               </NavLink>
-
               <NavLink to="/leave-request" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <Calendar className="h-5 w-5" />
                 <span>Submit Leave Request</span>
@@ -92,40 +77,33 @@ const Sidebar = ({ user }) => {
             </>
           )}
 
-          {/* Admin & HR Section */}
           {(isAdmin || user?.role === 'hr_manager') && (
             <>
               <div className="section-divider">Administration</div>
-              
               {isAdmin && (
                 <>
                   <NavLink to="/staff-requests" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                     <UserPlus className="h-5 w-5" />
                     <span>Staff Requests</span>
                   </NavLink>
-                  
                   <NavLink to="/manage-employees" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                     <Users className="h-5 w-5" />
                     <span>Manage Employees</span>
                   </NavLink>
-
                   <NavLink to="/branch-management" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                     <Building className="h-5 w-5" />
                     <span>Branch Management</span>
                   </NavLink>
                 </>
               )}
-
               <NavLink to="/attendance" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <Clock className="h-5 w-5" />
                 <span>Attendance</span>
               </NavLink>
-
               <NavLink to="/edit-profiles" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <FileText className="h-5 w-5" />
                 <span>Edit Profiles</span>
               </NavLink>
-
               <NavLink to="/manage-leaves" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <FileText className="h-5 w-5" />
                 <span>Manage Leaves</span>
@@ -133,7 +111,6 @@ const Sidebar = ({ user }) => {
             </>
           )}
 
-          {/* Admin Only Sections */}
           {isAdmin && (
             <NavLink to="/leave-history" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <History className="h-5 w-5" />
@@ -141,7 +118,6 @@ const Sidebar = ({ user }) => {
             </NavLink>
           )}
 
-          {/* Common Sections */}
           <div className="section-divider">Finance</div>
           <NavLink to="/accounts" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             <CircleDollarSign className="h-5 w-5" />
@@ -156,7 +132,7 @@ const Sidebar = ({ user }) => {
         </nav>
       </div>
       
-      {isMobileMenuOpen && <div className="overlay" onClick={toggleMobileMenu}></div>}
+      {isMobileMenuOpen && <div className="overlay" onClick={toggleMobileMenu} />}
     </>
   );
 };

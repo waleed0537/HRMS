@@ -17,6 +17,8 @@ import AdminDashboard from './Components/AdminDashboard';
 import AttendanceManagement from './Components/AttendanceManagement';
 import EmployeeDashboard from './Components/EmployeeDashboard';
 import Holiday from './Components/Holiday';
+import ApplicantForm from './Components/ApplicantForm';
+import ApplicantsManagement from './Components/ApplicantsManagement';
 import '../src/assets/css/global.css';
 
 function App() {
@@ -58,6 +60,18 @@ function App() {
     return <div>Loading...</div>;
   }
 
+  // Special routes that don't require authentication
+  const publicRoutes = ['/apply'];
+  const currentPath = window.location.pathname;
+  
+  if (publicRoutes.includes(currentPath)) {
+    return (
+      <Routes>
+        <Route path="/apply" element={<ApplicantForm />} />
+      </Routes>
+    );
+  }
+
   if (!isAuthenticated) {
     return <SignIn onLogin={handleLogin} />;
   }
@@ -76,7 +90,7 @@ function App() {
                 : <Navigate to="/dashboard" replace />
             } />
 
-            {/* Dashboard routes */}
+            {/* All your existing routes... */}
             <Route path="/dashboard" element={
               !user?.isAdmin ? (
                 <EmployeeDashboard />
@@ -84,119 +98,131 @@ function App() {
                 <Navigate to="/admin-dashboard" replace />
               )
             } />
-            <Route path="/admin-dashboard" element={
-              user?.isAdmin ? (
-                <AdminDashboard />
-              ) : (
-                <Navigate to="/dashboard" replace />
-              )
-            } />
-            {/* Attendance Management Route */}
-            <Route
-              path="/attendance"
-              element={
-                user?.isAdmin || user?.role === 'hr_manager' ? (
-                  <AttendanceManagement />
+              <Route path="/admin-dashboard" element={
+                user?.isAdmin ? (
+                  <AdminDashboard />
                 ) : (
                   <Navigate to="/dashboard" replace />
                 )
-              }
-            />
-            {/* Common Routes */}
-            <Route path="/employees" element={<EmployeeCards />} />
-            <Route path="/leave-request" element={<LeaveRequest />} />
-            <Route path="/profile" element={<EmployeeProfile />} />
+              } />
+              {/* Attendance Management Route */}
+              <Route
+                path="/attendance"
+                element={
+                  user?.isAdmin || user?.role === 'hr_manager' ? (
+                    <AttendanceManagement />
+                  ) : (
+                    <Navigate to="/dashboard" replace />
+                  )
+                }
+              />
+              {/* Common Routes */}
+              <Route path="/employees" element={<EmployeeCards />} />
+              <Route path="/leave-request" element={<LeaveRequest />} />
+              <Route path="/profile" element={<EmployeeProfile />} />
 
-            {/* Admin Only Routes */}
-            <Route
-              path="/staff-requests"
-              element={
-                user?.isAdmin ? (
-                  <StaffRequests />
-                ) : (
-                  <Navigate to="/dashboard" replace />
-                )
-              }
-            />
-            <Route
-              path="/manage-employees"
-              element={
-                user?.isAdmin ? (
-                  <EmployeeManagement />
-                ) : (
-                  <Navigate to="/dashboard" replace />
-                )
-              }
-            />
-            <Route
-  path="/holidays"
+              {/* Admin Only Routes */}
+              <Route
+                path="/staff-requests"
+                element={
+                  user?.isAdmin ? (
+                    <StaffRequests />
+                  ) : (
+                    <Navigate to="/dashboard" replace />
+                  )
+                }
+              />
+              
+              <Route
+  path="/applicants"
   element={
     user?.isAdmin || user?.role === 'hr_manager' ? (
-      <Holiday />
+      <ApplicantsManagement />
     ) : (
       <Navigate to="/dashboard" replace />
     )
   }
 />
-            <Route
-              path="/branch-management"
-              element={
-                user?.isAdmin ? (
-                  <BranchManagement />
-                ) : (
-                  <Navigate to="/dashboard" replace />
-                )
-              }
-            />
+              <Route
+                path="/manage-employees"
+                element={
+                  user?.isAdmin ? (
+                    <EmployeeManagement />
+                  ) : (
+                    <Navigate to="/dashboard" replace />
+                  )
+                }
+              />
+              <Route
+    path="/holidays"
+    element={
+      user?.isAdmin || user?.role === 'hr_manager' ? (
+        <Holiday />
+      ) : (
+        <Navigate to="/dashboard" replace />
+      )
+    }
+  />
+              <Route
+                path="/branch-management"
+                element={
+                  user?.isAdmin ? (
+                    <BranchManagement />
+                  ) : (
+                    <Navigate to="/dashboard" replace />
+                  )
+                }
+              />
 
-            {/* Admin & HR Manager Routes */}
-            <Route
-              path="/edit-profiles"
-              element={
-                user?.isAdmin || user?.role === 'hr_manager' ? (
-                  <EditProfiles />
-                ) : (
-                  <Navigate to="/dashboard" replace />
-                )
-              }
-            />
-            <Route
-              path="/manage-leaves"
-              element={
-                user?.isAdmin || user?.role === 'hr_manager' ? (
-                  <ManageLeaves />
-                ) : (
-                  <Navigate to="/dashboard" replace />
-                )
-              }
-            />
+              {/* Admin & HR Manager Routes */}
+              <Route
+                path="/edit-profiles"
+                element={
+                  user?.isAdmin || user?.role === 'hr_manager' ? (
+                    <EditProfiles />
+                  ) : (
+                    <Navigate to="/dashboard" replace />
+                  )
+                }
+              />
+              <Route
+                path="/manage-leaves"
+                element={
+                  user?.isAdmin || user?.role === 'hr_manager' ? (
+                    <ManageLeaves />
+                  ) : (
+                    <Navigate to="/dashboard" replace />
+                  )
+                }
+              />
 
-            {/* Admin Only Routes */}
-            <Route
-              path="/leave-history"
-              element={
-                user?.isAdmin ? (
-                  <LeaveHistory />
-                ) : (
-                  <Navigate to="/dashboard" replace />
-                )
-              }
-            />
+              {/* Admin Only Routes */}
+              <Route
+                path="/leave-history"
+                element={
+                  user?.isAdmin ? (
+                    <LeaveHistory />
+                  ) : (
+                    <Navigate to="/dashboard" replace />
+                  )
+                }
+              />
 
-            {/* Other Routes */}
-            <Route path="/projects" element={<div>Projects Page</div>} />
-            <Route path="/tickets" element={<div>Tickets Page</div>} />
-            <Route path="/clients" element={<div>Clients Page</div>} />
-            <Route path="/accounts" element={<div>Accounts Page</div>} />
-            <Route path="/payroll" element={<div>Payroll Page</div>} />
-            <Route path="/app" element={<div>App Page</div>} />
-            <Route path="/other-pages" element={<div>Other Pages</div>} />
-            <Route path="/ui-components" element={<div>UI Components</div>} />
-          </Routes>
-        </main>
+              {/* Other Routes */}
+              <Route path="/projects" element={<div>Projects Page</div>} />
+              <Route path="/tickets" element={<div>Tickets Page</div>} />
+              <Route path="/clients" element={<div>Clients Page</div>} />
+              <Route path="/accounts" element={<div>Accounts Page</div>} />
+              <Route path="/payroll" element={<div>Payroll Page</div>} />
+              <Route path="/app" element={<div>App Page</div>} />
+              <Route path="/other-pages" element={<div>Other Pages</div>} />
+              <Route path="/ui-components" element={<div>UI Components</div>} />
+              <Route path="/apply" element={<ApplicantForm />} />
+            </Routes>
+          </main>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-export default App;
+  export default App;

@@ -14,13 +14,44 @@ const Branch = require('../Backend/models/branch');
 const Announcement = require('../Backend/models/Announcement'); // Make sure to import the model
 const Notification =  require('../Backend/models/Notification');
 const Holiday = require('../Backend/models/Holiday');
-
+const Applicant = require('../Backend/models/Applicant');
 const Attendance = require('../Backend/models/Attendance');
 
 
 const app = express();
 const JWT_SECRET = 'your-jwt-secret-key';
+// Create the uploads/resumes directory if it doesn't exist
+if (!fs.existsSync('./uploads/resumes')) {
+  fs.mkdirSync('./uploads/resumes', { recursive: true });
+}
 
+// Configure multer for resume uploads
+const resumeStorage = multer.diskStorage({
+  destination: function(req, file, cb) {
+    cb(null, './uploads/resumes/');
+  },
+  filename: function(req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'resume-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const resumeUpload = multer({
+  storage: resumeStorage,
+  fileFilter: function(req, file, cb) {
+    // Accept only pdf and doc/docx files
+    if (file.mimetype === 'application/pdf' || 
+        file.mimetype === 'application/msword' || 
+        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF and Word documents are allowed!'), false);
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB max file size
+  }
+});
 app.get('/', (req, res) => {
   res.json({ message: 'HRMS API is running' });
 });
@@ -1405,6 +1436,190 @@ app.delete('/api/holidays/:id', authenticateToken, checkPermission, async (req, 
 });
 
 
+
+const uploadResume = multer({
+  storage: resumeStorage,
+  limits: { fileSize: 5000000 }, // 5MB limit
+  fileFilter: function(req, file, cb) {
+    const filetypes = /pdf|doc|docx/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error('Only PDF and Word documents are allowed!'));
+  }
+});
+
+// Create directory for resume uploads if it doesn't exist
+if (!fs.existsSync('./uploads/resumes')) {
+  fs.mkdirSync('./uploads/resumes', { recursive: true });
+}
+
+// Submit new job application
+app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
+  console.log('Received application:', req.body);
+  console.log('File:', req.file);
+
+  try {
+    const {
+      name,
+      email,
+      phone,
+      address,
+      position,
+      branch
+    } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !phone || !address || !position || !branch) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required'
+      });
+    }
+
+    // Check if applicant already exists
+    const existingApplicant = await Applicant.findOne({
+      'personalDetails.email': email,
+      'jobDetails.position': position,
+      status: { $in: ['pending', 'reviewed', 'shortlisted'] }
+    });
+
+    if (existingApplicant) {
+      return res.status(400).json({
+        success: false,
+        message: 'You have already applied for this position'
+      });
+    }
+
+    // Create new applicant
+    const applicant = new Applicant({
+      personalDetails: {
+        name,
+        email,
+        phone,
+        address
+      },
+      jobDetails: {
+        position,
+        branch
+      },
+      resume: req.file ? {
+        filename: req.file.originalname,
+        path: req.file.path
+      } : undefined,
+      status: 'pending'
+    });
+
+    await applicant.save();
+
+    // Send success response
+    res.status(201).json({
+      success: true,
+      message: 'Application submitted successfully',
+      data: {
+        name: applicant.personalDetails.name,
+        email: applicant.personalDetails.email,
+        position: applicant.jobDetails.position
+      }
+    });
+
+  } catch (error) {
+    console.error('Error submitting application:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit application',
+      error: error.message
+    });
+  }
+});
+
+// Get all applications (Admin only)
+app.get('/api/applicants', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const { status, position, branch } = req.query;
+    const query = {};
+
+    if (status) query.status = status;
+    if (position) query['jobDetails.position'] = position;
+    if (branch) query['jobDetails.branch'] = branch;
+
+    const applicants = await Applicant.find(query)
+      .sort({ createdAt: -1 });
+
+    res.json(applicants);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error fetching applications',
+      error: error.message
+    });
+  }
+});
+
+// Update application status (Admin only)
+app.put('/api/applicants/:id/status', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['pending', 'reviewed', 'shortlisted', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const applicant = await Applicant.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+
+    if (!applicant) {
+      return res.status(404).json({ message: 'Applicant not found' });
+    }
+
+    // Send email notification to applicant about status update
+    // Note: Implement your email sending logic here
+
+    res.json(applicant);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error updating application status',
+      error: error.message
+    });
+  }
+});
+
+// Get application details (Admin only)
+app.get('/api/applicants/:id', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const applicant = await Applicant.findById(req.params.id);
+    if (!applicant) {
+      return res.status(404).json({ message: 'Applicant not found' });
+    }
+    res.json(applicant);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error fetching applicant details',
+      error: error.message
+    });
+  }
+});
+
+// Download resume
+app.get('/api/applicants/:id/resume', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const applicant = await Applicant.findById(req.params.id);
+    if (!applicant || !applicant.resume) {
+      return res.status(404).json({ message: 'Resume not found' });
+    }
+
+    res.download(applicant.resume.path, applicant.resume.filename);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error downloading resume',
+      error: error.message
+    });
+  }
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

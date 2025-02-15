@@ -7,6 +7,7 @@ import API_BASE_URL from '../config/api.js';
 const SignIn = ({ onLogin }) => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
+  const [showApplyInfo, setShowApplyInfo] = useState(false);
   const [formData, setFormData] = useState({
     // Personal Details
     name: '',
@@ -41,9 +42,7 @@ const SignIn = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
-      // Validation for signup
       if (!isLogin) {
-        // Check for empty fields
         const requiredFields = ['name', 'contact', 'email', 'address', 'branch', 'department', 'password', 'confirmPassword'];
         const missingFields = requiredFields.filter(field => !formData[field]);
         
@@ -109,6 +108,10 @@ const SignIn = ({ onLogin }) => {
     }
   };
 
+  const handleApplyClick = () => {
+    navigate('/apply');
+  };
+
   return (
     <div className="auth-container">
       <div className="auth-form-container">
@@ -124,7 +127,7 @@ const SignIn = ({ onLogin }) => {
           </div>
         )}
         
-        <form className="auth-form" onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="auth-form">
           {!isLogin && (
             <>
               <div className="form-section">
@@ -171,23 +174,6 @@ const SignIn = ({ onLogin }) => {
               <div className="form-section">
                 <h3>Professional Details</h3>
                 <div className="form-field">
-                  <Briefcase className="field-icon" />
-                  <select
-                    name="role"
-                    value={formData.role}
-                    onChange={handleChange}
-                    className="form-input form-select"
-                    required
-                  >
-                    <option value="employee">Employee</option>
-                    <option value="agent">Agent</option>
-                    <option value="hr_manager">HR Manager</option>
-                    <option value="t1_member">T1 Member</option>
-                    <option value="operational_manager">Operational Manager</option>
-                  </select>
-                </div>
-
-                <div className="form-field">
                   <Building className="field-icon" />
                   <input
                     name="branch"
@@ -211,22 +197,6 @@ const SignIn = ({ onLogin }) => {
                     className="form-input"
                     placeholder="Department"
                   />
-                </div>
-
-                <div className="form-field">
-                  <User className="field-icon" />
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChange}
-                    className="form-input form-select"
-                    required
-                  >
-                    <option value="active">Active</option>
-                    <option value="resigned">Resigned</option>
-                    <option value="terminated">Terminated</option>
-                    <option value="on_leave">On Leave</option>
-                  </select>
                 </div>
               </div>
             </>
@@ -286,7 +256,7 @@ const SignIn = ({ onLogin }) => {
               (isLogin ? 'Sign in' : 'Sign up')}
           </button>
 
-          <div className="toggle-auth">
+          <div className="auth-links">
             <button
               type="button"
               onClick={() => {
@@ -294,7 +264,7 @@ const SignIn = ({ onLogin }) => {
                 setError('');
                 setFormData({
                   name: '', contact: '', email: '', address: '',
-                  role: 'agent', branch: '', department: '', status: 'active',
+                  role: 'employee', branch: '', department: '', status: 'active',
                   password: '', confirmPassword: ''
                 });
               }}
@@ -304,8 +274,34 @@ const SignIn = ({ onLogin }) => {
                 ? 'Need an account? Sign up' 
                 : 'Already have an account? Sign in'}
             </button>
+
+            <div className="apply-section">
+              <p>Looking for a job?</p>
+              <button
+                type="button"
+                onClick={handleApplyClick}
+                className="apply-button"
+              >
+                Apply Now
+              </button>
+            </div>
           </div>
         </form>
+
+        {showApplyInfo && (
+          <div className="info-modal">
+            <div className="info-content">
+              <h3>Join Our Team!</h3>
+              <p>Submit your application and take the first step towards your new career.</p>
+              <button onClick={handleApplyClick} className="apply-now-button">
+                Go to Application Form
+              </button>
+              <button onClick={() => setShowApplyInfo(false)} className="close-button">
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

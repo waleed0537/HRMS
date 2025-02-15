@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
+import {
   Users, LayoutDashboard, CircleDollarSign, AppWindow, Menu, X,
   UserPlus, Calendar, FileText, History, UserSquare2, Building, Clock
 } from 'lucide-react';
@@ -110,7 +110,7 @@ const Sidebar = ({ user }) => {
               </NavLink>
             </>
           )}
-  
+
           {isAdmin && (
             <NavLink to="/leave-history" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <History className="h-5 w-5" />
@@ -118,12 +118,17 @@ const Sidebar = ({ user }) => {
             </NavLink>
           )}
           {(isAdmin || user?.role === 'hr_manager') && (
-  <NavLink to="/holidays" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-    <Calendar className="h-5 w-5" />
-    <span>Holidays</span>
-  </NavLink>
-)}
-
+            <NavLink to="/holidays" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <Calendar className="h-5 w-5" />
+              <span>Holidays</span>
+            </NavLink>
+          )}
+          {(isAdmin || user?.role === 'hr_manager') && (
+            <NavLink to="/applicants" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <Users className="h-5 w-5" />
+              <span>Job Applications</span>
+            </NavLink>
+          )}
           <div className="section-divider">Finance</div>
           <NavLink to="/accounts" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             <CircleDollarSign className="h-5 w-5" />
@@ -137,7 +142,7 @@ const Sidebar = ({ user }) => {
           </NavLink>
         </nav>
       </div>
-      
+
       {isMobileMenuOpen && <div className="overlay" onClick={toggleMobileMenu} />}
     </>
   );

@@ -32,22 +32,32 @@ const EmployeeCards = () => {
     }
   };
 
-  const fetchEmployees = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/employees`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch employees');
-      const data = await response.json();
-      setEmployees(data);
-      setLoading(false);
-    } catch (err) {
-      setError(err.message);
-      setLoading(false);
+// In EmployeeCards.jsx
+
+const fetchEmployees = async () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const endpoint = user.role === 'hr_manager' ? '/api/hr/employees' : '/api/employees';
+    
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch employees');
     }
-  };
+
+    const data = await response.json();
+    setEmployees(data);
+    setLoading(false);
+  } catch (err) {
+    console.error('Error fetching employees:', err);
+    setError(err.message);
+    setLoading(false);
+  }
+};
 
   const handleProfileClick = (emp) => {
     const formattedEmployee = {

@@ -25,52 +25,27 @@ const ApplicantsManagement = () => {
     useEffect(() => {
         fetchApplicants();
     }, []);
-    useEffect(() => {
-        // Log API URL configuration
-        console.log('API_BASE_URL:', API_BASE_URL);
-        console.log('Full API URL:', `${API_BASE_URL}/api/applicants`);
-    }, []);
 
     const fetchApplicants = async () => {
         try {
-            // Get token and log it (first few characters)
-            const token = localStorage.getItem('token');
-            console.log('Token available:', !!token);
-            if (token) {
-                console.log('Token preview:', token.substring(0, 10) + '...');
-            }
-    
-            // Log the full URL being called
-            console.log('Fetching from URL:', `${API_BASE_URL}/api/applicants`);
-    
-            const response = await fetch(`${API_BASE_URL}/api/applicants`, {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const endpoint = user.role === 'hr_manager' ? '/api/hr/applicants' : '/api/applicants';
+            
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-    
-            // Log response status
-            console.log('Response status:', response.status);
-    
+
             if (!response.ok) {
-                // Try to get error details from response
-                let errorDetail;
-                try {
-                    errorDetail = await response.json();
-                } catch (e) {
-                    errorDetail = await response.text();
-                }
-                console.error('Error detail:', errorDetail);
-                throw new Error(`Failed to fetch applicants: ${response.status} ${response.statusText}`);
+                throw new Error('Failed to fetch applicants');
             }
-    
+
             const data = await response.json();
-            console.log('Fetched applicants:', data);
             setApplicants(data);
             setFilteredApplicants(data);
         } catch (err) {
-            console.error('Full error:', err);
+            console.error('Error fetching applicants:', err);
             setError(err.message);
         } finally {
             setLoading(false);
@@ -143,20 +118,6 @@ const ApplicantsManagement = () => {
         // Status filter
         if (filters.status) {
             result = result.filter(app => app.status === filters.status);
-        }
-
-        // Position filter
-        if (filters.position) {
-            result = result.filter(app => 
-                app.jobDetails?.position?.toLowerCase() === filters.position.toLowerCase()
-            );
-        }
-
-        // Branch filter
-        if (filters.branch) {
-            result = result.filter(app => 
-                app.jobDetails?.branch?.toLowerCase() === filters.branch.toLowerCase()
-            );
         }
 
         setFilteredApplicants(result);
@@ -305,127 +266,105 @@ const ApplicantsManagement = () => {
             />
 
 {selectedApplicant && (
-    <div className="modal-overlay">
-        <div className="applicant-modal">
-            <div className="modal-header">
-                <div className="modal-avatar">
-                    {selectedApplicant.personalDetails?.name?.[0]?.toUpperCase() || '?'}
-                </div>
-                <div className="modal-title">
-                    <h2>{selectedApplicant.personalDetails?.name || 'Not provided'}</h2>
-                    <p className="modal-subtitle">
-                        {selectedApplicant.jobDetails?.position || 'Position not specified'}
-                    </p>
-                    <span className={`status-badge ${selectedApplicant.status}`}>
-                        {getStatusIcon(selectedApplicant.status)}
-                        {(selectedApplicant.status || 'pending').toUpperCase()}
-                    </span>
-                </div>
-                <button className="close-modal" onClick={() => setSelectedApplicant(null)}>
-                    <XCircle size={24} />
-                </button>
-            </div>
-
-            <div className="modal-sections">
-                <div className="modal-section">
-                    <h3 className="section-title">
-                        <User className="section-icon" />
-                        Personal Information
-                    </h3>
-                    <div className="info-grid">
-                        <div className="info-item">
-                            <label>Full Name</label>
-                            <p>{selectedApplicant.personalDetails?.name || 'Not provided'}</p>
-                        </div>
-                        <div className="info-item">
-                            <label>Email</label>
-                            <p>{selectedApplicant.personalDetails?.email || 'Not provided'}</p>
-                        </div>
-                        <div className="info-item">
-                            <label>Phone</label>
-                            <p>{selectedApplicant.personalDetails?.phone || 'Not provided'}</p>
-                        </div>
-                        <div className="info-item">
-                            <label>Gender</label>
-                            <p>{selectedApplicant.personalDetails?.gender || 'Not provided'}</p>
-                        </div>
-                        {Object.entries(selectedApplicant.personalDetails || {})
-                            .filter(([key]) => !['name', 'email', 'phone', 'gender'].includes(key))
-                            .map(([key, value]) => (
-                                <div key={key} className="info-item">
-                                    <label>{key}</label>
-                                    <p>{value || 'Not provided'}</p>
-                                </div>
-                            ))}
-                    </div>
-                </div>
-
-                <div className="modal-section">
-                    <h3 className="section-title">
-                        <Briefcase className="section-icon" />
-                        Application Details
-                    </h3>
-                    <div className="info-grid">
-                        <div className="info-item">
-                            <label>Position</label>
-                            <p>{selectedApplicant.jobDetails?.position || 'Not provided'}</p>
-                        </div>
-                        <div className="info-item">
-                            <label>Branch</label>
-                            <p>{selectedApplicant.jobDetails?.branch || 'Not provided'}</p>
-                        </div>
-                        {Object.entries(selectedApplicant.jobDetails || {})
-                            .filter(([key]) => !['position', 'branch'].includes(key))
-                            .map(([key, value]) => (
-                                <div key={key} className="info-item">
-                                    <label>{key}</label>
-                                    <p>{value || 'Not provided'}</p>
-                                </div>
-                            ))}
-                    </div>
-                </div>
-
-                {selectedApplicant.resume && (
-                    <div className="modal-section">
-                        <h3 className="section-title">
-                            <FileText className="section-icon" />
-                            Resume
-                        </h3>
-                        <div className="resume-container">
-                            <p className="resume-filename">{selectedApplicant.resume.filename}</p>
-                            <button 
-                                className="download-button"
-                                onClick={() => downloadResume(selectedApplicant._id, selectedApplicant.resume.filename)}
-                            >
-                                <Download size={18} />
-                                Download Resume
+                <div className="modal-overlay">
+                    <div className="applicant-modal">
+                        <div className="modal-header">
+                            <button className="close-modal" onClick={() => setSelectedApplicant(null)}>
+                                <X size={24} />
                             </button>
+                            <div className="modal-title">
+                                <h2>{selectedApplicant.personalDetails?.name || 'Applicant Details'}</h2>
+                                <p className="modal-subtitle">
+                                    {selectedApplicant.jobDetails?.position || 'Position not specified'}
+                                </p>
+                                <span className={`status-badge ${selectedApplicant.status}`}>
+                                    {getStatusIcon(selectedApplicant.status)}
+                                    {(selectedApplicant.status || 'pending').toUpperCase()}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="modal-sections">
+                            <div className="modal-section">
+                                <h3 className="section-title">
+                                    <User className="section-icon" />
+                                    Personal Information
+                                </h3>
+                                <div className="info-grid">
+                                    <div className="info-item">
+                                        <label>Full Name</label>
+                                        <p>{selectedApplicant.personalDetails?.name || 'Not provided'}</p>
+                                    </div>
+                                    <div className="info-item">
+                                        <label>Email</label>
+                                        <p>{selectedApplicant.personalDetails?.email || 'Not provided'}</p>
+                                    </div>
+                                    <div className="info-item">
+                                        <label>Phone</label>
+                                        <p>{selectedApplicant.personalDetails?.phone || 'Not provided'}</p>
+                                    </div>
+                                    <div className="info-item">
+                                        <label>Gender</label>
+                                        <p>{selectedApplicant.personalDetails?.gender || 'Not provided'}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="modal-section">
+                                <h3 className="section-title">
+                                    <Briefcase className="section-icon" />
+                                    Professional Information
+                                </h3>
+                                <div className="info-grid">
+                                    <div className="info-item">
+                                        <label>Position</label>
+                                        <p>{selectedApplicant.jobDetails?.position || 'Not provided'}</p>
+                                    </div>
+                                    <div className="info-item">
+                                        <label>Branch</label>
+                                        <p>{selectedApplicant.jobDetails?.branchName || 'Not provided'}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {selectedApplicant.resume && (
+                                <div className="modal-section">
+                                    <h3 className="section-title">
+                                        <FileText className="section-icon" />
+                                        Resume
+                                    </h3>
+                                    <div className="resume-container">
+                                        <p className="resume-filename">{selectedApplicant.resume.filename}</p>
+                                        <button 
+                                            className="download-button"
+                                            onClick={() => downloadResume(selectedApplicant._id, selectedApplicant.resume.filename)}
+                                        >
+                                            <Download size={18} />
+                                            Download Resume
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="modal-section">
+                                <h3 className="section-title">Status Update</h3>
+                                <div className="status-update-container">
+                                    <select
+                                        value={selectedApplicant.status}
+                                        onChange={(e) => handleStatusUpdate(selectedApplicant._id, e.target.value)}
+                                        className={`status-select-large ${selectedApplicant.status}`}
+                                    >
+                                        <option value="pending">Pending</option>
+                                        <option value="reviewed">Reviewed</option>
+                                        <option value="shortlisted">Shortlisted</option>
+                                        <option value="rejected">Rejected</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                )}
-
-                <div className="modal-section">
-                    <h3 className="section-title">Status Update</h3>
-                    <div className="status-update-container">
-                        <select
-                            value={selectedApplicant.status}
-                            onChange={(e) => handleStatusUpdate(selectedApplicant._id, e.target.value)}
-                            className={`status-select-large ${selectedApplicant.status}`}
-                        >
-                            <option value="pending">Pending</option>
-                            <option value="reviewed">Reviewed</option>
-                            <option value="shortlisted">Shortlisted</option>
-                            <option value="rejected">Rejected</option>
-                        </select>
-                        <p className="status-help-text">
-                            Change the application status to track the candidate's progress
-                        </p>
-                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
-)}
+            )}
         </div>
     );
 };

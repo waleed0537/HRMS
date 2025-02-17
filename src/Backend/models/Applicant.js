@@ -1,4 +1,3 @@
-// models/Applicant.js
 const mongoose = require('mongoose');
 
 const applicantSchema = new mongoose.Schema({
@@ -11,6 +10,10 @@ const applicantSchema = new mongoose.Schema({
     type: Map,
     of: mongoose.Schema.Types.Mixed,
     required: true
+  },
+  branchName: {
+    type: String,
+    required: false
   },
   resume: {
     filename: String,
@@ -26,35 +29,28 @@ const applicantSchema = new mongoose.Schema({
     default: 'pending'
   }
 }, {
-  timestamps: true,
-  // Allow fields not specified in the schema
-  strict: false
+  timestamps: true
 });
 
-// Add this to properly handle the email uniqueness
-applicantSchema.index({
-  'personalDetails.email': 1
-}, {
-  unique: true,
-  partialFilterExpression: {
-    'personalDetails.email': { $exists: true, $type: 'string' }
-  },
-  sparse: true
-});
+// Method to get all details in a consistent format
+applicantSchema.methods.getAllDetails = function() {
+  const personalDetails = this.personalDetails instanceof Map ? 
+    Object.fromEntries(this.personalDetails) : 
+    this.personalDetails;
 
-// Helper method to convert Map to Object
-applicantSchema.methods.toJSON = function() {
-  const obj = this.toObject();
-  
-  // Convert Maps to regular objects
-  if (obj.personalDetails instanceof Map) {
-    obj.personalDetails = Object.fromEntries(obj.personalDetails);
-  }
-  if (obj.jobDetails instanceof Map) {
-    obj.jobDetails = Object.fromEntries(obj.jobDetails);
-  }
-  
-  return obj;
+  const jobDetails = this.jobDetails instanceof Map ? 
+    Object.fromEntries(this.jobDetails) : 
+    this.jobDetails;
+
+  return {
+    _id: this._id,
+    personalDetails,
+    jobDetails,
+    branchName: this.branchName,
+    status: this.status,
+    resume: this.resume,
+    createdAt: this.createdAt
+  };
 };
 
 const Applicant = mongoose.model('Applicant', applicantSchema);

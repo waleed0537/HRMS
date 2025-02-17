@@ -1,3 +1,4 @@
+// models/Notification.js
 const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema({
@@ -16,8 +17,13 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['account', 'leave', 'role'],
+    enum: ['account', 'leave', 'role', 'application'],
     required: true
+  },
+  metadata: {
+    branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
+    branchName: String,
+    // Add any other metadata fields that might be useful
   },
   read: {
     type: Boolean,

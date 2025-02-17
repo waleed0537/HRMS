@@ -37,6 +37,7 @@ const resumeStorage = multer.diskStorage({
   }
 });
 
+
 const resumeUpload = multer({
   storage: resumeStorage,
   fileFilter: function(req, file, cb) {
@@ -1461,53 +1462,47 @@ if (!fs.existsSync('./uploads/resumes')) {
   fs.mkdirSync('./uploads/resumes', { recursive: true });
 }
 
-// In server.js or your routes file
-// Submit new job application
+// Server route handler for applicant submission
+// In server.js, update the /api/applicants POST route
+
+// In server.js, update the applicant submission route
+
+// In server.js
+// In server.js, update the applicant submission endpoint
+
 app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
   try {
-    console.log('Received form data:', req.body);
-    
-    // Parse form data
-    let personalDetails = {};
-    let jobDetails = {};
-    
-    // Get all form fields
-    Object.keys(req.body).forEach(key => {
-      // Handle special case for personal details sent as JSON string
-      if (key === 'personalDetails') {
-        try {
-          personalDetails = JSON.parse(req.body.personalDetails);
-        } catch (e) {
-          console.error('Error parsing personalDetails:', e);
-        }
-      }
-      // Handle special case for job details sent as JSON string
-      else if (key === 'jobDetails') {
-        try {
-          jobDetails = JSON.parse(req.body.jobDetails);
-        } catch (e) {
-          console.error('Error parsing jobDetails:', e);
-        }
-      }
-      // Handle regular form fields
-      else {
-        const value = req.body[key];
-        // Determine if field belongs to personal or job details
-        if (['name', 'email', 'phone', 'gender'].includes(key.toLowerCase())) {
-          personalDetails[key] = value;
-        } else {
-          jobDetails[key] = value;
-        }
-      }
+    console.log('Starting application submission');
+    const personalDetails = JSON.parse(req.body.personalDetails);
+    const jobDetails = JSON.parse(req.body.jobDetails);
+    const branchName = jobDetails.branchName || jobDetails.branch;
+
+    console.log('Application details:', {
+      name: personalDetails.name,
+      position: jobDetails.position,
+      branchName: branchName
     });
 
-    // Create new applicant document
+    // Find branch with case-insensitive match
+    const branch = await Branch.findOne({
+      name: { $regex: new RegExp('^' + branchName + '$', 'i') }
+    });
+
+    if (!branch) {
+      console.log('Branch not found:', branchName);
+      throw new Error('Invalid branch specified');
+    }
+
+    console.log('Found branch:', branch);
+
+    // Save applicant
     const applicantData = {
       personalDetails: new Map(Object.entries(personalDetails)),
-      jobDetails: new Map(Object.entries(jobDetails))
+      jobDetails: new Map(Object.entries(jobDetails)),
+      branchName: branch.name, // Use canonical branch name from database
+      status: 'pending'
     };
 
-    // Add resume if uploaded
     if (req.file) {
       applicantData.resume = {
         filename: req.file.originalname,
@@ -1519,21 +1514,69 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
     const applicant = new Applicant(applicantData);
     await applicant.save();
 
-    res.status(201).json({ 
-      success: true,
-      message: 'Application submitted successfully'
+    // Create notifications
+    const notificationPromises = [];
+
+    // Find admins
+    const admins = await User.find({ isAdmin: true });
+    console.log(`Found ${admins.length} admin users`);
+
+    // Notify admins
+    admins.forEach(admin => {
+      notificationPromises.push(
+        new Notification({
+          userId: admin._id,
+          title: 'New Job Application',
+          message: `New application received from ${personalDetails.name} for ${jobDetails.position} position in ${branch.name} branch`,
+          type: 'application',
+          metadata: {
+            branchId: branch._id,
+            branchName: branch.name
+          }
+        }).save()
+      );
     });
-  } catch (error) {
-    console.error('Error submitting application:', error);
-    
-    // Handle duplicate email error
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: 'An application with this email already exists'
+
+    // Find HR manager for the branch
+    if (branch.hrManager) {
+      console.log('Branch HR Manager ID:', branch.hrManager);
+      
+      const hrUser = await User.findOne({
+        $or: [
+          { _id: branch.hrManager },
+          { role: 'hr_manager', branchName: branch.name }
+        ]
       });
+
+      if (hrUser) {
+        console.log('Creating notification for HR manager:', hrUser.email);
+        notificationPromises.push(
+          new Notification({
+            userId: hrUser._id,
+            title: 'New Job Application',
+            message: `New application received from ${personalDetails.name} for ${jobDetails.position} position`,
+            type: 'application',
+            metadata: {
+              branchId: branch._id,
+              branchName: branch.name
+            }
+          }).save()
+        );
+      }
     }
 
+    // Save all notifications
+    const notifications = await Promise.all(notificationPromises);
+    console.log(`Created ${notifications.length} notifications`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Application submitted successfully',
+      notifications: notifications.length
+    });
+
+  } catch (error) {
+    console.error('Error in application submission:', error);
     res.status(400).json({
       success: false,
       message: error.message || 'Failed to submit application'
@@ -1814,6 +1857,334 @@ app.get('/api/public/form-fields', async (req, res) => {
     res.json(fields);
   } catch (error) {
     res.status(500).json({ message: 'Failed to load form fields. Please try again later.' });
+  }
+});
+// Add these HR-specific routes to server.js
+
+// Middleware to check if user is HR manager
+// Add or update this middleware in your server.js
+// Update or add this middleware in your server.js
+const isHrManager = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    console.log('User found:', user ? 'yes' : 'no', 'Role:', user?.role);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if user is HR manager or admin
+    if (user.role === 'hr_manager' || user.isAdmin) {
+      // For HR managers, set their branch. For admin, they can see all
+      if (user.role === 'hr_manager') {
+        if (!user.branchName) {
+          return res.status(400).json({ message: 'HR Manager branch not set' });
+        }
+        req.hrBranch = user.branchName;
+        console.log('HR Manager Branch set to:', req.hrBranch);
+      } else {
+        req.isAdmin = true;
+      }
+      next();
+    } else {
+      res.status(403).json({ message: 'HR Manager access required' });
+    }
+  } catch (error) {
+    console.error('Error in HR manager middleware:', error);
+    res.status(500).json({ message: 'Error checking HR access' });
+  }
+};
+
+// Get branch employees for HR
+app.get('/api/hr/employees', authenticateToken, isHrManager, async (req, res) => {
+  try {
+    const employees = await Employee.aggregate([
+      {
+        $match: {
+          'professionalDetails.branch': req.hrBranch
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      {
+        $unwind: '$user'
+      },
+      {
+        $match: {
+          'user.status': 'approved'
+        }
+      }
+    ]);
+
+    res.json(employees);
+  } catch (error) {
+    console.error('Error fetching branch employees:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get branch leave requests for HR
+app.get('/api/hr/leaves', authenticateToken, isHrManager, async (req, res) => {
+  try {
+    // First get all employees from the HR's branch
+    const branchEmployees = await Employee.find({
+      'professionalDetails.branch': req.hrBranch
+    }).select('userId personalDetails.email');
+
+    const employeeEmails = branchEmployees.map(emp => emp.personalDetails.email);
+
+    // Then get leave requests for those employees
+    const leaves = await Leave.find({
+      employeeEmail: { $in: employeeEmails }
+    }).sort({ createdAt: -1 });
+
+    res.json(leaves);
+  } catch (error) {
+    console.error('Error fetching branch leaves:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Add this to your server.js file
+// Add this to your server.js file
+// Remove any existing /api/hr/applicants routes and replace with this
+app.get('/api/hr/applicants', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!(user.role === 'hr_manager' || user.isAdmin)) {
+      return res.status(403).json({ message: 'HR Manager access required' });
+    }
+
+    console.log('HR Manager Branch:', user.branchName);
+
+    // Fetch all applicants
+    const allApplicants = await Applicant.find();
+    console.log(`Total applicants found: ${allApplicants.length}`);
+
+    let applicantsToShow = allApplicants;
+
+    // If HR manager (not admin), filter by branch
+    if (user.role === 'hr_manager') {
+      applicantsToShow = allApplicants.filter(applicant => {
+        // Get branch name from various possible locations
+        const branchName = applicant.branchName || 
+          (applicant.jobDetails instanceof Map ? 
+            applicant.jobDetails.get('branchName') || 
+            applicant.jobDetails.get('branch') : 
+            applicant.jobDetails?.branchName || 
+            applicant.jobDetails?.branch);
+
+        return branchName && branchName.toLowerCase() === user.branchName.toLowerCase();
+      });
+    }
+
+    // Transform the data to match admin view
+    const transformedApplicants = applicantsToShow.map(applicant => {
+      // Get personal details
+      let personalDetails = {};
+      if (applicant.personalDetails instanceof Map) {
+        personalDetails = Object.fromEntries(applicant.personalDetails);
+      } else if (typeof applicant.personalDetails === 'object') {
+        personalDetails = applicant.personalDetails;
+      }
+
+      // Get job details
+      let jobDetails = {};
+      if (applicant.jobDetails instanceof Map) {
+        jobDetails = Object.fromEntries(applicant.jobDetails);
+      } else if (typeof applicant.jobDetails === 'object') {
+        jobDetails = applicant.jobDetails;
+      }
+
+      // Log raw data for debugging
+      console.log('Raw applicant data:', {
+        personalDetails: applicant.personalDetails instanceof Map ? 
+          Object.fromEntries(applicant.personalDetails) : 
+          applicant.personalDetails,
+        jobDetails: applicant.jobDetails instanceof Map ? 
+          Object.fromEntries(applicant.jobDetails) : 
+          applicant.jobDetails
+      });
+
+      return {
+        _id: applicant._id,
+        personalDetails: {
+          name: personalDetails.name || personalDetails.fullname || 'Not provided',
+          email: personalDetails.email || 'Not provided',
+          phone: personalDetails.phone || 'Not provided',
+          gender: personalDetails.gender || 'Not provided',
+          ...personalDetails
+        },
+        jobDetails: {
+          position: jobDetails.position || 'Not specified',
+          branchName: applicant.branchName || 
+                     jobDetails.branchName || 
+                     jobDetails.branch || 
+                     'Not specified',
+          ...jobDetails
+        },
+        status: applicant.status || 'pending',
+        resume: applicant.resume || null,
+        createdAt: applicant.createdAt
+      };
+    });
+
+    // Log first transformed applicant for debugging
+    if (transformedApplicants.length > 0) {
+      console.log('First transformed applicant:', JSON.stringify(transformedApplicants[0], null, 2));
+    }
+
+    res.json(transformedApplicants);
+
+  } catch (error) {
+    console.error('Error in HR applicants endpoint:', error);
+    res.status(500).json({
+      message: 'Error fetching applicants',
+      error: error.message
+    });
+  }
+});
+// Add to server.js
+
+// Get branch employees for HR editing
+app.get('/api/hr/edit-profiles', authenticateToken, isHrManager, async (req, res) => {
+  try {
+    // Find all employees from HR's branch
+    const branchEmployees = await Employee.find({
+      'professionalDetails.branch': req.hrBranch
+    }).populate('userId');
+
+    const employees = branchEmployees.map(employee => ({
+      ...employee.toObject(),
+      userDetails: employee.userId ? {
+        email: employee.userId.email,
+        role: employee.userId.role,
+        status: employee.userId.status
+      } : null
+    }));
+
+    res.json(employees);
+  } catch (error) {
+    console.error('Error fetching branch employees for editing:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Update employee profile for HR
+app.put('/api/hr/edit-profiles/:id', authenticateToken, isHrManager, upload.array('documents', 5), async (req, res) => {
+  try {
+    const employee = await Employee.findById(req.params.id);
+    
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    // Verify employee belongs to HR's branch
+    if (employee.professionalDetails.branch !== req.hrBranch) {
+      return res.status(403).json({ message: 'Access denied. Employee not in your branch.' });
+    }
+
+    const updateData = JSON.parse(req.body.employeeData);
+    const documents = req.files ? req.files.map(file => ({
+      name: file.originalname,
+      path: file.path,
+      uploadedAt: new Date()
+    })) : [];
+
+    // Update user role if changed
+    if (employee.userId) {
+      await User.findByIdAndUpdate(employee.userId, {
+        role: updateData.professionalDetails.role
+      });
+    }
+
+    // Prepare updates object
+    const updates = {
+      professionalDetails: updateData.professionalDetails,
+      updatedAt: new Date()
+    };
+
+    if (documents.length > 0) {
+      updates.$push = { documents: { $each: documents } };
+    }
+
+    if (updateData.milestones && updateData.milestones.length > 0) {
+      if (!updates.$push) updates.$push = {};
+      updates.$push.milestones = { $each: updateData.milestones };
+    }
+
+    const updatedEmployee = await Employee.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true }
+    );
+
+    res.json(updatedEmployee);
+  } catch (error) {
+    console.error('Error updating employee profile:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+// New endpoint for HR notifications
+// In server.js, update the HR notifications endpoint
+
+app.get('/api/hr/notifications', authenticateToken, isHrManager, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    console.log('Fetching notifications for HR user:', {
+      userId: user._id,
+      branchName: user.branchName,
+      role: user.role
+    });
+
+    // Case-insensitive branch name matching
+    const branch = await Branch.findOne({
+      name: { $regex: new RegExp('^' + user.branchName + '$', 'i') }
+    });
+
+    console.log('Found branch:', branch);
+
+    let notifications;
+    if (user.isAdmin) {
+      // Admins see all notifications
+      notifications = await Notification.find()
+        .sort({ createdAt: -1 })
+        .limit(20);
+    } else {
+      // HR managers see:
+      // 1. Their own notifications
+      // 2. Applications for their branch
+      notifications = await Notification.find({
+        $or: [
+          { userId: user._id },
+          {
+            type: 'application',
+            'metadata.branchName': { $regex: new RegExp('^' + user.branchName + '$', 'i') }
+          }
+        ]
+      })
+      .sort({ createdAt: -1 })
+      .limit(20);
+    }
+
+    console.log(`Found ${notifications.length} notifications`);
+    res.json(notifications);
+  } catch (error) {
+    console.error('Error in HR notifications:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch notifications',
+      details: error.message 
+    });
   }
 });
 

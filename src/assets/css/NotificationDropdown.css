@@ -95,3 +95,32 @@
   .icon-default {
     color: #757575;
   }
+  .icon-application {
+    color: #8b5cf6; /* Purple color for application notifications */
+  }
+  
+  /* Update the notification item hover state for better visibility */
+  .notification-item.unread {
+    background-color: #f0f7ff;
+    border-left: 3px solid #474787;
+  }
+  
+  .notification-item.unread:hover {
+    background-color: #e5f1ff;
+  }
+  
+  /* Add a subtle animation for new notifications */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .notification-item {
+    animation: fadeIn 0.3s ease-out;
+  }

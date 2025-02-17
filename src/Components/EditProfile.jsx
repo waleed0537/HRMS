@@ -42,20 +42,24 @@ const EditProfiles = () => {
 
   const fetchEmployees = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/employees`, {
+      const user = JSON.parse(localStorage.getItem('user'));
+      const endpoint = user.role === 'hr_manager' ? '/api/hr/edit-profiles' : '/api/employees';
+  
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+  
       if (!response.ok) {
         throw new Error('Failed to fetch employees');
       }
-      
+  
       const data = await response.json();
       setEmployees(data);
       setLoading(false);
     } catch (err) {
+      console.error('Error fetching employees:', err);
       setError(err.message);
       setLoading(false);
     }
@@ -89,54 +93,60 @@ const EditProfiles = () => {
     setDocuments(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedEmployee) return;
   
-    const formData = new FormData();
-    
-    const updateData = {
-      professionalDetails: selectedEmployee.professionalDetails
-    };
-    
-    if (milestone.date && milestone.title) {
-      updateData.milestones = [milestone];
-    }
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!selectedEmployee) return;
+
+  const formData = new FormData();
   
-    formData.append('employeeData', JSON.stringify(updateData));
-    
-    documents.forEach(doc => {
-      formData.append('documents', doc);
-    });
-  
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/employees/${selectedEmployee._id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
-      });
-  
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update employee');
-      }
-  
-      setMilestone({
-        date: '',
-        title: '',
-        description: '',
-        impact: ''
-      });
-      setDocuments([]);
-      fetchEmployees();
-      alert('Employee profile updated successfully');
-    } catch (err) {
-      console.error('Update error:', err);
-      alert(`Failed to update: ${err.message}`);
-    }
+  const updateData = {
+    professionalDetails: selectedEmployee.professionalDetails
   };
+  
+  if (milestone.date && milestone.title) {
+    updateData.milestones = [milestone];
+  }
+
+  formData.append('employeeData', JSON.stringify(updateData));
+  
+  documents.forEach(doc => {
+    formData.append('documents', doc);
+  });
+
+  try {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const endpoint = user.role === 'hr_manager' 
+      ? `/api/hr/edit-profiles/${selectedEmployee._id}`
+      : `/api/employees/${selectedEmployee._id}`;
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to update employee');
+    }
+
+    setMilestone({
+      date: '',
+      title: '',
+      description: '',
+      impact: ''
+    });
+    setDocuments([]);
+    fetchEmployees();
+    alert('Employee profile updated successfully');
+  } catch (err) {
+    console.error('Update error:', err);
+    alert(`Failed to update: ${err.message}`);
+  }
+};
 
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">{error}</div>;

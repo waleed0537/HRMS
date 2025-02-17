@@ -1,10 +1,13 @@
+// NotificationDropdown.jsx
 import React, { useState, useEffect } from 'react';
-import { Bell, CheckCircle, UserCheck, Calendar } from 'lucide-react';
+import { Bell, CheckCircle, UserCheck, Calendar, UserPlus } from 'lucide-react';
 import '../assets/css/NotificationDropdown.css';
 import API_BASE_URL from '../config/api.js';
+
 const NotificationDropdown = ({ onClose }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchNotifications();
@@ -12,7 +15,14 @@ const NotificationDropdown = ({ onClose }) => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/notifications`, {
+      const user = JSON.parse(localStorage.getItem('user'));
+      const endpoint = user.role === 'hr_manager' 
+        ? `/api/hr/notifications` 
+        : `/api/notifications`;
+
+      console.log('Fetching notifications from endpoint:', endpoint);
+
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Accept': 'application/json'
@@ -24,6 +34,7 @@ const NotificationDropdown = ({ onClose }) => {
       }
   
       const data = await response.json();
+      console.log('Received notifications:', data);
       setNotifications(data);
       setLoading(false);
     } catch (error) {
@@ -54,30 +65,6 @@ const NotificationDropdown = ({ onClose }) => {
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
-  };
-
-  const getIcon = (type) => {
-    switch (type) {
-      case 'account':
-        return <UserCheck className="icon icon-account" />;
-      case 'leave':
-        return <Calendar className="icon icon-leave" />;
-      case 'role':
-        return <CheckCircle className="icon icon-role" />;
-      default:
-        return <Bell className="icon icon-default" />;
-    }
-  };
-
-  const formatTime = (date) => {
-    const now = new Date();
-    const notifDate = new Date(date);
-    const diff = now - notifDate;
-    
-    if (diff < 60000) return 'Just now';
-    if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff/3600000)}h ago`;
-    return notifDate.toLocaleDateString();
   };
 
   return (
@@ -114,6 +101,32 @@ const NotificationDropdown = ({ onClose }) => {
       </div>
     </div>
   );
+};
+
+// Helper function to get icon based on notification type
+const getIcon = (type) => {
+  switch (type) {
+    case 'account':
+      return <UserCheck className="icon icon-account" />;
+    case 'leave':
+      return <Calendar className="icon icon-leave" />;
+    case 'application':
+      return <UserPlus className="icon icon-application" />;
+    default:
+      return <Bell className="icon icon-default" />;
+  }
+};
+
+// Helper function to format time
+const formatTime = (date) => {
+  const now = new Date();
+  const notifDate = new Date(date);
+  const diff = now - notifDate;
+  
+  if (diff < 60000) return 'Just now';
+  if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff/3600000)}h ago`;
+  return notifDate.toLocaleDateString();
 };
 
 export default NotificationDropdown;

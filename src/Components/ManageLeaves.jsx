@@ -13,37 +13,34 @@ const ManageLeaves = () => {
     fetchLeaveRequests();
   }, []);
 
-  const fetchLeaveRequests = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const user = JSON.parse(localStorage.getItem('user'));
 
-      if (!token || !user) {
-        throw new Error('Authentication required');
+
+const fetchLeaveRequests = async () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const endpoint = user.role === 'hr_manager' ? '/api/hr/leaves' : '/api/leaves';
+    
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
+    });
 
-      const response = await fetch(`${API_BASE_URL}/api/leaves`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        console.log('Response status:', response.status);
-        throw new Error('Failed to fetch leave requests');
-      }
-
-      const data = await response.json();
-      console.log('Fetched leave requests:', data);
-      setLeaveRequests(data);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching leave requests:', error);
-      setError(error.message);
-      setLoading(false);
+    if (!response.ok) {
+      console.log('Response status:', response.status);
+      throw new Error('Failed to fetch leave requests');
     }
-  };
+
+    const data = await response.json();
+    console.log('Fetched leave requests:', data);
+    setLeaveRequests(data);
+    setLoading(false);
+  } catch (error) {
+    console.error('Error fetching leave requests:', error);
+    setError(error.message);
+    setLoading(false);
+  }
+};
 
   const handleStatusUpdate = async (id, status) => {
     try {

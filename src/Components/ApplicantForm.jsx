@@ -1,3 +1,4 @@
+// ApplicantForm.jsx
 import React, { useState, useEffect } from 'react';
 import { Upload } from 'lucide-react';
 import '../assets/css/ApplicantForm.css';
@@ -29,7 +30,7 @@ const ApplicantForm = () => {
   const handleInputChange = (label, value) => {
     setFormData(prev => ({
       ...prev,
-      [label.toLowerCase()]: value
+      [label.toLowerCase().replace(/\s+/g, '')]: value // Remove spaces from label
     }));
   };
 
@@ -52,65 +53,88 @@ const ApplicantForm = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
+  // In ApplicantForm.jsx, update the handleSubmit function
 
-    try {
-      // Validate required fields
-      const requiredFields = formFields.filter(field => field.required);
-      const missingFields = requiredFields.filter(field => {
-        const value = formData[field.label.toLowerCase()];
-        return !value || value.trim() === '';
-      });
+// In ApplicantForm.jsx
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  setIsLoading(true);
 
-      if (missingFields.length > 0) {
-        throw new Error(`Please fill in all required fields: ${missingFields.map(f => f.label).join(', ')}`);
-      }
+  try {
+    // Log form data for debugging
+    console.log('Form Data:', formData);
+    console.log('Resume:', resume);
 
-      if (!resume) {
-        throw new Error('Please upload your resume');
-      }
+    // Validate required fields
+    const requiredFields = formFields.filter(field => field.required);
+    const missingFields = requiredFields.filter(field => {
+      const value = formData[field.label.toLowerCase().replace(/\s+/g, '')];
+      return !value || value.trim() === '';
+    });
 
-      // Prepare form data
-      const submitData = new FormData();
-      
-      // Split data into personal and job details
-      const personalDetails = {};
-      const jobDetails = {};
-
-      Object.entries(formData).forEach(([key, value]) => {
-        if (['email', 'name', 'phone', 'gender'].includes(key.toLowerCase())) {
-          personalDetails[key] = value;
-        } else {
-          jobDetails[key] = value;
-        }
-      });
-
-      submitData.append('personalDetails', JSON.stringify(personalDetails));
-      submitData.append('jobDetails', JSON.stringify(jobDetails));
-      submitData.append('resume', resume);
-
-      const response = await fetch(`${API_BASE_URL}/api/applicants`, {
-        method: 'POST',
-        body: submitData
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to submit application');
-      }
-
-      setSubmitted(true);
-      setFormData({});
-      setResume(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
+    if (missingFields.length > 0) {
+      throw new Error(`Please fill in all required fields: ${missingFields.map(f => f.label).join(', ')}`);
     }
-  };
+
+    if (!resume) {
+      throw new Error('Please upload your resume');
+    }
+
+    // Prepare form data
+    const submitData = new FormData();
+
+    // Prepare personal and job details with more explicit field handling
+    const personalDetails = {
+      name: formData.fullname || formData.name || '',
+      email: formData.email || '',
+      phone: formData.phone || formData.contact || '',
+      gender: formData.gender || ''
+    };
+
+    const jobDetails = {
+      branchName: formData.branchname || formData.branch || '',
+      position: formData.position || formData.jobtitle || '',
+      department: formData.department || ''
+    };
+
+    // Log the prepared data
+    console.log('Prepared Personal Details:', personalDetails);
+    console.log('Prepared Job Details:', jobDetails);
+
+    submitData.append('personalDetails', JSON.stringify(personalDetails));
+    submitData.append('jobDetails', JSON.stringify(jobDetails));
+    submitData.append('branchName', jobDetails.branchName);
+    submitData.append('resume', resume);
+
+    // Log the FormData entries for debugging
+    for (let pair of submitData.entries()) {
+      console.log(pair[0], pair[1]);
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/applicants`, {
+      method: 'POST',
+      body: submitData
+    });
+
+    const responseData = await response.json();
+    console.log('Server Response:', responseData);
+
+    if (!response.ok) {
+      throw new Error(responseData.message || 'Failed to submit application');
+    }
+
+    setSubmitted(true);
+    setFormData({});
+    setResume(null);
+
+  } catch (err) {
+    console.error('Form submission error:', err);
+    setError(err.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   if (submitted) {
     return (
@@ -146,7 +170,7 @@ const ApplicantForm = () => {
                 <label>{field.label} {field.required && '*'}</label>
                 {field.type === 'select' ? (
                   <select
-                    value={formData[field.label.toLowerCase()] || ''}
+                    value={formData[field.label.toLowerCase().replace(/\s+/g, '')] || ''}
                     onChange={(e) => handleInputChange(field.label, e.target.value)}
                     required={field.required}
                     className="form-input"
@@ -161,7 +185,7 @@ const ApplicantForm = () => {
                 ) : (
                   <input
                     type={field.type}
-                    value={formData[field.label.toLowerCase()] || ''}
+                    value={formData[field.label.toLowerCase().replace(/\s+/g, '')] || ''}
                     onChange={(e) => handleInputChange(field.label, e.target.value)}
                     required={field.required}
                     className="form-input"
@@ -181,7 +205,7 @@ const ApplicantForm = () => {
                 <label>{field.label} {field.required && '*'}</label>
                 {field.type === 'select' ? (
                   <select
-                    value={formData[field.label.toLowerCase()] || ''}
+                    value={formData[field.label.toLowerCase().replace(/\s+/g, '')] || ''}
                     onChange={(e) => handleInputChange(field.label, e.target.value)}
                     required={field.required}
                     className="form-input"
@@ -196,7 +220,7 @@ const ApplicantForm = () => {
                 ) : (
                   <input
                     type={field.type}
-                    value={formData[field.label.toLowerCase()] || ''}
+                    value={formData[field.label.toLowerCase().replace(/\s+/g, '')] || ''}
                     onChange={(e) => handleInputChange(field.label, e.target.value)}
                     required={field.required}
                     className="form-input"
@@ -217,7 +241,6 @@ const ApplicantForm = () => {
               accept=".pdf,.doc,.docx"
               onChange={handleFileChange}
               className="hidden"
-              required
             />
             <label htmlFor="resume-upload" className="upload-label">
               <Upload className="upload-icon" />

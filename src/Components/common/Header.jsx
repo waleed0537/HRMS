@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import NotificationDropdown from '../NotificationDropdown';
 import '../../assets/css/header.css';
-
+import API_BASE_URL from '../../config/api.js';
 const Header = ({ user, onLogout }) => {
  const [showProfile, setShowProfile] = useState(false);
  const [showNotifications, setShowNotifications] = useState(false);

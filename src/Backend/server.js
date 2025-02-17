@@ -16,6 +16,7 @@ const Notification =  require('../Backend/models/Notification');
 const Holiday = require('../Backend/models/Holiday');
 const Applicant = require('../Backend/models/Applicant');
 const Attendance = require('../Backend/models/Attendance');
+const FormField = require('../Backend/models/FormField');
 
 
 const app = express();
@@ -87,20 +88,18 @@ const checkPermission = async (req, res, next) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Allow access for both admin and HR manager
+    // Allow access for admin and HR manager
     if (user.isAdmin || user.role === 'hr_manager') {
       req.userRole = user.role;
       next();
     } else {
-      // Regular employees can only access their own requests
-      req.userRole = 'employee';
-      next();
+      res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
     }
   } catch (error) {
+    console.error('Permission check error:', error);
     res.status(500).json({ message: 'Error checking permissions' });
   }
 };
-
 async function createTestLeaveRequest() {
   try {
     // Find an existing employee
@@ -156,10 +155,15 @@ const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) return res.status(401).json({ message: 'Access denied' });
+  if (!token) {
+    return res.status(401).json({ message: 'Access denied' });
+  }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ message: 'Invalid token' });
+    if (err) {
+      console.error('JWT verification error:', err);
+      return res.status(403).json({ message: 'Invalid token' });
+    }
     req.user = user;
     next();
   });
@@ -1457,117 +1461,239 @@ if (!fs.existsSync('./uploads/resumes')) {
   fs.mkdirSync('./uploads/resumes', { recursive: true });
 }
 
+// In server.js or your routes file
 // Submit new job application
 app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
-  console.log('Received application:', req.body);
-  console.log('File:', req.file);
-
   try {
-    const {
-      name,
-      email,
-      phone,
-      address,
-      position,
-      branch
-    } = req.body;
-
-    // Validate required fields
-    if (!name || !email || !phone || !address || !position || !branch) {
-      return res.status(400).json({
-        success: false,
-        message: 'All fields are required'
-      });
-    }
-
-    // Check if applicant already exists
-    const existingApplicant = await Applicant.findOne({
-      'personalDetails.email': email,
-      'jobDetails.position': position,
-      status: { $in: ['pending', 'reviewed', 'shortlisted'] }
-    });
-
-    if (existingApplicant) {
-      return res.status(400).json({
-        success: false,
-        message: 'You have already applied for this position'
-      });
-    }
-
-    // Create new applicant
-    const applicant = new Applicant({
-      personalDetails: {
-        name,
-        email,
-        phone,
-        address
-      },
-      jobDetails: {
-        position,
-        branch
-      },
-      resume: req.file ? {
-        filename: req.file.originalname,
-        path: req.file.path
-      } : undefined,
-      status: 'pending'
-    });
-
-    await applicant.save();
-
-    // Send success response
-    res.status(201).json({
-      success: true,
-      message: 'Application submitted successfully',
-      data: {
-        name: applicant.personalDetails.name,
-        email: applicant.personalDetails.email,
-        position: applicant.jobDetails.position
+    console.log('Received form data:', req.body);
+    
+    // Parse form data
+    let personalDetails = {};
+    let jobDetails = {};
+    
+    // Get all form fields
+    Object.keys(req.body).forEach(key => {
+      // Handle special case for personal details sent as JSON string
+      if (key === 'personalDetails') {
+        try {
+          personalDetails = JSON.parse(req.body.personalDetails);
+        } catch (e) {
+          console.error('Error parsing personalDetails:', e);
+        }
+      }
+      // Handle special case for job details sent as JSON string
+      else if (key === 'jobDetails') {
+        try {
+          jobDetails = JSON.parse(req.body.jobDetails);
+        } catch (e) {
+          console.error('Error parsing jobDetails:', e);
+        }
+      }
+      // Handle regular form fields
+      else {
+        const value = req.body[key];
+        // Determine if field belongs to personal or job details
+        if (['name', 'email', 'phone', 'gender'].includes(key.toLowerCase())) {
+          personalDetails[key] = value;
+        } else {
+          jobDetails[key] = value;
+        }
       }
     });
 
+    // Create new applicant document
+    const applicantData = {
+      personalDetails: new Map(Object.entries(personalDetails)),
+      jobDetails: new Map(Object.entries(jobDetails))
+    };
+
+    // Add resume if uploaded
+    if (req.file) {
+      applicantData.resume = {
+        filename: req.file.originalname,
+        path: req.file.path,
+        uploadedAt: new Date()
+      };
+    }
+
+    const applicant = new Applicant(applicantData);
+    await applicant.save();
+
+    res.status(201).json({ 
+      success: true,
+      message: 'Application submitted successfully'
+    });
   } catch (error) {
     console.error('Error submitting application:', error);
-    res.status(500).json({
+    
+    // Handle duplicate email error
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'An application with this email already exists'
+      });
+    }
+
+    res.status(400).json({
       success: false,
-      message: 'Failed to submit application',
-      error: error.message
+      message: error.message || 'Failed to submit application'
     });
   }
 });
 
+
+// Add a route to get applicant data for admin/HR
 // Get all applications (Admin only)
-app.get('/api/applicants', authenticateToken, isAdmin, async (req, res) => {
+app.get('/api/applicants', authenticateToken, async (req, res) => {
+  console.log('GET /api/applicants endpoint hit');
+  console.log('Auth header:', req.headers.authorization);
+  
   try {
+      const { status, position, branch } = req.query;
+      const query = {};
+
+      if (status) query.status = status;
+      if (position) query['jobDetails.position'] = position;
+      if (branch) query['jobDetails.branch'] = branch;
+
+      console.log('Query:', query);
+
+      const applicants = await Applicant.find(query).sort({ createdAt: -1 });
+      console.log(`Found ${applicants.length} applicants`);
+
+      // Transform data for frontend display
+      const transformedApplicants = applicants.map(applicant => {
+          try {
+              const personalDetails = Object.fromEntries(applicant.personalDetails || new Map());
+              const jobDetails = Object.fromEntries(applicant.jobDetails || new Map());
+
+              return {
+                  _id: applicant._id,
+                  personalDetails: {
+                      name: personalDetails.name || 'Not provided',
+                      email: personalDetails.email || 'Not provided',
+                      phone: personalDetails.phone || 'Not provided',
+                      gender: personalDetails.gender || 'Not provided',
+                      ...personalDetails
+                  },
+                  jobDetails: {
+                      position: jobDetails.position || 'Not provided',
+                      branch: jobDetails.branch || 'Not provided',
+                      ...jobDetails
+                  },
+                  status: applicant.status,
+                  resume: applicant.resume,
+                  createdAt: applicant.createdAt
+              };
+          } catch (err) {
+              console.error('Error transforming applicant:', err, applicant);
+              // Return a safe fallback for this applicant
+              return {
+                  _id: applicant._id,
+                  personalDetails: {
+                      name: 'Error processing details',
+                      email: 'Not available',
+                      phone: 'Not available',
+                      gender: 'Not available'
+                  },
+                  jobDetails: {
+                      position: 'Not available',
+                      branch: 'Not available'
+                  },
+                  status: applicant.status || 'pending',
+                  createdAt: applicant.createdAt
+              };
+          }
+      });
+
+      res.json(transformedApplicants);
+  } catch (error) {
+      console.error('Error in /api/applicants:', error);
+      res.status(500).json({
+          success: false,
+          message: 'Error fetching applications',
+          error: error.message,
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
+  }
+});
+
+app.get('/api/applicants', authenticateToken, checkPermission, async (req, res) => {
+  try {
+    console.log('Fetching applicants...');
+    
+    // Get query parameters
     const { status, position, branch } = req.query;
     const query = {};
 
+    // Build query based on filters
     if (status) query.status = status;
-    if (position) query['jobDetails.position'] = position;
-    if (branch) query['jobDetails.branch'] = branch;
+    if (position) query['jobDetails.get("position")'] = position;
+    if (branch) query['jobDetails.get("branch")'] = branch;
 
+    // Fetch applicants from database
     const applicants = await Applicant.find(query)
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
-    res.json(applicants);
+    console.log(`Found ${applicants.length} applicants`);
+
+    // Transform the data for response
+    const transformedApplicants = applicants.map(applicant => {
+      // Convert Maps to regular objects
+      const personalDetails = applicant.personalDetails instanceof Map ? 
+        Object.fromEntries(applicant.personalDetails) : 
+        (applicant.personalDetails || {});
+
+      const jobDetails = applicant.jobDetails instanceof Map ? 
+        Object.fromEntries(applicant.jobDetails) : 
+        (applicant.jobDetails || {});
+
+      return {
+        _id: applicant._id,
+        personalDetails: {
+          name: personalDetails.name || personalDetails['First Name'] || 'Not provided',
+          email: personalDetails.email || personalDetails.Email || 'Not provided',
+          phone: personalDetails.phone || personalDetails.Phone || 'Not provided',
+          gender: personalDetails.gender || personalDetails.Gender || 'Not provided',
+          ...personalDetails
+        },
+        jobDetails: {
+          position: jobDetails.position || jobDetails.Position || 'Not provided',
+          branch: jobDetails.branch || jobDetails.Branch || 'Not provided',
+          ...jobDetails
+        },
+        status: applicant.status || 'pending',
+        resume: applicant.resume,
+        createdAt: applicant.createdAt
+      };
+    });
+
+    res.json(transformedApplicants);
   } catch (error) {
+    console.error('Error in /api/applicants:', error);
     res.status(500).json({
       message: 'Error fetching applications',
-      error: error.message
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
 
-// Update application status (Admin only)
-app.put('/api/applicants/:id/status', authenticateToken, isAdmin, async (req, res) => {
+
+
+// Update application status
+app.put('/api/applicants/:id/status', authenticateToken, checkPermission, async (req, res) => {
   try {
+    const { id } = req.params;
     const { status } = req.body;
+
     if (!['pending', 'reviewed', 'shortlisted', 'rejected'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
     const applicant = await Applicant.findByIdAndUpdate(
-      req.params.id,
+      id,
       { status },
       { new: true }
     );
@@ -1576,15 +1702,10 @@ app.put('/api/applicants/:id/status', authenticateToken, isAdmin, async (req, re
       return res.status(404).json({ message: 'Applicant not found' });
     }
 
-    // Send email notification to applicant about status update
-    // Note: Implement your email sending logic here
-
     res.json(applicant);
   } catch (error) {
-    res.status(500).json({
-      message: 'Error updating application status',
-      error: error.message
-    });
+    console.error('Error updating applicant status:', error);
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -1605,19 +1726,94 @@ app.get('/api/applicants/:id', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Download resume
-app.get('/api/applicants/:id/resume', authenticateToken, isAdmin, async (req, res) => {
+app.get('/api/applicants/:id/resume', authenticateToken, checkPermission, async (req, res) => {
   try {
-    const applicant = await Applicant.findById(req.params.id);
+    const { id } = req.params;
+    const applicant = await Applicant.findById(id);
+
     if (!applicant || !applicant.resume) {
       return res.status(404).json({ message: 'Resume not found' });
     }
 
+    // Check if file exists
+    if (!fs.existsSync(applicant.resume.path)) {
+      return res.status(404).json({ message: 'Resume file not found' });
+    }
+
     res.download(applicant.resume.path, applicant.resume.filename);
   } catch (error) {
-    res.status(500).json({
-      message: 'Error downloading resume',
-      error: error.message
-    });
+    console.error('Error downloading resume:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Admin routes for managing form fields (protected)
+app.get('/api/admin/form-fields', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const fields = await FormField.find().sort({ order: 1 });
+    res.json(fields);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+app.post('/api/admin/form-fields', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const field = new FormField(req.body);
+    const newField = await field.save();
+    res.status(201).json(newField);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+app.put('/api/admin/form-fields/:id', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const updatedField = await FormField.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    if (!updatedField) {
+      return res.status(404).json({ message: 'Field not found' });
+    }
+    res.json(updatedField);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.delete('/api/admin/form-fields/:id', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const field = await FormField.findByIdAndDelete(req.params.id);
+    if (!field) {
+      return res.status(404).json({ message: 'Field not found' });
+    }
+    res.json({ message: 'Field deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.put('/api/admin/form-fields/reorder', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const { fields } = req.body;
+    await Promise.all(fields.map(field => 
+      FormField.findByIdAndUpdate(field._id, { order: field.order })
+    ));
+    res.json({ message: 'Field order updated' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Public route for getting form fields (unprotected)
+app.get('/api/public/form-fields', async (req, res) => {
+  try {
+    const fields = await FormField.find()
+      .sort({ order: 1 })
+      .select('-__v'); // Exclude unnecessary fields
+    res.json(fields);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to load form fields. Please try again later.' });
   }
 });
 

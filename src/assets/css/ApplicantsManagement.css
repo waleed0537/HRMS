@@ -622,7 +622,32 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-
+  .customize-form-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #474787;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .customize-form-btn:hover {
+    background: #5c5c9d;
+    transform: translateY(-1px);
+  }
+  
+  @media (max-width: 768px) {
+    .customize-form-btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
   /* Responsive Design */
   @media (max-width: 1024px) {
     .applicants-management {

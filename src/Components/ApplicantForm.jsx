@@ -1,40 +1,42 @@
+import React, { useState, useEffect } from 'react';
+import { Upload } from 'lucide-react';
 import '../assets/css/ApplicantForm.css';
-import React, { useState } from 'react';
-import { Upload, Mail, User, Phone, MapPin, Building, Briefcase, Check } from 'lucide-react';
 import API_BASE_URL from '../config/api.js';
 
 const ApplicantForm = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    position: '',
-    branch: ''
-  });
+  const [formFields, setFormFields] = useState([]);
+  const [formData, setFormData] = useState({});
   const [resume, setResume] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const positions = [
-    'Software Developer',
-    'HR Manager',
-    'Sales Representative',
-    'Project Manager'
-  ];
+  useEffect(() => {
+    fetchFormFields();
+  }, []);
 
-  const branches = [
-    'Main Branch',
-    'East Branch',
-    'West Branch',
-    'North Branch'
-  ];
+  const fetchFormFields = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/public/form-fields`);
+      if (!response.ok) throw new Error('Failed to fetch form fields');
+      const fields = await response.json();
+      setFormFields(fields);
+    } catch (err) {
+      setError('Failed to load form fields. Please try again later.');
+    }
+  };
+
+  const handleInputChange = (label, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [label.toLowerCase()]: value
+    }));
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
         setError('File size must be less than 5MB');
         return;
       }
@@ -56,40 +58,53 @@ const ApplicantForm = () => {
     setIsLoading(true);
 
     try {
-      // Validate all required fields
-      const requiredFields = ['name', 'email', 'phone', 'address', 'position', 'branch'];
-      const missingFields = requiredFields.filter(field => !formData[field]);
-      
+      // Validate required fields
+      const requiredFields = formFields.filter(field => field.required);
+      const missingFields = requiredFields.filter(field => {
+        const value = formData[field.label.toLowerCase()];
+        return !value || value.trim() === '';
+      });
+
       if (missingFields.length > 0) {
-        throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
+        throw new Error(`Please fill in all required fields: ${missingFields.map(f => f.label).join(', ')}`);
       }
 
       if (!resume) {
         throw new Error('Please upload your resume');
       }
 
-      const formDataToSend = new FormData();
+      // Prepare form data
+      const submitData = new FormData();
       
-      // Append all form fields
-      Object.keys(formData).forEach(key => {
-        formDataToSend.append(key, formData[key]);
+      // Split data into personal and job details
+      const personalDetails = {};
+      const jobDetails = {};
+
+      Object.entries(formData).forEach(([key, value]) => {
+        if (['email', 'name', 'phone', 'gender'].includes(key.toLowerCase())) {
+          personalDetails[key] = value;
+        } else {
+          jobDetails[key] = value;
+        }
       });
-      
-      // Append resume file
-      formDataToSend.append('resume', resume);
+
+      submitData.append('personalDetails', JSON.stringify(personalDetails));
+      submitData.append('jobDetails', JSON.stringify(jobDetails));
+      submitData.append('resume', resume);
 
       const response = await fetch(`${API_BASE_URL}/api/applicants`, {
         method: 'POST',
-        body: formDataToSend
+        body: submitData
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
+        const data = await response.json();
         throw new Error(data.message || 'Failed to submit application');
       }
 
       setSubmitted(true);
+      setFormData({});
+      setResume(null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -101,15 +116,10 @@ const ApplicantForm = () => {
     return (
       <div className="success-container">
         <div className="success-content">
-          <div className="success-icon">
-            <Check size={48} className="text-green-500" />
-          </div>
+          <div className="success-icon">✓</div>
           <h2 className="success-title">Application Submitted!</h2>
           <p className="success-message">
             Thank you for your application. We will review your information and contact you soon.
-          </p>
-          <p className="success-email">
-            A confirmation email has been sent to {formData.email}
           </p>
         </div>
       </div>
@@ -124,136 +134,82 @@ const ApplicantForm = () => {
       </div>
 
       {error && (
-        <div className="error-message">
-          {error}
-        </div>
+        <div className="error-message">{error}</div>
       )}
 
       <form onSubmit={handleSubmit} className="application-form">
         <div className="form-section">
-          <h3 className="section-title">
-            <User className="section-icon" />
-            Personal Information
-          </h3>
-          
+          <h3>Personal Information</h3>
           <div className="form-grid">
-            <div className="form-field">
-              <label>Full Name</label>
-              <div className="input-with-icon">
-                <User className="field-icon" />
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="Enter your full name"
-                  className="form-input"
-                />
+            {formFields.filter(field => field.section === 'personal').map((field) => (
+              <div key={field._id} className="form-field">
+                <label>{field.label} {field.required && '*'}</label>
+                {field.type === 'select' ? (
+                  <select
+                    value={formData[field.label.toLowerCase()] || ''}
+                    onChange={(e) => handleInputChange(field.label, e.target.value)}
+                    required={field.required}
+                    className="form-input"
+                  >
+                    <option value="">Select {field.label}</option>
+                    {field.options.map((option, idx) => (
+                      <option key={idx} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type={field.type}
+                    value={formData[field.label.toLowerCase()] || ''}
+                    onChange={(e) => handleInputChange(field.label, e.target.value)}
+                    required={field.required}
+                    className="form-input"
+                    placeholder={`Enter your ${field.label.toLowerCase()}`}
+                  />
+                )}
               </div>
-            </div>
-
-            <div className="form-field">
-              <label>Email Address</label>
-              <div className="input-with-icon">
-                <Mail className="field-icon" />
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  placeholder="Enter your email"
-                  className="form-input"
-                />
-              </div>
-            </div>
-
-            <div className="form-field">
-              <label>Phone Number</label>
-              <div className="input-with-icon">
-                <Phone className="field-icon" />
-                <input
-                  type="tel"
-                  required
-                  value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  placeholder="Enter your phone number"
-                  className="form-input"
-                />
-              </div>
-            </div>
-
-            <div className="form-field">
-              <label>Address</label>
-              <div className="input-with-icon">
-                <MapPin className="field-icon" />
-                <input
-                  type="text"
-                  required
-                  value={formData.address}
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
-                  placeholder="Enter your address"
-                  className="form-input"
-                />
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
         <div className="form-section">
-          <h3 className="section-title">
-            <Briefcase className="section-icon" />
-            Job Details
-          </h3>
-          
+          <h3>Professional Information</h3>
           <div className="form-grid">
-            <div className="form-field">
-              <label>Position Applied For</label>
-              <div className="input-with-icon">
-                <Briefcase className="field-icon" />
-                <select
-                  required
-                  value={formData.position}
-                  onChange={(e) => setFormData({...formData, position: e.target.value})}
-                  className="form-input"
-                >
-                  <option value="">Select Position</option>
-                  {positions.map(position => (
-                    <option key={position} value={position}>
-                      {position}
-                    </option>
-                  ))}
-                </select>
+            {formFields.filter(field => field.section === 'professional').map((field) => (
+              <div key={field._id} className="form-field">
+                <label>{field.label} {field.required && '*'}</label>
+                {field.type === 'select' ? (
+                  <select
+                    value={formData[field.label.toLowerCase()] || ''}
+                    onChange={(e) => handleInputChange(field.label, e.target.value)}
+                    required={field.required}
+                    className="form-input"
+                  >
+                    <option value="">Select {field.label}</option>
+                    {field.options.map((option, idx) => (
+                      <option key={idx} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type={field.type}
+                    value={formData[field.label.toLowerCase()] || ''}
+                    onChange={(e) => handleInputChange(field.label, e.target.value)}
+                    required={field.required}
+                    className="form-input"
+                    placeholder={`Enter your ${field.label.toLowerCase()}`}
+                  />
+                )}
               </div>
-            </div>
-
-            <div className="form-field">
-              <label>Preferred Branch</label>
-              <div className="input-with-icon">
-                <Building className="field-icon" />
-                <select
-                  required
-                  value={formData.branch}
-                  onChange={(e) => setFormData({...formData, branch: e.target.value})}
-                  className="form-input"
-                >
-                  <option value="">Select Branch</option>
-                  {branches.map(branch => (
-                    <option key={branch} value={branch}>
-                      {branch}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
         <div className="form-section">
-          <h3 className="section-title">
-            <Upload className="section-icon" />
-            Resume Upload
-          </h3>
-          
+          <h3>Resume Upload</h3>
           <div className="upload-container">
             <input
               type="file"
@@ -275,7 +231,11 @@ const ApplicantForm = () => {
           </div>
         </div>
 
-        <button type="submit" className="submit-button" disabled={isLoading}>
+        <button 
+          type="submit" 
+          className="submit-button"
+          disabled={isLoading}
+        >
           {isLoading ? 'Submitting...' : 'Submit Application'}
         </button>
       </form>

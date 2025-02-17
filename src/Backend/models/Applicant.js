@@ -3,33 +3,14 @@ const mongoose = require('mongoose');
 
 const applicantSchema = new mongoose.Schema({
   personalDetails: {
-    name: {
-      type: String,
-      required: true
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true
-    },
-    phone: {
-      type: String,
-      required: true
-    },
-    address: {
-      type: String,
-      required: true
-    }
+    type: Map,
+    of: mongoose.Schema.Types.Mixed,
+    required: true
   },
   jobDetails: {
-    position: {
-      type: String,
-      required: true
-    },
-    branch: {
-      type: String,
-      required: true
-    }
+    type: Map,
+    of: mongoose.Schema.Types.Mixed,
+    required: true
   },
   resume: {
     filename: String,
@@ -43,23 +24,38 @@ const applicantSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'reviewed', 'shortlisted', 'rejected'],
     default: 'pending'
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
   }
+}, {
+  timestamps: true,
+  // Allow fields not specified in the schema
+  strict: false
 });
 
-// Update timestamp on save
-applicantSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
+// Add this to properly handle the email uniqueness
+applicantSchema.index({
+  'personalDetails.email': 1
+}, {
+  unique: true,
+  partialFilterExpression: {
+    'personalDetails.email': { $exists: true, $type: 'string' }
+  },
+  sparse: true
 });
+
+// Helper method to convert Map to Object
+applicantSchema.methods.toJSON = function() {
+  const obj = this.toObject();
+  
+  // Convert Maps to regular objects
+  if (obj.personalDetails instanceof Map) {
+    obj.personalDetails = Object.fromEntries(obj.personalDetails);
+  }
+  if (obj.jobDetails instanceof Map) {
+    obj.jobDetails = Object.fromEntries(obj.jobDetails);
+  }
+  
+  return obj;
+};
 
 const Applicant = mongoose.model('Applicant', applicantSchema);
-
 module.exports = Applicant;

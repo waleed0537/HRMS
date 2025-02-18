@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import {
     Search, Download, Eye, User, Mail, Phone,
     Building, Briefcase, Calendar, CheckCircle, XCircle,
-    AlertCircle, FileText, Settings, X
+    AlertCircle, FileText, Settings, X, FileDown, 
+    FileSpreadsheet, File // Changed FilePdf to File
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import API_BASE_URL from '../config/api';
-import '../assets/css/ApplicantsManagement.css';
 import FormFieldManager from './FormFieldManager';
-
+import '../assets/css/ApplicantsManagement.css';
 const ApplicantsManagement = () => {
     const [showFieldManager, setShowFieldManager] = useState(false);
     const [applicants, setApplicants] = useState([]);
@@ -21,7 +24,40 @@ const ApplicantsManagement = () => {
         position: '',
         branch: ''
     });
-
+    const [uniquePositions, setUniquePositions] = useState([]);
+    const [uniqueBranches, setUniqueBranches] = useState([]);
+    const getStatusIcon = (status) => {
+        switch (status?.toLowerCase()) {
+            case 'shortlisted': return <CheckCircle className="status-icon shortlisted" />;
+            case 'rejected': return <XCircle className="status-icon rejected" />;
+            case 'reviewed': return <Eye className="status-icon reviewed" />;
+            case 'pending': return <AlertCircle className="status-icon pending" />;
+            default: return <AlertCircle className="status-icon unknown" />;
+        }
+    };
+    const downloadResume = async (id, filename) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/applicants/${id}/resume`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+    
+            if (!response.ok) throw new Error('Failed to download resume');
+    
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Error downloading resume:', error);
+        }
+    };
     useEffect(() => {
         fetchApplicants();
     }, []);
@@ -44,6 +80,13 @@ const ApplicantsManagement = () => {
             const data = await response.json();
             setApplicants(data);
             setFilteredApplicants(data);
+
+            // Extract unique positions and branches
+            const positions = [...new Set(data.map(app => app.jobDetails?.position).filter(Boolean))];
+            const branches = [...new Set(data.map(app => app.jobDetails?.branch).filter(Boolean))];
+            
+            setUniquePositions(positions);
+            setUniqueBranches(branches);
         } catch (err) {
             console.error('Error fetching applicants:', err);
             setError(err.message);
@@ -52,61 +95,21 @@ const ApplicantsManagement = () => {
         }
     };
 
-    const handleStatusUpdate = async (id, newStatus) => {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/applicants/${id}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ status: newStatus })
-            });
-
-            if (!response.ok) throw new Error('Failed to update status');
-            
-            // Update local state
-            const updatedApplicants = applicants.map(app =>
-                app._id === id ? { ...app, status: newStatus } : app
-            );
-            setApplicants(updatedApplicants);
-            setFilteredApplicants(prev => 
-                prev.map(app => app._id === id ? { ...app, status: newStatus } : app)
-            );
-        } catch (err) {
-            console.error('Error updating status:', err);
-        }
-    };
-
-    const downloadResume = async (id, filename) => {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/applicants/${id}/resume`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-
-            if (!response.ok) throw new Error('Failed to download resume');
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        } catch (err) {
-            console.error('Error downloading resume:', err);
-        }
-    };
-
-    // Filtering and search functionality
     useEffect(() => {
         let result = [...applicants];
 
-        // Search filter
+        // Apply filters
+        if (filters.status) {
+            result = result.filter(app => app.status === filters.status);
+        }
+        if (filters.position) {
+            result = result.filter(app => app.jobDetails?.position === filters.position);
+        }
+        if (filters.branch) {
+            result = result.filter(app => app.jobDetails?.branch === filters.branch);
+        }
+
+        // Apply search
         if (searchTerm) {
             const searchLower = searchTerm.toLowerCase();
             result = result.filter(app =>
@@ -115,26 +118,143 @@ const ApplicantsManagement = () => {
             );
         }
 
-        // Status filter
-        if (filters.status) {
-            result = result.filter(app => app.status === filters.status);
-        }
-
         setFilteredApplicants(result);
     }, [searchTerm, filters, applicants]);
 
-    const getStatusIcon = (status) => {
-        switch (status?.toLowerCase()) {
-            case 'shortlisted': return <CheckCircle className="status-icon shortlisted" />;
-            case 'rejected': return <XCircle className="status-icon rejected" />;
-            case 'pending': return <AlertCircle className="status-icon pending" />;
-            case 'reviewed': return <Eye className="status-icon reviewed" />;
-            default: return <AlertCircle className="status-icon unknown" />;
-        }
+    const exportToExcel = () => {
+        const exportData = filteredApplicants.map(app => ({
+            // Personal Information
+            'Full Name': app.personalDetails?.name || 'N/A',
+            'Email': app.personalDetails?.email || 'N/A',
+            'Phone': app.personalDetails?.phone || 'N/A',
+            'Gender': app.personalDetails?.gender || 'N/A',
+            
+            // Professional Information
+            'Position': app.jobDetails?.position || 'N/A',
+            'Branch': app.jobDetails?.branch || app.jobDetails?.branchName || 'N/A',
+            'Department': app.jobDetails?.department || 'N/A',
+            
+            // Application Status
+            'Status': app.status || 'N/A',
+            'Applied Date': new Date(app.createdAt).toLocaleDateString(),
+            
+            // Resume Information
+            'Resume Filename': app.resume?.filename || 'No Resume',
+            
+            // Additional Information
+            'Application ID': app._id || 'N/A',
+            'Last Updated': app.updatedAt ? new Date(app.updatedAt).toLocaleDateString() : 'N/A'
+        }));
+    
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Applicants');
+        
+        // Auto-size columns
+        const colWidths = [];
+        exportData.forEach(row => {
+            Object.values(row).forEach((value, i) => {
+                const length = value.toString().length;
+                colWidths[i] = Math.max(colWidths[i] || 0, length);
+            });
+        });
+        ws['!cols'] = colWidths.map(width => ({ wch: width }));
+    
+        XLSX.writeFile(wb, `applicants_${new Date().toISOString().split('T')[0]}.xlsx`);
     };
 
-    if (loading) return <div className="loading-state">Loading applicants...</div>;
-    if (error) return <div className="error-state">Error: {error}</div>;
+
+    const exportToPDF = () => {
+        const doc = new jsPDF();
+        
+        // Add title
+        doc.setFontSize(16);
+        doc.text('Applicants Report', 14, 15);
+        
+        // Add timestamp
+        doc.setFontSize(10);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
+        
+        // Define columns for the table
+        const tableColumn = [
+            'Full Name',
+            'Email',
+            'Phone',
+            'Gender',
+            'Position',
+            'Branch',
+            'Status',
+            'Applied Date'
+        ];
+    
+        // Prepare rows data
+        const tableRows = filteredApplicants.map(app => [
+            app.personalDetails?.name || 'N/A',
+            app.personalDetails?.email || 'N/A',
+            app.personalDetails?.phone || 'N/A',
+            app.personalDetails?.gender || 'N/A',
+            app.jobDetails?.position || 'N/A',
+            app.jobDetails?.branch || app.jobDetails?.branchName || 'N/A',
+            app.status || 'N/A',
+            new Date(app.createdAt).toLocaleDateString()
+        ]);
+    
+        // Add the table
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 25,
+            theme: 'grid',
+            styles: { fontSize: 8, cellPadding: 1 },
+            headStyles: { 
+                fillColor: [71, 71, 135],
+                fontSize: 8,
+                fontStyle: 'bold',
+                halign: 'center'
+            },
+            columnStyles: {
+                0: { cellWidth: 25 }, // Name
+                1: { cellWidth: 35 }, // Email
+                2: { cellWidth: 25 }, // Phone
+                3: { cellWidth: 15 }, // Gender
+                4: { cellWidth: 25 }, // Position
+                5: { cellWidth: 25 }, // Branch
+                6: { cellWidth: 20 }, // Status
+                7: { cellWidth: 20 }  // Applied Date
+            }
+        });
+    
+        // Add details section for each applicant
+        let yPos = doc.lastAutoTable.finalY + 10;
+        
+        filteredApplicants.forEach((app, index) => {
+            // Check if we need a new page
+            if (yPos > 250) {
+                doc.addPage();
+                yPos = 20;
+            }
+    
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            doc.text(`Detailed Information - ${app.personalDetails?.name || 'Applicant'} (${index + 1}/${filteredApplicants.length})`, 14, yPos);
+            
+            doc.setFontSize(8);
+            doc.setFont(undefined, 'normal');
+            
+            // Add resume information if available
+            if (app.resume?.filename) {
+                yPos += 5;
+                doc.text(`Resume: ${app.resume.filename}`, 14, yPos);
+            }
+    
+            // Add a separator line
+            yPos += 7;
+            doc.line(14, yPos, 196, yPos);
+            yPos += 10;
+        });
+    
+        doc.save(`applicants_${new Date().toISOString().split('T')[0]}.pdf`);
+    };
 
     return (
         <div className="applicants-management">
@@ -163,10 +283,51 @@ const ApplicantsManagement = () => {
                             <option value="shortlisted">Shortlisted</option>
                             <option value="rejected">Rejected</option>
                         </select>
+
+                        <select
+                            value={filters.position}
+                            onChange={(e) => setFilters({ ...filters, position: e.target.value })}
+                            className="filter-select"
+                        >
+                            <option value="">All Positions</option>
+                            {uniquePositions.map(position => (
+                                <option key={position} value={position}>{position}</option>
+                            ))}
+                        </select>
+
+                        <select
+                            value={filters.branch}
+                            onChange={(e) => setFilters({ ...filters, branch: e.target.value })}
+                            className="filter-select"
+                        >
+                            <option value="">All Branches</option>
+                            {uniqueBranches.map(branch => (
+                                <option key={branch} value={branch}>{branch}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="export-actions">
+                        <button
+                            onClick={exportToExcel}
+                            className="export-button"
+                            title="Export to Excel"
+                        >
+                            <FileSpreadsheet size={18} />
+                            Excel
+                        </button>
+                        <button
+                            onClick={exportToPDF}
+                            className="export-button"
+                            title="Export to PDF"
+                        >
+                            <File size={18} />
+                            PDF
+                        </button>
                     </div>
 
                     <button
-                        onClick={() => setShowFieldManager(true)}
+                        onClick={() => (true)}
                         className="customize-form-btn"
                     >
                         <Settings size={18} />

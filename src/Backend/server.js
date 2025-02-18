@@ -89,8 +89,8 @@ const checkPermission = async (req, res, next) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Allow access for admin and HR manager
-    if (user.isAdmin || user.role === 'hr_manager') {
+    // Allow access for admin, HR manager, and T1 member
+    if (user.isAdmin || user.role === 'hr_manager' || user.role === 't1_member') {
       req.userRole = user.role;
       next();
     } else {
@@ -381,7 +381,18 @@ app.get('/api/employees', authenticateToken, async (req, res) => {
   }
 });
 // Get all employees
-
+const isAdminOrT1 = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (user && (user.isAdmin || user.role === 't1_member')) {
+      next();
+    } else {
+      res.status(403).json({ message: 'Admin or T1 Member access required' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Error checking permissions' });
+  }
+};
 
 // Get employee by ID
 app.get('/api/employees/:id', authenticateToken, async (req, res) => {
@@ -1477,29 +1488,20 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
     const jobDetails = JSON.parse(req.body.jobDetails);
     const branchName = jobDetails.branchName || jobDetails.branch;
 
-    console.log('Application details:', {
-      name: personalDetails.name,
-      position: jobDetails.position,
-      branchName: branchName
-    });
-
-    // Find branch with case-insensitive match
+    // Find branch
     const branch = await Branch.findOne({
       name: { $regex: new RegExp('^' + branchName + '$', 'i') }
     });
 
     if (!branch) {
-      console.log('Branch not found:', branchName);
       throw new Error('Invalid branch specified');
     }
 
-    console.log('Found branch:', branch);
-
-    // Save applicant
+    // Save applicant data
     const applicantData = {
       personalDetails: new Map(Object.entries(personalDetails)),
       jobDetails: new Map(Object.entries(jobDetails)),
-      branchName: branch.name, // Use canonical branch name from database
+      branchName: branch.name,
       status: 'pending'
     };
 
@@ -1517,15 +1519,19 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
     // Create notifications
     const notificationPromises = [];
 
-    // Find admins
-    const admins = await User.find({ isAdmin: true });
-    console.log(`Found ${admins.length} admin users`);
+    // Find admins and T1 members
+    const authorizedUsers = await User.find({ 
+      $or: [
+        { isAdmin: true },
+        { role: 't1_member' }
+      ]
+    });
 
-    // Notify admins
-    admins.forEach(admin => {
+    // Notify admins and T1 members
+    authorizedUsers.forEach(user => {
       notificationPromises.push(
         new Notification({
-          userId: admin._id,
+          userId: user._id,
           title: 'New Job Application',
           message: `New application received from ${personalDetails.name} for ${jobDetails.position} position in ${branch.name} branch`,
           type: 'application',
@@ -1537,10 +1543,8 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
       );
     });
 
-    // Find HR manager for the branch
+    // Notify HR manager if exists
     if (branch.hrManager) {
-      console.log('Branch HR Manager ID:', branch.hrManager);
-      
       const hrUser = await User.findOne({
         $or: [
           { _id: branch.hrManager },
@@ -1549,7 +1553,6 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
       });
 
       if (hrUser) {
-        console.log('Creating notification for HR manager:', hrUser.email);
         notificationPromises.push(
           new Notification({
             userId: hrUser._id,
@@ -1565,14 +1568,12 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
       }
     }
 
-    // Save all notifications
-    const notifications = await Promise.all(notificationPromises);
-    console.log(`Created ${notifications.length} notifications`);
+    await Promise.all(notificationPromises);
 
     res.status(201).json({
       success: true,
       message: 'Application submitted successfully',
-      notifications: notifications.length
+      notifications: notificationPromises.length
     });
 
   } catch (error) {
@@ -1726,8 +1727,14 @@ app.get('/api/applicants', authenticateToken, checkPermission, async (req, res) 
 
 
 // Update application status
-app.put('/api/applicants/:id/status', authenticateToken, checkPermission, async (req, res) => {
+// Update application status
+app.put('/api/applicants/:id/status', authenticateToken, async (req, res) => {
   try {
+    const user = await User.findById(req.user.id);
+    if (!(user.isAdmin || user.role === 'hr_manager' || user.role === 't1_member')) {
+      return res.status(403).json({ message: 'Insufficient permissions' });
+    }
+
     const { id } = req.params;
     const { status } = req.body;
 
@@ -1752,9 +1759,15 @@ app.put('/api/applicants/:id/status', authenticateToken, checkPermission, async 
   }
 });
 
-// Get application details (Admin only)
-app.get('/api/applicants/:id', authenticateToken, isAdmin, async (req, res) => {
+
+// Get application details (Admin and T1 member)
+app.get('/api/applicants/:id', authenticateToken, async (req, res) => {
   try {
+    const user = await User.findById(req.user.id);
+    if (!(user.isAdmin || user.role === 't1_member')) {
+      return res.status(403).json({ message: 'Insufficient permissions' });
+    }
+
     const applicant = await Applicant.findById(req.params.id);
     if (!applicant) {
       return res.status(404).json({ message: 'Applicant not found' });
@@ -1769,8 +1782,13 @@ app.get('/api/applicants/:id', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Download resume
-app.get('/api/applicants/:id/resume', authenticateToken, checkPermission, async (req, res) => {
+app.get('/api/applicants/:id/resume', authenticateToken, async (req, res) => {
   try {
+    const user = await User.findById(req.user.id);
+    if (!(user.isAdmin || user.role === 'hr_manager' || user.role === 't1_member')) {
+      return res.status(403).json({ message: 'Insufficient permissions' });
+    }
+
     const { id } = req.params;
     const applicant = await Applicant.findById(id);
 
@@ -1896,13 +1914,19 @@ const isHrManager = async (req, res, next) => {
 };
 
 // Get branch employees for HR
-app.get('/api/hr/employees', authenticateToken, isHrManager, async (req, res) => {
+app.get('/api/hr/employees', authenticateToken, async (req, res) => {
   try {
+    const user = await User.findById(req.user.id);
+    if (!(user.isAdmin || user.role === 'hr_manager' || user.role === 't1_member')) {
+      return res.status(403).json({ message: 'Insufficient permissions' });
+    }
+
+    const query = user.role === 'hr_manager' ? 
+      { 'professionalDetails.branch': user.branchName } : {};
+
     const employees = await Employee.aggregate([
       {
-        $match: {
-          'professionalDetails.branch': req.hrBranch
-        }
+        $match: query
       },
       {
         $lookup: {
@@ -1928,7 +1952,6 @@ app.get('/api/hr/employees', authenticateToken, isHrManager, async (req, res) =>
     res.status(500).json({ message: error.message });
   }
 });
-
 // Get branch leave requests for HR
 app.get('/api/hr/leaves', authenticateToken, isHrManager, async (req, res) => {
   try {
@@ -2138,10 +2161,10 @@ app.put('/api/hr/edit-profiles/:id', authenticateToken, isHrManager, upload.arra
 // New endpoint for HR notifications
 // In server.js, update the HR notifications endpoint
 
-app.get('/api/hr/notifications', authenticateToken, isHrManager, async (req, res) => {
+app.get('/api/hr/notifications', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    console.log('Fetching notifications for HR user:', {
+    console.log('Fetching notifications for user:', {
       userId: user._id,
       branchName: user.branchName,
       role: user.role
@@ -2155,8 +2178,8 @@ app.get('/api/hr/notifications', authenticateToken, isHrManager, async (req, res
     console.log('Found branch:', branch);
 
     let notifications;
-    if (user.isAdmin) {
-      // Admins see all notifications
+    if (user.isAdmin || user.role === 't1_member') {
+      // Admins and T1 members see all notifications
       notifications = await Notification.find()
         .sort({ createdAt: -1 })
         .limit(20);

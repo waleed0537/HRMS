@@ -642,6 +642,101 @@
     transform: translateY(-1px);
   }
   
+  .export-actions {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .export-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #474787;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .export-button:hover {
+    background: #5c5c9d;
+    transform: translateY(-1px);
+  }
+  
+  .filters {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .filter-select {
+    padding: 8px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 14px;
+    min-width: 150px;
+    background-color: white;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .filter-select:hover {
+    border-color: #474787;
+  }
+  
+  .filter-select:focus {
+    outline: none;
+    border-color: #474787;
+    box-shadow: 0 0 0 2px rgba(71, 71, 135, 0.1);
+  }
+  
+  @media (max-width: 1024px) {
+    .header-actions {
+      flex-direction: column;
+      gap: 16px;
+    }
+  
+    .search-bar {
+      width: 100%;
+    }
+  
+    .filters {
+      width: 100%;
+    }
+  
+    .filter-select {
+      flex: 1;
+    }
+  
+    .export-actions {
+      width: 100%;
+    }
+  
+    .export-button {
+      flex: 1;
+      justify-content: center;
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .filters {
+      flex-direction: column;
+    }
+  
+    .filter-select {
+      width: 100%;
+    }
+  
+    .export-actions {
+      flex-direction: column;
+    }
+  }
+  
   @media (max-width: 768px) {
     .customize-form-btn {
       width: 100%;

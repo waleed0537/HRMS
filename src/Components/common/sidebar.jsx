@@ -123,12 +123,12 @@ const Sidebar = ({ user }) => {
               <span>Holidays</span>
             </NavLink>
           )}
-          {(isAdmin || user?.role === 'hr_manager') && (
-            <NavLink to="/applicants" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              <Users className="h-5 w-5" />
-              <span>Job Applications</span>
-            </NavLink>
-          )}
+          {(user?.isAdmin || user?.role === 'hr_manager' || user?.role === 't1_member') && (
+  <NavLink to="/applicants" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+    <Users className="h-5 w-5" />
+    <span>Job Applications</span>
+  </NavLink>
+)}
           <div className="section-divider">Finance</div>
           <NavLink to="/accounts" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             <CircleDollarSign className="h-5 w-5" />

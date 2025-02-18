@@ -136,7 +136,7 @@ function App() {
               <Route
   path="/applicants"
   element={
-    user?.isAdmin || user?.role === 'hr_manager' ? (
+    user?.isAdmin || user?.role === 'hr_manager' || user?.role === 't1_member' ? (
       <ApplicantsManagement />
     ) : (
       <Navigate to="/dashboard" replace />

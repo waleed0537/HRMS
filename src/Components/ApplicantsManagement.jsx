@@ -120,6 +120,56 @@ const ApplicantsManagement = () => {
 
         setFilteredApplicants(result);
     }, [searchTerm, filters, applicants]);
+    const handleStatusUpdate = async (id, newStatus) => {
+        try {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!(user.isAdmin || user.role === 'hr_manager')) {
+                alert('Only administrators and HR managers can update application status');
+                return;
+            }
+    
+            const response = await fetch(`${API_BASE_URL}/api/applicants/${id}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
+    
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to update status');
+            }
+    
+            const result = await response.json();
+            
+            // Update local state
+            setApplicants(prevApplicants => 
+                prevApplicants.map(app =>
+                    app._id === id ? { ...app, status: newStatus } : app
+                )
+            );
+    
+            // If modal is open with this applicant, update it
+            if (selectedApplicant && selectedApplicant._id === id) {
+                setSelectedApplicant(prev => ({ ...prev, status: newStatus }));
+            }
+    
+            // Update filtered applicants as well
+            setFilteredApplicants(prev =>
+                prev.map(app =>
+                    app._id === id ? { ...app, status: newStatus } : app
+                )
+            );
+    
+            // Show success message
+            alert(`Application status updated to ${newStatus}`);
+        } catch (error) {
+            console.error('Error updating status:', error);
+            alert(error.message || 'Failed to update status. Please try again.');
+        }
+    };
 
     const exportToExcel = () => {
         const exportData = filteredApplicants.map(app => ({

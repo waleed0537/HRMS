@@ -1,0 +1,175 @@
+/* src/assets/css/theme.css */
+:root {
+    /* Base colors */
+    --color-primary: #474787;
+    --color-primary-hover: #5c5c9d;
+    --color-background: #f8fafc;
+    --color-surface: #ffffff;
+    --color-text: #1e293b;
+    --color-text-secondary: #64748b;
+    --color-border: #e5e7eb;
+    --color-sidebar: #474787;
+    --color-sidebar-text: #ffffff;
+    --color-sidebar-hover: rgba(255, 255, 255, 0.1);
+    --color-card: #ffffff;
+    --color-card-hover: #f8f9fa;
+    --color-input: #ffffff;
+    --color-input-border: #e5e7eb;
+    --color-input-text: #1e293b;
+    --color-header: #474787;
+    --color-header-text: #ffffff;
+    --color-success: #15803d;
+    --color-error: #dc2626;
+    --color-warning: #d97706;
+    --color-info: #0369a1;
+    --color-notification-bg: #ffffff;
+    --color-dropdown-bg: #ffffff;
+    --color-dropdown-hover: #f3f4f6;
+    --color-table-header: #f8fafc;
+    --color-table-border: #e5e7eb;
+    --color-table-stripe: #f9fafb;
+  
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  
+    /* Transitions */
+    --transition-all: all 0.3s ease;
+  }
+  
+  /* Dark mode colors */
+  .dark-mode {
+    --color-primary: #6363a8;
+    --color-primary-hover: #7777b8;
+    --color-background: #0f172a;
+    --color-surface: #1e293b;
+    --color-text: #f1f5f9;
+    --color-text-secondary: #94a3b8;
+    --color-border: #334155;
+    --color-sidebar: #1e293b;
+    --color-sidebar-text: #f1f5f9;
+    --color-sidebar-hover: rgba(255, 255, 255, 0.05);
+    --color-card: #1e293b;
+    --color-card-hover: #2d3748;
+    --color-input: #1e293b;
+    --color-input-border: #334155;
+    --color-input-text: #f1f5f9;
+    --color-header: #1e293b;
+    --color-header-text: #f1f5f9;
+    --color-notification-bg: #1e293b;
+    --color-dropdown-bg: #1e293b;
+    --color-dropdown-hover: #2d3748;
+    --color-table-header: #1e293b;
+    --color-table-border: #334155;
+    --color-table-stripe: #2d3748;
+  
+    /* Shadows for dark mode */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
+  }
+  
+  /* Apply transitions to all elements */
+  * {
+    transition: var(--transition-all);
+  }
+  
+  /* Base styles */
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+  }
+  
+  /* Card styles */
+  .card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+  }
+  
+  /* Input styles */
+  input, select, textarea {
+    background-color: var(--color-input);
+    border-color: var(--color-input-border);
+    color: var(--color-input-text);
+  }
+  
+  /* Table styles */
+  table {
+    border-color: var(--color-table-border);
+  }
+  
+  th {
+    background-color: var(--color-table-header);
+  }
+  
+  tr:nth-child(even) {
+    background-color: var(--color-table-stripe);
+  }
+  
+  /* Button styles */
+  .button-primary {
+    background-color: var(--color-primary);
+    color: white;
+  }
+  
+  .button-primary:hover {
+    background-color: var(--color-primary-hover);
+  }
+  /* Add these classes to your theme.css */
+
+.loading-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: var(--color-background);
+    color: var(--color-text);
+  }
+  
+  .app-container {
+    min-height: 100vh;
+    background-color: var(--color-background);
+    color: var(--color-text);
+  }
+  
+  .app-layout {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+  }
+  
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--color-background);
+  }
+  
+  .main-area {
+    flex: 1;
+    padding: 1.5rem;
+    padding-top: 5rem;
+    margin-left: 16rem;
+    background-color: var(--color-background);
+    transition: var(--transition-all);
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .main-area {
+      margin-left: 0;
+      padding: 1rem;
+      padding-top: 4rem;
+    }
+  }
+  
+  /* Smooth transitions */
+  .app-container,
+  .app-layout,
+  .main-content,
+  .main-area {
+    transition: var(--transition-all);
+  }

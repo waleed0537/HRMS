@@ -4,7 +4,36 @@
   padding: 2rem;
   text-align: center;
 }
+/* Add to your global.css or create a new App.css */
+.app-container {
+  min-height: 100vh;
+  background-color: var(--color-background);
+  color: var(--color-text);
+}
 
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  background-color: var(--color-background);
+}
+
+.main-area {
+  padding: 1.5rem;
+  padding-top: 5rem;
+  margin-left: 16rem;
+  min-height: calc(100vh - 64px);
+}
+
+/* Dark mode transitions */
+.app-container,
+.main-content,
+.main-area {
+  transition: var(--transition-all);
+}
 
 .logo {
   height: 6em;

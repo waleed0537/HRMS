@@ -1,0 +1,30 @@
+/* src/assets/css/ThemeToggle.css */
+.theme-toggle {
+    padding: 8px;
+    border-radius: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-header-text);
+    transition: var(--transition-all);
+  }
+  
+  .theme-toggle:hover {
+    background-color: var(--color-sidebar-hover);
+  }
+  
+  .theme-icon {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .dark-mode .theme-toggle .theme-icon {
+    color: #fbbf24; /* Yellow color for sun icon in dark mode */
+  }
+  
+  .theme-toggle .theme-icon {
+    color: #666666; /* Gray color for moon icon in light mode */
+  }

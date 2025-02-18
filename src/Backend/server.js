@@ -17,6 +17,7 @@ const Holiday = require('../Backend/models/Holiday');
 const Applicant = require('../Backend/models/Applicant');
 const Attendance = require('../Backend/models/Attendance');
 const FormField = require('../Backend/models/FormField');
+const nodemailer = require('nodemailer');
 
 
 const app = express();
@@ -36,7 +37,31 @@ const resumeStorage = multer.diskStorage({
     cb(null, 'resume-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'smartrichads@gmail.com',
+    pass: 'rqtp zuyg xkvn nmym'
+  }
+});
+const sendEmail = async (to, subject, content) => {
+  try {
+    const mailOptions = {
+      from: 'smartrichads@gmail.com',
+      to: to,
+      subject: subject,
+      html: content
+    };
 
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully to:', to);
+    console.log('Email messageId:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending email to', to, ':', error);
+    return false;
+  }
+};
 
 const resumeUpload = multer({
   storage: resumeStorage,
@@ -1481,12 +1506,15 @@ if (!fs.existsSync('./uploads/resumes')) {
 // In server.js
 // In server.js, update the applicant submission endpoint
 
+// In server.js, update the applicant submission route
 app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
   try {
     console.log('Starting application submission');
     const personalDetails = JSON.parse(req.body.personalDetails);
     const jobDetails = JSON.parse(req.body.jobDetails);
     const branchName = jobDetails.branchName || jobDetails.branch;
+
+    console.log('Application received for branch:', branchName);
 
     // Find branch
     const branch = await Branch.findOne({
@@ -1496,6 +1524,21 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
     if (!branch) {
       throw new Error('Invalid branch specified');
     }
+
+    console.log('Found branch:', branch);
+
+    // Find HR managers for this branch
+    const branchHRs = await User.find({
+      $and: [
+        { role: 'hr_manager' },
+        { branchName: { $regex: new RegExp('^' + branchName + '$', 'i') } }
+      ]
+    });
+
+    console.log('HR Managers found for branch:', branchHRs.map(hr => ({
+      email: hr.email,
+      branchName: hr.branchName
+    })));
 
     // Save applicant data
     const applicantData = {
@@ -1516,8 +1559,9 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
     const applicant = new Applicant(applicantData);
     await applicant.save();
 
-    // Create notifications
+    // Create notifications and send emails
     const notificationPromises = [];
+    const emailPromises = [];
 
     // Find admins and T1 members
     const authorizedUsers = await User.find({ 
@@ -1543,37 +1587,73 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
       );
     });
 
-    // Notify HR manager if exists
-    if (branch.hrManager) {
-      const hrUser = await User.findOne({
-        $or: [
-          { _id: branch.hrManager },
-          { role: 'hr_manager', branchName: branch.name }
-        ]
-      });
-
-      if (hrUser) {
-        notificationPromises.push(
-          new Notification({
-            userId: hrUser._id,
-            title: 'New Job Application',
-            message: `New application received from ${personalDetails.name} for ${jobDetails.position} position`,
-            type: 'application',
-            metadata: {
-              branchId: branch._id,
-              branchName: branch.name
+    // Notify and email HR managers
+    for (const hr of branchHRs) {
+      // Create notification
+      notificationPromises.push(
+        new Notification({
+          userId: hr._id,
+          title: 'New Job Application',
+          message: `New application received from ${personalDetails.name} for ${jobDetails.position} position`,
+          type: 'application',
+          metadata: {
+            branchId: branch._id,
+            branchName: branch.name,
+            applicantDetails: {
+              name: personalDetails.name,
+              email: personalDetails.email,
+              phone: personalDetails.phone,
+              position: jobDetails.position
             }
-          }).save()
+          }
+        }).save()
+      );
+
+      // Prepare and send email
+      const emailContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #474787;">New Job Application Received</h2>
+          <p>A new application has been received for <strong>${branch.name}</strong> branch.</p>
+          
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="color: #333;">Applicant Details:</h3>
+            <ul style="list-style: none; padding-left: 0;">
+              <li style="margin-bottom: 10px;"><strong>Name:</strong> ${personalDetails.name}</li>
+              <li style="margin-bottom: 10px;"><strong>Email:</strong> ${personalDetails.email}</li>
+              <li style="margin-bottom: 10px;"><strong>Phone:</strong> ${personalDetails.phone}</li>
+              <li style="margin-bottom: 10px;"><strong>Position:</strong> ${jobDetails.position}</li>
+            </ul>
+          </div>
+          
+          <p style="color: #666;">Please log in to the HR portal to review the application.</p>
+          
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666;">
+            <p>This is an automated email from the HR Management System.</p>
+          </div>
+        </div>
+      `;
+
+      try {
+        console.log(`Attempting to send email to HR manager: ${hr.email}`);
+        await sendEmail(
+          hr.email,
+          'New Job Application Received',
+          emailContent
         );
+        console.log(`Successfully sent email to HR manager: ${hr.email}`);
+      } catch (emailError) {
+        console.error(`Failed to send email to HR manager: ${hr.email}`, emailError);
       }
     }
 
+    // Wait for all notifications to be sent
     await Promise.all(notificationPromises);
 
     res.status(201).json({
       success: true,
       message: 'Application submitted successfully',
-      notifications: notificationPromises.length
+      notifications: notificationPromises.length,
+      hrManagersNotified: branchHRs.length
     });
 
   } catch (error) {
@@ -1728,8 +1808,10 @@ app.get('/api/applicants', authenticateToken, checkPermission, async (req, res) 
 
 // Update application status
 // Update application status
+// Update or add this route in server.js
 app.put('/api/applicants/:id/status', authenticateToken, async (req, res) => {
   try {
+    // Check user permissions
     const user = await User.findById(req.user.id);
     if (!(user.isAdmin || user.role === 'hr_manager' || user.role === 't1_member')) {
       return res.status(403).json({ message: 'Insufficient permissions' });
@@ -1738,24 +1820,120 @@ app.put('/api/applicants/:id/status', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
+    // Validate status
     if (!['pending', 'reviewed', 'shortlisted', 'rejected'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
-    const applicant = await Applicant.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
-    );
-
+    // Find applicant with all details
+    const applicant = await Applicant.findById(id);
     if (!applicant) {
       return res.status(404).json({ message: 'Applicant not found' });
     }
 
-    res.json(applicant);
+    // Get applicant details
+    const personalDetails = Object.fromEntries(applicant.personalDetails);
+    const jobDetails = Object.fromEntries(applicant.jobDetails);
+
+    // Update applicant status
+    applicant.status = status;
+    await applicant.save();
+
+    // Prepare status message for email
+    let statusMessage = '';
+    let nextSteps = '';
+    
+    switch(status) {
+      case 'reviewed':
+        statusMessage = 'Your application has been reviewed by our HR team.';
+        nextSteps = 'We are currently evaluating all applications and will update you soon about the next steps.';
+        break;
+      case 'shortlisted':
+        statusMessage = 'Congratulations! Your application has been shortlisted.';
+        nextSteps = 'Our HR team will contact you soon to schedule an interview.';
+        break;
+      case 'rejected':
+        statusMessage = 'Thank you for your interest in our organization.';
+        nextSteps = 'We regret to inform you that we have decided to move forward with other candidates. We encourage you to apply for future positions that match your skills and experience.';
+        break;
+      default:
+        statusMessage = 'Your application status has been updated.';
+        nextSteps = 'We will keep you informed about any further updates.';
+    }
+
+    // Format application date
+    const applicationDate = applicant.createdAt.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    // Send email to applicant
+    const emailContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #474787;">Application Status Update</h2>
+        
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+          <p style="margin-bottom: 20px;">${statusMessage}</p>
+          <p style="margin-bottom: 20px;">${nextSteps}</p>
+        </div>
+
+        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+          <h3 style="color: #333; margin-bottom: 15px;">Application Details:</h3>
+          <ul style="list-style: none; padding-left: 0;">
+            <li style="margin-bottom: 10px;"><strong>Position:</strong> ${jobDetails.position}</li>
+            <li style="margin-bottom: 10px;"><strong>Branch:</strong> ${applicant.branchName}</li>
+            <li style="margin-bottom: 10px;"><strong>Applied On:</strong> ${applicationDate}</li>
+            <li style="margin-bottom: 10px;"><strong>Current Status:</strong> ${status.charAt(0).toUpperCase() + status.slice(1)}</li>
+          </ul>
+        </div>
+
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+          <h3 style="color: #333; margin-bottom: 15px;">Your Information:</h3>
+          <ul style="list-style: none; padding-left: 0;">
+            <li style="margin-bottom: 10px;"><strong>Name:</strong> ${personalDetails.name}</li>
+            <li style="margin-bottom: 10px;"><strong>Email:</strong> ${personalDetails.email}</li>
+            <li style="margin-bottom: 10px;"><strong>Phone:</strong> ${personalDetails.phone}</li>
+          </ul>
+        </div>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666;">
+          <p style="font-size: 12px;">This is an automated email from our HR Management System.</p>
+          ${status === 'shortlisted' ? '<p style="font-size: 14px; color: #474787;"><strong>Note:</strong> Please monitor your email for interview scheduling details.</p>' : ''}
+        </div>
+      </div>
+    `;
+
+    try {
+      console.log(`Sending status update email to applicant: ${personalDetails.email}`);
+      await sendEmail(
+        personalDetails.email,
+        `Application Status Update - ${jobDetails.position}`,
+        emailContent
+      );
+      console.log('Status update email sent successfully');
+    } catch (emailError) {
+      console.error('Error sending status update email:', emailError);
+      // Continue with response even if email fails
+    }
+
+    res.json({
+      message: 'Application status updated successfully',
+      applicant: {
+        id: applicant._id,
+        status: applicant.status,
+        emailSent: true
+      }
+    });
+
   } catch (error) {
     console.error('Error updating applicant status:', error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: 'Error updating application status',
+      error: error.message
+    });
   }
 });
 

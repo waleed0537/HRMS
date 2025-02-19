@@ -1507,6 +1507,7 @@ if (!fs.existsSync('./uploads/resumes')) {
 // In server.js, update the applicant submission endpoint
 
 // In server.js, update the applicant submission route
+// In server.js, update the POST /api/applicants route
 app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
   try {
     console.log('Starting application submission');
@@ -1527,19 +1528,6 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
 
     console.log('Found branch:', branch);
 
-    // Find HR managers for this branch
-    const branchHRs = await User.find({
-      $and: [
-        { role: 'hr_manager' },
-        { branchName: { $regex: new RegExp('^' + branchName + '$', 'i') } }
-      ]
-    });
-
-    console.log('HR Managers found for branch:', branchHRs.map(hr => ({
-      email: hr.email,
-      branchName: hr.branchName
-    })));
-
     // Save applicant data
     const applicantData = {
       personalDetails: new Map(Object.entries(personalDetails)),
@@ -1559,17 +1547,23 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
     const applicant = new Applicant(applicantData);
     await applicant.save();
 
-    // Create notifications and send emails
-    const notificationPromises = [];
-    const emailPromises = [];
+    // After saving, create notifications
+    // Find users to notify (admins, HR managers, and T1 members)
+    const [hrManagers, authorizedUsers] = await Promise.all([
+      User.find({
+        role: 'hr_manager',
+        branchName: { $regex: new RegExp('^' + branchName + '$', 'i') }
+      }),
+      User.find({ 
+        $or: [
+          { isAdmin: true },
+          { role: 't1_member' }
+        ]
+      })
+    ]);
 
-    // Find admins and T1 members
-    const authorizedUsers = await User.find({ 
-      $or: [
-        { isAdmin: true },
-        { role: 't1_member' }
-      ]
-    });
+    // Create notifications
+    const notificationPromises = [];
 
     // Notify admins and T1 members
     authorizedUsers.forEach(user => {
@@ -1587,9 +1581,8 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
       );
     });
 
-    // Notify and email HR managers
-    for (const hr of branchHRs) {
-      // Create notification
+    // Notify HR managers
+    hrManagers.forEach(hr => {
       notificationPromises.push(
         new Notification({
           userId: hr._id,
@@ -1598,18 +1591,12 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
           type: 'application',
           metadata: {
             branchId: branch._id,
-            branchName: branch.name,
-            applicantDetails: {
-              name: personalDetails.name,
-              email: personalDetails.email,
-              phone: personalDetails.phone,
-              position: jobDetails.position
-            }
+            branchName: branch.name
           }
         }).save()
       );
 
-      // Prepare and send email
+      // Send email to HR manager
       const emailContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #474787;">New Job Application Received</h2>
@@ -1622,38 +1609,26 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
               <li style="margin-bottom: 10px;"><strong>Email:</strong> ${personalDetails.email}</li>
               <li style="margin-bottom: 10px;"><strong>Phone:</strong> ${personalDetails.phone}</li>
               <li style="margin-bottom: 10px;"><strong>Position:</strong> ${jobDetails.position}</li>
+              ${jobDetails.experience ? `<li style="margin-bottom: 10px;"><strong>Experience:</strong> ${jobDetails.experience}</li>` : ''}
             </ul>
-          </div>
-          
-          <p style="color: #666;">Please log in to the HR portal to review the application.</p>
-          
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666;">
-            <p>This is an automated email from the HR Management System.</p>
           </div>
         </div>
       `;
 
-      try {
-        console.log(`Attempting to send email to HR manager: ${hr.email}`);
-        await sendEmail(
-          hr.email,
-          'New Job Application Received',
-          emailContent
-        );
-        console.log(`Successfully sent email to HR manager: ${hr.email}`);
-      } catch (emailError) {
-        console.error(`Failed to send email to HR manager: ${hr.email}`, emailError);
-      }
-    }
+      notificationPromises.push(
+        sendEmail(hr.email, 'New Job Application Received', emailContent)
+          .catch(err => console.error(`Failed to send email to ${hr.email}:`, err))
+      );
+    });
 
-    // Wait for all notifications to be sent
+    // Wait for all notifications and emails to be sent
     await Promise.all(notificationPromises);
 
     res.status(201).json({
       success: true,
       message: 'Application submitted successfully',
       notifications: notificationPromises.length,
-      hrManagersNotified: branchHRs.length
+      hrManagersNotified: hrManagers.length
     });
 
   } catch (error) {
@@ -1668,77 +1643,55 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
 
 // Add a route to get applicant data for admin/HR
 // Get all applications (Admin only)
+// In your server.js, update the GET /api/applicants endpoint
 app.get('/api/applicants', authenticateToken, async (req, res) => {
-  console.log('GET /api/applicants endpoint hit');
-  console.log('Auth header:', req.headers.authorization);
-  
   try {
-      const { status, position, branch } = req.query;
-      const query = {};
+    const { status, position, branch } = req.query;
+    const query = {};
 
-      if (status) query.status = status;
-      if (position) query['jobDetails.position'] = position;
-      if (branch) query['jobDetails.branch'] = branch;
+    if (status) query.status = status;
+    if (position) query['jobDetails.position'] = position;
+    if (branch) query.branchName = branch;
 
-      console.log('Query:', query);
+    const applicants = await Applicant.find(query).sort({ createdAt: -1 });
 
-      const applicants = await Applicant.find(query).sort({ createdAt: -1 });
-      console.log(`Found ${applicants.length} applicants`);
+    // Transform the data to include all fields
+    const transformedApplicants = applicants.map(applicant => {
+      // Convert Maps to regular objects and preserve all fields
+      const personalDetails = applicant.personalDetails instanceof Map ? 
+        Object.fromEntries(applicant.personalDetails) : 
+        (applicant.personalDetails || {});
 
-      // Transform data for frontend display
-      const transformedApplicants = applicants.map(applicant => {
-          try {
-              const personalDetails = Object.fromEntries(applicant.personalDetails || new Map());
-              const jobDetails = Object.fromEntries(applicant.jobDetails || new Map());
+      const jobDetails = applicant.jobDetails instanceof Map ? 
+        Object.fromEntries(applicant.jobDetails) : 
+        (applicant.jobDetails || {});
 
-              return {
-                  _id: applicant._id,
-                  personalDetails: {
-                      name: personalDetails.name || 'Not provided',
-                      email: personalDetails.email || 'Not provided',
-                      phone: personalDetails.phone || 'Not provided',
-                      gender: personalDetails.gender || 'Not provided',
-                      ...personalDetails
-                  },
-                  jobDetails: {
-                      position: jobDetails.position || 'Not provided',
-                      branch: jobDetails.branch || 'Not provided',
-                      ...jobDetails
-                  },
-                  status: applicant.status,
-                  resume: applicant.resume,
-                  createdAt: applicant.createdAt
-              };
-          } catch (err) {
-              console.error('Error transforming applicant:', err, applicant);
-              // Return a safe fallback for this applicant
-              return {
-                  _id: applicant._id,
-                  personalDetails: {
-                      name: 'Error processing details',
-                      email: 'Not available',
-                      phone: 'Not available',
-                      gender: 'Not available'
-                  },
-                  jobDetails: {
-                      position: 'Not available',
-                      branch: 'Not available'
-                  },
-                  status: applicant.status || 'pending',
-                  createdAt: applicant.createdAt
-              };
-          }
+      // Collect any additional fields that don't fit in the main categories
+      const additionalDetails = {};
+      Object.entries(applicant.toObject()).forEach(([key, value]) => {
+        if (!['_id', 'personalDetails', 'jobDetails', 'status', 'resume', 'createdAt', 'updatedAt'].includes(key)) {
+          additionalDetails[key] = value;
+        }
       });
 
-      res.json(transformedApplicants);
+      return {
+        _id: applicant._id,
+        personalDetails,
+        jobDetails,
+        status: applicant.status || 'pending',
+        resume: applicant.resume,
+        createdAt: applicant.createdAt,
+        additionalDetails: Object.keys(additionalDetails).length > 0 ? additionalDetails : null
+      };
+    });
+
+    res.json(transformedApplicants);
   } catch (error) {
-      console.error('Error in /api/applicants:', error);
-      res.status(500).json({
-          success: false,
-          message: 'Error fetching applications',
-          error: error.message,
-          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      });
+    console.error('Error fetching applicants:', error);
+    res.status(500).json({ 
+      message: 'Error fetching applications',
+      error: error.message 
+    });
   }
 });
 
@@ -1939,23 +1892,45 @@ app.put('/api/applicants/:id/status', authenticateToken, async (req, res) => {
 
 
 // Get application details (Admin and T1 member)
+// Add this to your server.js
 app.get('/api/applicants/:id', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!(user.isAdmin || user.role === 't1_member')) {
-      return res.status(403).json({ message: 'Insufficient permissions' });
-    }
+      const applicant = await Applicant.findById(req.params.id);
+      
+      if (!applicant) {
+          return res.status(404).json({ message: 'Applicant not found' });
+      }
 
-    const applicant = await Applicant.findById(req.params.id);
-    if (!applicant) {
-      return res.status(404).json({ message: 'Applicant not found' });
-    }
-    res.json(applicant);
+      // Transform the data
+      const processedData = {
+          _id: applicant._id,
+          personalDetails: applicant.personalDetails instanceof Map ? 
+              Object.fromEntries(applicant.personalDetails) : 
+              applicant.personalDetails,
+          jobDetails: applicant.jobDetails instanceof Map ? 
+              Object.fromEntries(applicant.jobDetails) : 
+              applicant.jobDetails,
+          status: applicant.status,
+          resume: applicant.resume,
+          createdAt: applicant.createdAt,
+          additionalFields: {}
+      };
+
+      // Add any additional fields that don't fit in the main categories
+      const rawData = applicant.toObject();
+      Object.keys(rawData).forEach(key => {
+          if (!['_id', 'personalDetails', 'jobDetails', 'status', 'resume', 'createdAt', 'updatedAt', '__v'].includes(key)) {
+              processedData.additionalFields[key] = rawData[key];
+          }
+      });
+
+      res.json(processedData);
   } catch (error) {
-    res.status(500).json({
-      message: 'Error fetching applicant details',
-      error: error.message
-    });
+      console.error('Error fetching applicant details:', error);
+      res.status(500).json({ 
+          message: 'Error fetching applicant details',
+          error: error.message 
+      });
   }
 });
 

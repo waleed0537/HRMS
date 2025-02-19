@@ -56,15 +56,14 @@ const ApplicantForm = () => {
   // In ApplicantForm.jsx, update the handleSubmit function
 
 // In ApplicantForm.jsx
+// In ApplicantForm.jsx, update the handleSubmit function
 const handleSubmit = async (e) => {
   e.preventDefault();
   setError('');
   setIsLoading(true);
 
   try {
-    // Log form data for debugging
     console.log('Form Data:', formData);
-    console.log('Resume:', resume);
 
     // Validate required fields
     const requiredFields = formFields.filter(field => field.required);
@@ -84,7 +83,7 @@ const handleSubmit = async (e) => {
     // Prepare form data
     const submitData = new FormData();
 
-    // Prepare personal and job details with more explicit field handling
+    // Organize personal details
     const personalDetails = {
       name: formData.fullname || formData.name || '',
       email: formData.email || '',
@@ -92,25 +91,24 @@ const handleSubmit = async (e) => {
       gender: formData.gender || ''
     };
 
+    // Organize job details with experience
     const jobDetails = {
       branchName: formData.branchname || formData.branch || '',
       position: formData.position || formData.jobtitle || '',
-      department: formData.department || ''
+      department: formData.department || '',
+      experience: formData.experience || '' // Include experience field
     };
 
-    // Log the prepared data
-    console.log('Prepared Personal Details:', personalDetails);
-    console.log('Prepared Job Details:', jobDetails);
+    console.log('Submitting with data:', {
+      personalDetails,
+      jobDetails
+    });
 
     submitData.append('personalDetails', JSON.stringify(personalDetails));
     submitData.append('jobDetails', JSON.stringify(jobDetails));
     submitData.append('branchName', jobDetails.branchName);
+    submitData.append('experience', formData.experience || ''); // Add experience separately
     submitData.append('resume', resume);
-
-    // Log the FormData entries for debugging
-    for (let pair of submitData.entries()) {
-      console.log(pair[0], pair[1]);
-    }
 
     const response = await fetch(`${API_BASE_URL}/api/applicants`, {
       method: 'POST',

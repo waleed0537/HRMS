@@ -308,21 +308,11 @@
                     </div>
                     <div className="newsletter-radios wow fadeInUp delay-0-8s">
                       <div className="custom-control custom-radio">
-                        <input 
-                          type="radio" 
-                          className="custom-control-input" 
-                          id="hero-weekly" 
-        
-                        />
+                        
                       
                       </div>
                       <div className="custom-control custom-radio">
-                        <input 
-                          type="radio" 
-                          className="custom-control-input" 
-                          id="hero-monthly"
-              
-                        />
+                        
                         
                       </div>
                     </div>

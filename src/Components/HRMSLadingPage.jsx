@@ -63,6 +63,7 @@
         [name]: value
       }));
     };
+ // Added this method to handle radio button change
 
     const sliderSettings = {
       dots: true,
@@ -311,24 +312,18 @@
                           type="radio" 
                           className="custom-control-input" 
                           id="hero-weekly" 
-                          checked={updateFrequency === 'weekly'}
-                          onChange={() => setUpdateFrequency('weekly')}
+        
                         />
-                        <label className="custom-control-label" htmlFor="hero-weekly">
-                          Weekly Insights
-                        </label>
+                      
                       </div>
                       <div className="custom-control custom-radio">
                         <input 
                           type="radio" 
                           className="custom-control-input" 
                           id="hero-monthly"
-                          checked={updateFrequency === 'monthly'}
-                          onChange={() => setUpdateFrequency('monthly')}
+              
                         />
-                        <label className="custom-control-label" htmlFor="hero-monthly">
-                          Monthly Reports
-                        </label>
+                        
                       </div>
                     </div>
                   </form>
@@ -470,34 +465,49 @@
 </section>
 
 <section className="newsletter-section-two mt-30 rmt-0 rel z-2">
-    <div className="container">
-        <div className="newsletter-inner style-two bg-gray bgs-cover text-white rel z-1">
+        <div className="container">
+          <div className="newsletter-inner style-two bg-gray bgs-cover text-white rel z-1">
             <div className="row align-items-center align-items-xl-start">
-                <div className="col-lg-6">
-                    <div className="newsletter-content p-60 wow fadeInUp delay-0-2s">
-                        <div className="section-title mb-30">
-                            <span className="sub-title">Stay Updated</span>
-                            <h2>Subscribe to HRMS Insights & Feature Updates</h2>
-                        </div>
-                        <form className="newsletter-form" action="#">
-                            <div className="newsletter-email">
-                                <input type="email" placeholder="Enter Email Address" required />
-                                <button type="submit">Subscribe <i className="fas fa-angle-right"></i></button>
-                            </div>
-                            <div className="newsletter-radios">
-                                <div className="custom-control custom-radio">
-                                  <input type="radio" className="custom-control-input" id="weekly" name="updateFrequency" checked={condition}
-  onChange={(e) => handleChange(e)} />
-                                  <label className="custom-control-label" htmlFor="weekly">Weekly Updates</label>
-                                </div> 
-                                <div className="custom-control custom-radio">
-                                  <input type="radio" className="custom-control-input" id="monthly" name="updateFrequency" />
-                                  <label className="custom-control-label" htmlFor="monthly">Monthly Updates</label>
-                                </div> 
-                            </div>
-                        </form>
+              <div className="col-lg-6">
+                <div className="newsletter-content p-60 wow fadeInUp delay-0-2s">
+                  <div className="section-title mb-30">
+                    <span className="sub-title">Stay Updated</span>
+                    <h2>Subscribe to HRMS Insights & Feature Updates</h2>
+                  </div>
+                  <form className="newsletter-form" onSubmit={handleNewsletterSubmit}>
+                    <div className="newsletter-email">
+                      <input 
+                        type="email" 
+                        placeholder="Enter Email Address" 
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required 
+                      />
+                      <button type="submit">Subscribe <i className="fas fa-angle-right"></i></button>
                     </div>
+                    <div className="newsletter-radios">
+                      <div className="custom-control custom-radio">
+                        <input 
+                          type="radio" 
+                          className="custom-control-input" 
+                          id="weekly" 
+                          name="updateFrequency"
+                        />
+                        <label className="custom-control-label" htmlFor="weekly">Weekly Updates</label>
+                      </div> 
+                      <div className="custom-control custom-radio">
+                        <input 
+                          type="radio" 
+                          className="custom-control-input" 
+                          id="monthly" 
+                          name="updateFrequency"
+                        />
+                        <label className="custom-control-label" htmlFor="monthly">Monthly Updates</label>
+                      </div> 
+                    </div>
+                  </form>
                 </div>
+              </div>
                 <div className="col-lg-6">
                     <div className="newsletter-images wow fadeInUp delay-0-4s">
                         <img src="assets1/images/newsletter/newsletter-two.png" alt="HRMS Newsletter" />

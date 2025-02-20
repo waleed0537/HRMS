@@ -1,0 +1,123 @@
+/* Reset default styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .container {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  
+  /* Navigation styles */
+  nav {
+    background: transparent;
+  }
+  
+  /* Hero section styles */
+  .hero-input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+  
+  .hero-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  /* Button styles */
+  .button-primary {
+    background: #4F46E5;
+    transition: all 0.3s ease;
+  }
+  
+  .button-primary:hover {
+    background: #4338CA;
+  }
+  /* Global styles for the page */
+  body,
+  .page-wrapper,
+  .hero-section-three,
+  .solutions-section-three,
+  .about-section-three,
+  .dashboard-section,
+  .feedback-section-three,
+  .contact-section-two,
+  .footer-section {
+      background: linear-gradient(135deg, #060b4d 0%, #01084e 100%) !important;
+      color: #ffffff !important;
+  }
+  
+  /* Ensure all text is white */
+  h1, h2, h3, h4, h5, h6,
+  p,  a, li,
+  .section-title,
+  .contact-info-item,
+  .footer-widget p,
+  .footer-widget a,
+  
+  .list-style-three li {
+      color: #ffffff !important;
+  }
+  
+  /* Style form elements */
+  input,
+  textarea,
+  .form-control {
+      background-color: rgba(255, 255, 255, 0.1) !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  }
+  
+  input::placeholder,
+  textarea::placeholder {
+      color: rgba(255, 255, 255, 0.7) !important;
+  }
+  
+  /* Style buttons */
+  .theme-btn,
+  .login,
+  button[type="submit"] {
+      background-color: rgba(255, 255, 255, 0.1) !important;
+      border: 1px solid rgba(255, 255, 255, 0.3) !important;
+      color: #ffffff !important;
+  }
+  
+  .theme-btn:hover,
+  .login:hover,
+  button[type="submit"]:hover {
+      background-color: rgba(255, 255, 255, 0.2) !important;
+  }
+  
+  /* Style navigation */
+  .nav-search button,
+  .nav-search form {
+      background-color: transparent !important;
+      color: #ffffff !important;
+  }
+  
+  /* Style cards and sections */
+  .solution-item-three,
+  .service-item,
+  .contact-info-item {
+      background-color: rgba(255, 255, 255, 0.05) !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+  
+  /* Ensure icons are visible */
+  
+  
+  /* Fix any dark backgrounds */
+  .bg-blue,
+  .bg-gray,
+  .bg-lighter {
+      background: transparent !important;
+  }

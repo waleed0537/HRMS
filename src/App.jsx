@@ -1,6 +1,6 @@
   import React, { useState, useEffect } from 'react';
   import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
-  import HRMSLandingPage from './Components/HRMSLandingPage';
+  import HRMSLandingPage from './Components/HRMSLadingPage';
   import Sidebar from "./Components/common/sidebar";
   import Header from "./Components/common/Header";
   import SignIn from "./Components/signin";

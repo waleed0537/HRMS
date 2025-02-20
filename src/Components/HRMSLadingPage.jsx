@@ -101,7 +101,7 @@
           <div className="logo">
             <a href="/">
               <img 
-                src="/assets1/images/HRMSLogo.png" 
+                src="../assets1/images/HRMSLogo.png" 
                 alt="Logo" 
                 style={{ width: "150px", height: "auto" }} 
               />
@@ -322,7 +322,7 @@
               <div className="col-lg-6">
                 <div className="hero-image-three overlay wow fadeInLeft delay-0-4s">
                 <img 
-                  src="./assets1/images/HRMSHeroImage.png" 
+                  src="../assets1/images/HRMSHeroImage.png" 
                   alt="HRMS Dashboard Preview" 
                   style={{ marginTop: "-50px !important" }} 
                 />
@@ -330,9 +330,9 @@
               </div>
             </div>
           </div>
-          <img className="dots-shape" src="/assets1/images/shapes/dots.png" alt="Shape" />
-          <img className="tringle-shape" src="/assets1/images/shapes/tringle.png" alt="Shape" />
-          <img className="close-shape" src="/assets1/images/shapes/close.png" alt="Shape" />
+          <img className="dots-shape" src="../assets1/images/shapes/dots.png" alt="Shape" />
+          <img className="tringle-shape" src="../assets1/images/shapes/tringle.png" alt="Shape" />
+          <img className="close-shape" src="../assets1/images/shapes/close.png" alt="Shape" />
 </section>
 
 
@@ -340,7 +340,7 @@
 <section 
   className="solutions-section-three text-white text-center rel bg-blue pt-130 rpt-100 z-1 pb-75 rpb-45"
   style={{
-    backgroundImage: `radial-gradient(circle at center, #1a1f37 0%, #1a1f37 100%), url(/assets1/images/shapes/solutions-bg-dots.png)`,
+    backgroundImage: `radial-gradient(circle at center, #1a1f37 0%, #1a1f37 100%), url(../assets1/images/shapes/solutions-bg-dots.png)`,
     backgroundSize: "30px 30px",
     backgroundPosition: "0 0",
     backgroundRepeat: "repeat"
@@ -396,7 +396,7 @@
         <div className="row align-items-center">
             <div className="col-xl-7 col-lg-6">
                 <div className="about-image rmb-55 wow fadeInLeft delay-0-2s">
-                    <img src="/assets1/images/HRMSImage2.png" alt="About HRMS" />
+                    <img src="../assets1/images/HRMSImage2.png" alt="About HRMS" />
                 </div>
             </div>
             <div className="col-xl-5 col-lg-6">
@@ -447,7 +447,7 @@
             </div>
             <div className="col-xl-7 col-lg-6">
                 <div className="browswr-support-image text-lg-right wow fadeInLeft delay-0-2s">
-                    <img src="assets1/images/HRMSImage3.png" alt="HRMS Accessibility" />
+                    <img src="../assets1/images/HRMSImage3.png" alt="HRMS Accessibility" />
                 </div>
             </div>
         </div>
@@ -500,9 +500,9 @@
               </div>
                 <div className="col-lg-6">
                     <div className="newsletter-images wow fadeInUp delay-0-4s">
-                        <img src="assets1/images/newsletter/newsletter-two.png" alt="HRMS Newsletter" />
-                        <img src="assets1/images/newsletter/circle.png" alt="shape" className="circle slideUpRight" />
-                        <img src="assets1/images/newsletter/dots.png" alt="shape" className="dots slideLeftRight" />
+                        <img src="../assets1/images/newsletter/newsletter-two.png" alt="HRMS Newsletter" />
+                        <img src="../assets1/images/newsletter/circle.png" alt="shape" className="circle slideUpRight" />
+                        <img src="../assets1/images/newsletter/dots.png" alt="shape" className="dots slideLeftRight" />
                     </div>
                 </div>
             </div>
@@ -591,13 +591,13 @@
     </div>
     <Slider {...sliderSettings}>
       <div className="dashboard-screenshot-item">
-        <img src="./assets1/images/dashboard-screenshots/hrms-dashboard1.jpg" alt="Employee Management Dashboard" />
+        <img src="../assets1/images/dashboard-screenshots/hrms-dashboard1.jpg" alt="Employee Management Dashboard" />
       </div>
       <div className="dashboard-screenshot-item">
-        <img src="./assets1/images/dashboard-screenshots/hrms-dashboard2.jpg" alt="Performance Analytics Dashboard" />
+        <img src="../assets1/images/dashboard-screenshots/hrms-dashboard2.jpg" alt="Performance Analytics Dashboard" />
       </div>
       <div className="dashboard-screenshot-item">
-        <img src="./assets1/images/dashboard-screenshots/hrms-dashboard3.jpg" alt="Recruitment & Attendance Dashboard" />
+        <img src="../assets1/images/dashboard-screenshots/hrms-dashboard3.jpg" alt="Recruitment & Attendance Dashboard" />
       </div>
     </Slider>
   </div>
@@ -611,27 +611,27 @@
                 <div className="row justify-content-around justify-content-lg-between mb-80 rmb-50">
                     <div className="col-lg-2 col-md-4 col-6">
                         <a className="partner-item-three wow fadeInUp delay-0-2s" href="project-details.html">
-                            <img src="./assets1/images/partners/partner-three-white1.png" alt="Partner" />
+                            <img src="../assets1/images/partners/partner-three-white1.png" alt="Partner" />
                         </a>
                     </div>
                     <div className="col-lg-2 col-md-4 col-6">
                         <a className="partner-item-three wow fadeInUp delay-0-4s" href="project-details.html">
-                            <img src="./assets1/images/partners/partner-three-white2.png" alt="Partner" />
+                            <img src="../assets1/images/partners/partner-three-white2.png" alt="Partner" />
                         </a>
                     </div>
                     <div className="col-lg-2 col-md-4 col-6">
                         <a className="partner-item-three wow fadeInUp delay-0-6s" href="project-details.html">
-                            <img src="./assets1/images/partners/partner-three-white3.png" alt="Partner" />
+                            <img src="../assets1/images/partners/partner-three-white3.png" alt="Partner" />
                         </a>
                     </div>
                     <div className="col-lg-2 col-md-4 col-6">
                         <a className="partner-item-three wow fadeInUp delay-0-8s" href="project-details.html">
-                            <img src="./assets1/images/partners/partner-three-white4.png" alt="Partner" />
+                            <img src="../assets1/images/partners/partner-three-white4.png" alt="Partner" />
                         </a>
                     </div>
                     <div className="col-lg-2 col-md-4 col-6">
                         <a className="partner-item-three wow fadeInUp delay-1-0s" href="project-details.html">
-                            <img src="./assets1/images/partners/partner-three-white5.png" alt="Partner" />
+                            <img src="../assets1/images/partners/partner-three-white5.png" alt="Partner" />
                         </a>
                     </div>
                 </div>
@@ -886,9 +886,9 @@
               <p>© 2024 Your Company. All Rights Reserved</p>
             </div>
           </div>
-          <img className="dots-shape" src="/assets1/images/shapes/dots.png" alt="Shape" />
-          <img className="tringle-shape" src="/assets1/images/shapes/tringle.png" alt="Shape" />
-          <img className="close-shape" src="/assets1/images/shapes/close.png" alt="Shape" />
+          <img className="dots-shape" src="../assets1/images/shapes/dots.png" alt="Shape" />
+          <img className="tringle-shape" src="../assets1/images/shapes/tringle.png" alt="Shape" />
+          <img className="close-shape" src="../assets1/images/shapes/close.png" alt="Shape" />
         </footer>
 
         {/* Scroll Top Button */}

@@ -23,7 +23,7 @@ import PWhite2 from '../assets1/images/partners/partner-three-white2.png';
 import PWhite3 from '../assets1/images/partners/partner-three-white3.png';
 import PWhite4 from '../assets1/images/partners/partner-three-white4.png';
 import PWhite5 from '../assets1/images/partners/partner-three-white5.png';
-
+import Preloader from './Preloader';
 // CSS imports
 import '../assets1/css/flaticon.css';
 import '../assets1/css/magnific-popup.css';
@@ -34,6 +34,23 @@ import '../assets1/css/menu.css';
 import '../assets1/css/style.css';
 import '../assets1/css/responsive.css';
 const LandingPage = () => {
+  const imagesArray = [
+    HRMSLogo,
+    HRMSHeroImage,
+    ShapeDot,
+    ShapeTraingle,
+    ShapeClose,
+    HRMSImage2,
+    HRMSImage3,
+    NL2,
+    NLCircle,
+    NLDot,
+    PWhite1,
+    PWhite2,
+    PWhite3,
+    PWhite4,
+    PWhite5,
+  ];
   const pageStyles = {
     background: 'linear-gradient(to right,rgb(0, 0, 0),rgb(21, 62, 102))', // Light gradient background
     minHeight: '100vh',
@@ -225,6 +242,7 @@ const LandingPage = () => {
           background: transparent !important;
         }
       `}</style>
+      <Preloader images={imagesArray}>
     <div className="hrms-landing-page">
     <div className="page-wrapper" style={{background: 'linear-gradient(to right,rgb(0, 0, 0),rgb(21, 62, 102))' }} >
       {/* Header Section */}
@@ -1018,6 +1036,7 @@ style={{
       </button>
     </div>
     </div>
+    </Preloader>
     </>
   );
 };

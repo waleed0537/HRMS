@@ -53,7 +53,8 @@ const EmployeeDetails = ({ employee, onClose }) => {
           <div className="large-avatar">
             {employee.firstName?.[0] || ''}{employee.lastName?.[0] || ''}
           </div>
-          <h2>{employee.firstName} {employee.lastName}</h2>
+          <h2 style={{ color: 'white' }}>{employee.firstName} {employee.lastName}</h2>
+
           <p>{employee.role}</p>
           <div className="status-container">
             <span className={`status ${employee.status?.toLowerCase()}`}>

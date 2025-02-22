@@ -6,15 +6,52 @@
   min-height: calc(100vh - 64px);
 }
 
-.filter-section {
-  background: white;
-  padding: 20px;
+/* Controls Section */
+.controls-section {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.view-controls {
+  display: flex;
+  gap: 8px;
+  background: white;
+  padding: 4px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  margin-bottom: 20px;
+}
+
+.view-control-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.view-control-btn:hover {
+  background: #f0f0f0;
+}
+
+.view-control-btn.active {
+  background: #474787;
+  color: white;
+}
+
+/* Filter Section */
+.filter-section {
+  display: flex;
+  gap: 16px;
+  align-items: center;
 }
 
 .filter-container {
@@ -49,7 +86,8 @@
   background: #5c5c9d;
 }
 
-.employee-grid {
+/* Grid View */
+.employee-grid-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 20px;
@@ -68,13 +106,24 @@
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
-.employee-header {
+/* List View */
+.employee-list-container {
   display: flex;
-  gap: 15px;
-  margin-bottom: 20px;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.employee-avatar {
+.employee-list-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.employee-list-avatar {
   width: 48px;
   height: 48px;
   background: #474787;
@@ -85,20 +134,109 @@
   justify-content: center;
   font-size: 18px;
   font-weight: 600;
+  flex-shrink: 0;
 }
 
-.employee-info h3 {
-  margin: 0;
-  color: #333;
+.employee-list-info {
+  flex: 1;
+  min-width: 200px;
+}
+
+.employee-list-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+}
+
+.employee-list-status {
+  min-width: 120px;
+  text-align: center;
+}
+
+/* Compact View */
+.employee-compact-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
+  padding: 10px;
+}
+
+.employee-compact-item {
+  background: white;
+  border-radius: 12px;
+  padding: 20px 15px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+}
+
+.employee-compact-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.employee-compact-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.employee-compact-avatar {
+  width: 48px;
+  height: 48px;
+  background: #474787;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
 }
 
-.role {
+.employee-compact-info {
+  width: 100%;
+}
+
+.employee-compact-info h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.role-label {
+  margin: 4px 0 12px;
+  font-size: 13px;
   color: #666;
-  margin: 5px 0;
-  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+.view-btn-compact {
+  padding: 6px 20px;
+  background: #474787;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.view-btn-compact:hover {
+  background: #5c5c9d;
+}
+
+/* Common Styles */
 .status {
   display: inline-block;
   padding: 4px 8px;
@@ -112,74 +250,50 @@
   color: #137333;
 }
 
-.contact-info {
-  margin: 15px 0;
+.status.resigned {
+  background: #fce8e8;
+  color: #b91c1c;
 }
 
-.contact-info p {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #666;
-  margin: 8px 0;
-  font-size: 14px;
-  word-break: break-all;
+.status.terminated {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
-.icon {
-  font-style: normal;
-  flex-shrink: 0;
-}
-
-.employee-footer {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.rating {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.star {
-  color: #ffd700;
-}
-
-.button-group {
-  display: flex;
-  gap: 10px;
-}
-
-.profile-btn, .view-btn {
-  flex: 1;
-  background-color: #474787;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.3s;
+.status.on_leave {
+  background: #fff3cd;
+  color: #856404;
 }
 
 .view-btn {
+  padding: 6px 12px;
+  background: #474787;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.3s ease;
+}
+
+.view-btn:hover {
   background: #5c5c9d;
 }
 
-.profile-btn:hover, .view-btn:hover {
-  opacity: 0.9;
-}
-
-@media (max-width: 768px) {
+/* Responsive Styles */
+@media (max-width: 1024px) {
   .employee-cards-container {
     margin-left: 0;
   }
 
+  .controls-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .filter-section {
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
   }
 
   .filter-container {
@@ -194,14 +308,72 @@
     width: 100%;
     justify-content: center;
   }
+
+  .employee-list-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .employee-list-contact {
+    width: 100%;
+  }
+
+  .employee-list-status {
+    width: 100%;
+    text-align: left;
+  }
 }
 
-@media (max-width: 480px) {
-  .employee-grid {
+@media (max-width: 768px) {
+  .employee-cards-container {
+    padding: 16px;
+  }
+
+  .view-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .employee-grid-container {
     grid-template-columns: 1fr;
   }
 
-  .button-group {
-    flex-direction: column;
+  .employee-compact-container {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
+}
+
+@media (max-width: 480px) {
+  .employee-compact-container {
+    grid-template-columns: 1fr;
+  }
+
+  .view-control-btn {
+    padding: 8px;
+  }
+
+  .view-control-btn span {
+    display: none;
+  }
+
+  .employee-card {
+    padding: 16px;
+  }
+}
+
+/* Loading and Error States */
+.loading-screen,
+.error-message {
+  text-align: center;
+  padding: 40px;
+  background: white;
+  border-radius: 8px;
+  margin: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.error-message {
+  color: #dc2626;
+  background: #fee2e2;
 }

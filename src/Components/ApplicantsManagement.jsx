@@ -3,7 +3,7 @@ import {
     Search, Download, Eye, User, Mail, Phone,
     Building, Briefcase, Calendar, CheckCircle, XCircle,
     AlertCircle, FileText, Settings, X, FileDown,
-    FileSpreadsheet, File // Changed FilePdf to File
+    FileSpreadsheet, File,Grid,List,LayoutGrid // Changed FilePdf to File
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -18,6 +18,7 @@ const ApplicantsManagement = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedApplicant, setSelectedApplicant] = useState(null);
+    
     const [searchTerm, setSearchTerm] = useState('');
     const [filters, setFilters] = useState({
         status: '',
@@ -26,6 +27,7 @@ const ApplicantsManagement = () => {
     });
     const [uniquePositions, setUniquePositions] = useState([]);
     const [uniqueBranches, setUniqueBranches] = useState([]);
+    const [viewMode, setViewMode] = useState('grid'); // New state for view mode
     const getStatusIcon = (status) => {
         switch (status?.toLowerCase()) {
             case 'shortlisted': return <CheckCircle className="status-icon shortlisted" />;
@@ -108,15 +110,15 @@ const ApplicantsManagement = () => {
             }
 
             const detailedData = await response.json();
-            
+
             // Transform the data to ensure all fields are properly structured
             const processedData = {
                 ...detailedData,
-                personalDetails: detailedData.personalDetails instanceof Map ? 
-                    Object.fromEntries(detailedData.personalDetails) : 
+                personalDetails: detailedData.personalDetails instanceof Map ?
+                    Object.fromEntries(detailedData.personalDetails) :
                     detailedData.personalDetails || {},
-                jobDetails: detailedData.jobDetails instanceof Map ? 
-                    Object.fromEntries(detailedData.jobDetails) : 
+                jobDetails: detailedData.jobDetails instanceof Map ?
+                    Object.fromEntries(detailedData.jobDetails) :
                     detailedData.jobDetails || {},
             };
 
@@ -339,12 +341,165 @@ const ApplicantsManagement = () => {
 
         doc.save(`applicants_${new Date().toISOString().split('T')[0]}.pdf`);
     };
+    const renderApplicantGrid = (applicant) => (
+        <div className="applicant-card">
+            <div className="card-header">
+                <div className="applicant-avatar">
+                    {applicant.personalDetails?.name?.[0]?.toUpperCase() || '?'}
+                </div>
+                <div className="applicant-info">
+                    <h3>{applicant.personalDetails?.name || 'Not provided'}</h3>
+                    <p className="position">
+                        {applicant.jobDetails?.position || 'Position not specified'}
+                    </p>
+                    <span className={`status-badge ${applicant.status || 'pending'}`}>
+                        {getStatusIcon(applicant.status)}
+                        {(applicant.status || 'pending').toUpperCase()}
+                    </span>
+                </div>
+            </div>
+
+            <div className="contact-details">
+                <div className="detail-item">
+                    <Mail className="detail-icon" />
+                    <span>{applicant.personalDetails?.email || 'Email not provided'}</span>
+                </div>
+                {applicant.personalDetails?.phone && (
+                    <div className="detail-item">
+                        <Phone className="detail-icon" />
+                        <span>{applicant.personalDetails.phone}</span>
+                    </div>
+                )}
+                {applicant.jobDetails?.branch && (
+                    <div className="detail-item">
+                        <Building className="detail-icon" />
+                        <span>{applicant.jobDetails.branch}</span>
+                    </div>
+                )}
+            </div>
+
+            <div className="card-actions">
+                <select
+                    value={applicant.status}
+                    onChange={(e) => handleStatusUpdate(applicant._id, e.target.value)}
+                    className={`status-select ${applicant.status}`}
+                >
+                    <option value="pending">Pending</option>
+                    <option value="reviewed">Reviewed</option>
+                    <option value="shortlisted">Shortlisted</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+                <button
+                    onClick={() => setSelectedApplicant(applicant)}
+                    className="view-details-btn"
+                >
+                    <Eye size={18} />
+                    View Details
+                </button>
+            </div>
+        </div>
+    );
+
+    const renderApplicantList = (applicant) => (
+        <div className="applicant-list-item">
+            <div className="applicant-list-header">
+                <div className="applicant-list-avatar">
+                    {applicant.personalDetails?.name?.[0]?.toUpperCase() || '?'}
+                </div>
+                <div className="applicant-list-info">
+                    <h3>{applicant.personalDetails?.name || 'Not provided'}</h3>
+                    <div className="applicant-list-meta">
+                        <span>{applicant.jobDetails?.position || 'Position not specified'}</span>
+                        <span>•</span>
+                        <span>{applicant.jobDetails?.branch || 'Branch not specified'}</span>
+                    </div>
+                </div>
+            </div>
+            <div className="applicant-list-status">
+                <select
+                    value={applicant.status}
+                    onChange={(e) => handleStatusUpdate(applicant._id, e.target.value)}
+                    className={`status-select ${applicant.status}`}
+                >
+                    <option value="pending">Pending</option>
+                    <option value="reviewed">Reviewed</option>
+                    <option value="shortlisted">Shortlisted</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+            </div>
+            <button
+                onClick={() => setSelectedApplicant(applicant)}
+                className="view-details-btn"
+            >
+                <Eye size={18} />
+                View
+            </button>
+        </div>
+    );
+
+    const renderApplicantCompact = (applicant) => (
+        <div className="applicant-compact-item">
+            <div className="applicant-compact-avatar">
+                {applicant.personalDetails?.name?.[0]?.toUpperCase() || '?'}
+            </div>
+            <div className="applicant-compact-info">
+                <h3>{applicant.personalDetails?.name || 'Not provided'}</h3>
+                <p className="position-compact">
+                    {applicant.jobDetails?.position || 'Position not specified'}
+                </p>
+                <span className={`status-badge-compact ${applicant.status || 'pending'}`}>
+                    {(applicant.status || 'pending').toUpperCase()}
+                </span>
+            </div>
+            <div className="applicant-compact-actions">
+                <select
+                    value={applicant.status}
+                    onChange={(e) => handleStatusUpdate(applicant._id, e.target.value)}
+                    className={`status-select-compact ${applicant.status}`}
+                >
+                    <option value="pending">Pending</option>
+                    <option value="reviewed">Reviewed</option>
+                    <option value="shortlisted">Shortlisted</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+                <button
+                    onClick={() => setSelectedApplicant(applicant)}
+                    className="view-details-btn-compact"
+                >
+                    View
+                </button>
+            </div>
+        </div>
+    );
 
     return (
         <div className="applicants-management">
             <div className="page-header">
                 <h1>Manage Applications</h1>
                 <div className="header-actions">
+                <div className="view-controls">
+                        <button 
+                            className={`view-control-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                            onClick={() => setViewMode('grid')}
+                        >
+                            <Grid size={20} />
+                            Grid
+                        </button>
+                        <button 
+                            className={`view-control-btn ${viewMode === 'list' ? 'active' : ''}`}
+                            onClick={() => setViewMode('list')}
+                        >
+                            <List size={20} />
+                            List
+                        </button>
+                        <button 
+                            className={`view-control-btn ${viewMode === 'compact' ? 'active' : ''}`}
+                            onClick={() => setViewMode('compact')}
+                        >
+                            <LayoutGrid size={20} />
+                            Compact
+                        </button>
+                    </div>
                     <div className="search-bar">
                         <Search className="search-icon" />
                         <input
@@ -417,6 +572,15 @@ const ApplicantsManagement = () => {
                     </button>
                 </div>
             </div>
+            <div className={`applicants-${viewMode}-container`}>
+                {filteredApplicants.map((applicant) => (
+                    <React.Fragment key={applicant._id}>
+                        {viewMode === 'grid' && renderApplicantGrid(applicant)}
+                        {viewMode === 'list' && renderApplicantList(applicant)}
+                        {viewMode === 'compact' && renderApplicantCompact(applicant)}
+                    </React.Fragment>
+                ))}
+            </div>
 
             <div className="applicants-grid">
                 {filteredApplicants.map(applicant => (
@@ -484,12 +648,12 @@ const ApplicantsManagement = () => {
                             </select>
 
                             <button
-                    onClick={() => handleViewDetails(applicant)}
-                    className="view-details-btn"
-                >
-                    <Eye size={18} />
-                    View Details
-                </button>
+                                onClick={() => handleViewDetails(applicant)}
+                                className="view-details-btn"
+                            >
+                                <Eye size={18} />
+                                View Details
+                            </button>
                         </div>
                     </div>
                 ))}
@@ -508,7 +672,7 @@ const ApplicantsManagement = () => {
                 onClose={() => setShowFieldManager(false)}
             />
 
-{selectedApplicant && (
+            {selectedApplicant && (
                 <div className="modal-overlay">
                     <div className="applicant-modal">
                         <div className="modal-header">
@@ -540,8 +704,8 @@ const ApplicantsManagement = () => {
                                         .map(([key, value]) => (
                                             <div key={key} className="info-item">
                                                 <label>
-                                                    {key.split(/(?=[A-Z])/).join(' ').charAt(0).toUpperCase() + 
-                                                     key.split(/(?=[A-Z])/).join(' ').slice(1)}
+                                                    {key.split(/(?=[A-Z])/).join(' ').charAt(0).toUpperCase() +
+                                                        key.split(/(?=[A-Z])/).join(' ').slice(1)}
                                                 </label>
                                                 <p>{value}</p>
                                             </div>
@@ -561,8 +725,8 @@ const ApplicantsManagement = () => {
                                         .map(([key, value]) => (
                                             <div key={key} className="info-item">
                                                 <label>
-                                                    {key.split(/(?=[A-Z])/).join(' ').charAt(0).toUpperCase() + 
-                                                     key.split(/(?=[A-Z])/).join(' ').slice(1)}
+                                                    {key.split(/(?=[A-Z])/).join(' ').charAt(0).toUpperCase() +
+                                                        key.split(/(?=[A-Z])/).join(' ').slice(1)}
                                                 </label>
                                                 <p>{value}</p>
                                             </div>
@@ -583,8 +747,8 @@ const ApplicantsManagement = () => {
                                             .map(([key, value]) => (
                                                 <div key={key} className="info-item">
                                                     <label>
-                                                        {key.split(/(?=[A-Z])/).join(' ').charAt(0).toUpperCase() + 
-                                                         key.split(/(?=[A-Z])/).join(' ').slice(1)}
+                                                        {key.split(/(?=[A-Z])/).join(' ').charAt(0).toUpperCase() +
+                                                            key.split(/(?=[A-Z])/).join(' ').slice(1)}
                                                     </label>
                                                     <p>{value}</p>
                                                 </div>
@@ -602,7 +766,7 @@ const ApplicantsManagement = () => {
                                     </h3>
                                     <div className="resume-container">
                                         <p className="resume-filename">{selectedApplicant.resume.filename}</p>
-                                        <button 
+                                        <button
                                             className="download-button"
                                             onClick={() => downloadResume(selectedApplicant._id, selectedApplicant.resume.filename)}
                                         >

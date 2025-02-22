@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import EmployeeDetails from './EmployeeDetails';
-import { Mail, Phone, Download, FilterIcon } from 'lucide-react';
+import { Mail, Phone, Download, FilterIcon, Grid, List, LayoutGrid } from 'lucide-react';
 import '../assets/css/EmployeeCards.css';
 import API_BASE_URL from '../config/api.js';
+
 const EmployeeCards = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [showCards, setShowCards] = useState(true);
@@ -11,6 +12,7 @@ const EmployeeCards = () => {
   const [selectedBranch, setSelectedBranch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', or 'compact'
 
   useEffect(() => {
     fetchEmployees();
@@ -32,32 +34,30 @@ const EmployeeCards = () => {
     }
   };
 
-// In EmployeeCards.jsx
+  const fetchEmployees = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      const endpoint = user.role === 'hr_manager' ? '/api/hr/employees' : '/api/employees';
+      
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
 
-const fetchEmployees = async () => {
-  try {
-    const user = JSON.parse(localStorage.getItem('user'));
-    const endpoint = user.role === 'hr_manager' ? '/api/hr/employees' : '/api/employees';
-    
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      if (!response.ok) {
+        throw new Error('Failed to fetch employees');
       }
-    });
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch employees');
+      const data = await response.json();
+      setEmployees(data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching employees:', err);
+      setError(err.message);
+      setLoading(false);
     }
-
-    const data = await response.json();
-    setEmployees(data);
-    setLoading(false);
-  } catch (err) {
-    console.error('Error fetching employees:', err);
-    setError(err.message);
-    setLoading(false);
-  }
-};
+  };
 
   const handleProfileClick = (emp) => {
     const formattedEmployee = {
@@ -129,75 +129,158 @@ const fetchEmployees = async () => {
   if (loading) return <div className="loading-screen">Loading...</div>;
   if (error) return <div className="error-message">Error: {error}</div>;
 
-  return (
-    <div className="employee-cards-container">
-      {/* Removed Header component as it's now handled by the parent App.jsx */}
-      {showCards && (
-        <>
-          <div className="filter-section">
-            <div className="filter-container">
-              <FilterIcon size={20} />
-              <select 
-                value={selectedBranch}
-                onChange={(e) => setSelectedBranch(e.target.value)}
-                className="branch-select"
-              >
-                <option value="">All Branches</option>
-                {branches.map(branch => (
-                  <option key={branch._id} value={branch.name}>
-                    {branch.name}
-                  </option>
-                ))}
-              </select>
+  const renderEmployee = (emp) => {
+    switch (viewMode) {
+      case 'list':
+        return (
+          <div className="employee-list-item">
+            <div className="employee-list-avatar">
+              {getInitials(emp.personalDetails.name)}
             </div>
-            <button onClick={generateReport} className="generate-report-btn">
-              <Download size={20} />
-              Download Report
+            <div className="employee-list-info">
+              <h3>{emp.personalDetails.name}</h3>
+              <p>{emp.professionalDetails.role}</p>
+            </div>
+            <div className="employee-list-contact">
+              <p><Mail className="icon" size={16} /> {emp.personalDetails.email}</p>
+              <p><Phone className="icon" size={16} /> {emp.personalDetails.contact}</p>
+            </div>
+            <div className="employee-list-status">
+              <span className={`status ${emp.professionalDetails.status.toLowerCase()}`}>
+                {emp.professionalDetails.status}
+              </span>
+            </div>
+            <button 
+              className="view-btn"
+              onClick={() => handleProfileClick(emp)}
+            >
+              View Profile
             </button>
           </div>
+        );
 
-          <div className="employee-grid">
-            {filteredEmployees.map((emp) => (
-              <div key={emp._id} className="employee-card">
-                <div className="employee-header">
-                <div className="employee-avatar">
-  {getInitials(emp.personalDetails.name)}
-</div>
-                  <div className="employee-info">
-                    <h3>{emp.personalDetails.name}</h3>
-                    <p className="role">{emp.professionalDetails.role}</p>
-                    <span className={`status ${emp.professionalDetails.status.toLowerCase()}`}>
-                      {emp.professionalDetails.status}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="contact-info">
-                  <p>
-                    <Mail className="icon" size={16} />
-                    {emp.personalDetails.email}
-                  </p>
-                  <p>
-                    <Phone className="icon" size={16} />
-                    {emp.personalDetails.contact}
-                  </p>
-                </div>
-                
-                <div className="employee-footer">
-                  <div className="rating">
-                    <span className="star">★</span>
-                    <span>{emp.rating || 'N/A'}</span>
-                  </div>
-                  <div className="button-group">
-                    <button 
-                      className="view-btn"
-                      onClick={() => handleProfileClick(emp)}
-                    >
-                      View Profile
-                    </button>
-                  </div>
-                </div>
+      case 'compact':
+        return (
+          <div className="employee-compact-item">
+            <div className="employee-compact-avatar">
+              {getInitials(emp.personalDetails.name)}
+            </div>
+            <div className="employee-compact-info">
+              <h3>{emp.personalDetails.name}</h3>
+              <p>{emp.professionalDetails.role}</p>
+              <button 
+                className="view-btn"
+                onClick={() => handleProfileClick(emp)}
+              >
+                View
+              </button>
+            </div>
+          </div>
+        );
+
+      default: // grid view
+        return (
+          <div className="employee-card">
+            <div className="employee-header">
+              <div className="employee-avatar">
+                {getInitials(emp.personalDetails.name)}
               </div>
+              <div className="employee-info">
+                <h3>{emp.personalDetails.name}</h3>
+                <p className="role">{emp.professionalDetails.role}</p>
+                <span className={`status ${emp.professionalDetails.status.toLowerCase()}`}>
+                  {emp.professionalDetails.status}
+                </span>
+              </div>
+            </div>
+            
+            <div className="contact-info">
+              <p>
+                <Mail className="icon" size={16} />
+                {emp.personalDetails.email}
+              </p>
+              <p>
+                <Phone className="icon" size={16} />
+                {emp.personalDetails.contact}
+              </p>
+            </div>
+            
+            <div className="employee-footer">
+              <div className="rating">
+                <span className="star">★</span>
+                <span>{emp.rating || 'N/A'}</span>
+              </div>
+              <div className="button-group">
+                <button 
+                  className="view-btn"
+                  onClick={() => handleProfileClick(emp)}
+                >
+                  View Profile
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="employee-cards-container">
+      {showCards && (
+        <>
+          <div className="controls-section">
+            <div className="view-controls">
+              <button 
+                className={`view-control-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                onClick={() => setViewMode('grid')}
+              >
+                <Grid size={20} />
+                Grid
+              </button>
+              <button 
+                className={`view-control-btn ${viewMode === 'list' ? 'active' : ''}`}
+                onClick={() => setViewMode('list')}
+              >
+                <List size={20} />
+                List
+              </button>
+              <button 
+                className={`view-control-btn ${viewMode === 'compact' ? 'active' : ''}`}
+                onClick={() => setViewMode('compact')}
+              >
+                <LayoutGrid size={20} />
+                Compact
+              </button>
+            </div>
+
+            <div className="filter-section">
+              <div className="filter-container">
+                <FilterIcon size={20} />
+                <select 
+                  value={selectedBranch}
+                  onChange={(e) => setSelectedBranch(e.target.value)}
+                  className="branch-select"
+                >
+                  <option value="">All Branches</option>
+                  {branches.map(branch => (
+                    <option key={branch._id} value={branch.name}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button onClick={generateReport} className="generate-report-btn">
+                <Download size={20} />
+                Download Report
+              </button>
+            </div>
+          </div>
+
+          <div className={`employee-${viewMode}-container`}>
+            {filteredEmployees.map((emp) => (
+              <React.Fragment key={emp._id}>
+                {renderEmployee(emp)}
+              </React.Fragment>
             ))}
           </div>
         </>

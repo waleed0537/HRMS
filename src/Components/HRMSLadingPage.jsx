@@ -965,8 +965,8 @@ style={{
             <div className="row">
               <div className="col-lg-3 col-md-6">
                 <div className="footer-widget">
-                <h4 className="footer-title">About Company</h4>
-                  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla id tincidunt erat.</p>
+                <h4 className="footer-title">Hrrive</h4>
+                  <p>Our advanced HRMS simplifies workforce management streamlining employees, recruitment, and performance with security and scalability</p>
                   <div className="social-style-one mt-20">
                     <a href="#"><i className="fab fa-facebook-f"></i></a>
                     <a href="#"><i className="fab fa-twitter"></i></a>

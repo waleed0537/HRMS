@@ -4,11 +4,12 @@
   }
   .page-header {
     background: white;
-    padding: 20px 24px;
+    padding: 16px;
     border-radius: 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     margin-bottom: 24px;
   }
+  
   
   .status-icon {
     width: 16px;

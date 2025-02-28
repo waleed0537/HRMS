@@ -1,7 +1,7 @@
 .manage-leaves-container {
   padding: 20px;
   margin-left: 16rem;
-  margin-top: 64px;
+  margin-top: 48px;
   background-color: #f8fafc;
   min-height: calc(100vh - 64px);
 }

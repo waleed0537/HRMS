@@ -1,7 +1,7 @@
 .staff-requests {
   padding: 2rem;
   margin-left: 16rem;
-  margin-top: 64px;
+  margin-top: 28px;
   background-color: #f8fafc;
   min-height: calc(100vh - 64px);
 }

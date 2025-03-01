@@ -13,7 +13,7 @@
 
 .logo-section {
   flex: 0 0 auto;
-  padding: 1.5rem;
+  padding: 2rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -101,6 +101,54 @@
 @media (max-width: 1024px) {
   .mobile-menu-button {
     display: block;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 110;
+    /* Add any other styling you need for the button itself */
+  }
+
+  /* Active state (open menu) */
+  .mobile-menu-button.active {
+    margin-left: 180px;
+    /* Keep the same positioning properties */
+    display: block;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 110;
+  }
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 90;
+    backdrop-filter: blur(4px);
+  }
+}
+@media (max-width: 768px) {  /* Changed from 1024px to 768px */
+  .mobile-menu-button {
+    display: block;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 110;
+  }
+  .logo-section{
+    margin-left: 40px;
+  }
+  /* Active state (open menu) */
+  .mobile-menu-button.active {
+    margin-left: 180px;
     position: fixed;
     top: 1rem;
     left: 1rem;

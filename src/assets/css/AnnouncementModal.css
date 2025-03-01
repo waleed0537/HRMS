@@ -111,6 +111,7 @@
   }
   
   .cancel-button {
+    height: fit-content;
     background: #f0f0f0;
     border: 1px solid #ddd;
     color: #333;

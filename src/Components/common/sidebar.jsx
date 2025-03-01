@@ -36,7 +36,7 @@ const Sidebar = ({ user }) => {
       <div className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="logo-section">
           <div className="logo-icon">
-            <Users className="h-6 w-6 text-[#474787]" />
+            
             <span className="logo-text">My-Task</span>
           </div>
         </div>
@@ -86,10 +86,7 @@ const Sidebar = ({ user }) => {
                     <UserPlus className="h-5 w-5" />
                     <span>Staff Requests</span>
                   </NavLink>
-                  <NavLink to="/manage-employees" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                    <Users className="h-5 w-5" />
-                    <span>Manage Employees</span>
-                  </NavLink>
+                
                   <NavLink to="/branch-management" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                     <Building className="h-5 w-5" />
                     <span>Branch Management</span>

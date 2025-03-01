@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Bell, CheckCircle, XCircle, Download } from 'lucide-react';
+import { 
+  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
+  Legend, ResponsiveContainer, RadialBarChart, RadialBar
+} from 'recharts';
+import { 
+  Bell, CheckCircle, XCircle, Download, Users, Calendar, 
+  TrendingUp, CreditCard, DollarSign, Activity, Briefcase,
+  ChevronRight, AlertTriangle, FilePlus, Eye, Clock, Archive
+} from 'lucide-react';
 import AnnouncementModal from './AnnouncementModal';
 import AnnouncementsList from './AnnouncementsList';
 import '../assets/css/AdminDashboard.css';
 import API_BASE_URL from '../config/api.js';
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const AdminDashboard = () => {
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
@@ -19,7 +28,17 @@ const AdminDashboard = () => {
     onLeave: 0,
     departments: []
   });
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [kpiData, setKpiData] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(null);
+  const [timeRange, setTimeRange] = useState('month');
+  const [isLoading, setIsLoading] = useState(true);
+  const [summaryCards, setSummaryCards] = useState([
+    { title: 'Total Employees', value: 0, change: 0, icon: Users, color: '#0088FE' },
+    { title: 'Pending Leaves', value: 0, change: 0, icon: Calendar, color: '#00C49F' },
+    { title: 'This Month Revenue', value: 0, change: 0, icon: DollarSign, color: '#FFBB28' },
+    { title: 'Active Projects', value: 0, change: 0, icon: Briefcase, color: '#FF8042' }
+  ]);
 
   useEffect(() => {
     if (notificationMessage) {
@@ -33,29 +52,69 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [timeRange]);
 
   const fetchDashboardData = async () => {
     try {
+      setIsLoading(true);
       const token = localStorage.getItem('token');
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       };
 
-      const employeesResponse = await fetch(`${API_BASE_URL}/api/employees`, { headers });
-      const employeesData = await employeesResponse.json();
+      // Safely fetch data with error handling for each call
+      const safelyFetchData = async (url) => {
+        try {
+          const response = await fetch(`${API_BASE_URL}${url}`, { headers });
+          if (!response.ok) {
+            console.warn(`Failed to fetch from ${url} with status: ${response.status}`);
+            return [];
+          }
+          return await response.json();
+        } catch (error) {
+          console.warn(`Error fetching ${url}:`, error);
+          return [];
+        }
+      };
 
-      const leavesResponse = await fetch(`${API_BASE_URL}/api/leaves`, { headers });
-      const leavesData = await leavesResponse.json();
+      // Fetch employee and leave data - these are essential
+      const employeesData = await safelyFetchData('/api/employees');
+      const leavesData = await safelyFetchData('/api/leaves');
+      
+      // Projects endpoint might not exist in your API, so handle it gracefully
+      // We're not using await Promise.all here to avoid one failing request affecting others
+      let projectsData = [];
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/projects`, { headers });
+        if (response.ok) {
+          projectsData = await response.json();
+        }
+      } catch (error) {
+        console.warn('Projects API endpoint not available:', error);
+        // Continue with empty projects data
+      }
 
-      processEmployeeStats(employeesData, leavesData);
-      processLeaveStats(leavesData);
-      processTeamPerformance(employeesData);
+      // Only proceed if we have the minimum required data
+      if (Array.isArray(employeesData) && Array.isArray(leavesData)) {
+        processEmployeeStats(employeesData, leavesData);
+        processLeaveStats(leavesData);
+        processTeamPerformance(employeesData);
+        generateRecentActivity(employeesData, leavesData, projectsData);
+        generateKpiData();
+        updateSummaryCards(employeesData, leavesData, projectsData);
+      } else {
+        // If essential data isn't available, show error
+        setNotificationMessage('Failed to fetch essential dashboard data');
+        setNotificationType('error');
+      }
+
+      setIsLoading(false);
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      setNotificationMessage('Failed to fetch dashboard data');
+      console.error('Error in dashboard data processing:', error);
+      setNotificationMessage('Error processing dashboard data');
       setNotificationType('error');
+      setIsLoading(false);
     }
   };
 
@@ -78,12 +137,10 @@ const AdminDashboard = () => {
       return acc;
     }, {});
 
-    const departmentData = Object.entries(departments).map(([name, count]) => ({
+    const departmentData = Object.entries(departments).map(([name, value]) => ({
       name,
-      value: count
+      value
     }));
-
-    console.log('Status counts:', { active, onLeave, total: employees.length });
 
     setEmployeeStats({
       total: employees.length,
@@ -94,15 +151,34 @@ const AdminDashboard = () => {
   };
 
   const processLeaveStats = (leaves) => {
+    const last6Months = [];
+    const today = new Date();
+    
+    for (let i = 5; i >= 0; i--) {
+      const month = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      last6Months.push(month.toLocaleString('default', { month: 'short' }));
+    }
+
     const monthlyStats = leaves.reduce((acc, leave) => {
       const month = new Date(leave.startDate).toLocaleString('default', { month: 'short' });
-      acc[month] = (acc[month] || 0) + 1;
+      const status = leave.status;
+      
+      if (!acc[month]) {
+        acc[month] = { approved: 0, pending: 0, rejected: 0, total: 0, month };
+      }
+      
+      acc[month][status] = (acc[month][status] || 0) + 1;
+      acc[month].total += 1;
+      
       return acc;
     }, {});
 
-    const leaveData = Object.entries(monthlyStats).map(([month, count]) => ({
+    const leaveData = last6Months.map(month => ({
       month,
-      leaves: count
+      approved: monthlyStats[month]?.approved || 0,
+      pending: monthlyStats[month]?.pending || 0,
+      rejected: monthlyStats[month]?.rejected || 0,
+      total: monthlyStats[month]?.total || 0
     }));
 
     setLeaveStats(leaveData);
@@ -117,7 +193,10 @@ const AdminDashboard = () => {
         acc[branch] = {
           name: branch,
           performance: emp.rating || 0,
-          count: 1
+          count: 1,
+          attendance: Math.random() * 30, // Mock data
+          productivity: Math.random() * 100, // Mock data
+          quality: Math.random() * 5 // Mock data
         };
       } else {
         acc[branch].performance += emp.rating || 0;
@@ -126,12 +205,75 @@ const AdminDashboard = () => {
       return acc;
     }, {});
 
-    const performanceData = Object.values(branchPerformance).map(({ name, performance, count }) => ({
+    const performanceData = Object.values(branchPerformance).map(({ name, performance, count, attendance, productivity, quality }) => ({
       name,
-      rating: (performance / count).toFixed(1)
+      rating: parseFloat((performance / count).toFixed(1)),
+      attendance: Math.round(attendance),
+      productivity: Math.round(productivity),
+      quality: parseFloat(quality.toFixed(1))
     }));
 
     setTeamPerformance(performanceData);
+  };
+
+  const generateRecentActivity = (employees, leaves, projects) => {
+    // Create mock activity data based on real data
+    const activities = [
+      ...leaves.slice(0, 3).map(leave => ({
+        id: `leave-${leave._id}`,
+        type: 'leave',
+        title: `Leave ${leave.status === 'approved' ? 'Approved' : leave.status === 'rejected' ? 'Rejected' : 'Requested'}`,
+        description: `${leave.employeeName} - ${leave.leaveType} leave`,
+        timestamp: leave.updatedAt || leave.createdAt,
+        status: leave.status
+      })),
+      ...employees.slice(0, 2).map(emp => ({
+        id: `emp-${emp._id}`,
+        type: 'employee',
+        title: 'New Employee',
+        description: `${emp.personalDetails?.name} joined as ${emp.professionalDetails?.role}`,
+        timestamp: emp.createdAt,
+        status: 'success'
+      })),
+      ...(projects || []).slice(0, 2).map(project => ({
+        id: `project-${project.id || Math.random()}`,
+        type: 'project',
+        title: 'Project Update',
+        description: `${project.name || 'Project'} - ${project.status || 'In Progress'}`,
+        timestamp: project.updatedAt || new Date().toISOString(),
+        status: project.status === 'completed' ? 'success' : 'pending'
+      }))
+    ];
+
+    // Sort by timestamp (newest first)
+    activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    setRecentActivity(activities.slice(0, 5));
+  };
+
+  const generateKpiData = () => {
+    // Generate mock KPI data
+    const data = [
+      { name: 'Onboarding', value: 85 },
+      { name: 'Retention', value: 92 },
+      { name: 'Attendance', value: 78 },
+      { name: 'Training', value: 65 }
+    ];
+    
+    setKpiData(data);
+  };
+
+  const updateSummaryCards = (employees, leaves, projects) => {
+    const pendingLeaves = leaves.filter(leave => leave.status === 'pending').length;
+    const revenue = Math.floor(Math.random() * 100000) + 50000; // Mock revenue data
+    const activeProjects = (projects || []).filter(p => p.status !== 'completed').length || Math.floor(Math.random() * 20) + 5;
+
+    setSummaryCards([
+      { title: 'Total Employees', value: employees.length, change: 2.5, icon: Users, color: '#0088FE' },
+      { title: 'Pending Leaves', value: pendingLeaves, change: -1.2, icon: Calendar, color: '#00C49F' },
+      { title: 'This Month Revenue', value: revenue, isCurrency: true, change: 4.7, icon: DollarSign, color: '#FFBB28' },
+      { title: 'Active Projects', value: activeProjects, change: 0.8, icon: Briefcase, color: '#FF8042' }
+    ]);
   };
 
   const generateReport = () => {
@@ -152,7 +294,7 @@ const AdminDashboard = () => {
       ),
       '\nLeave Statistics:',
       ...leaveStats.map(stat =>
-        `${stat.month}: ${stat.leaves} leave requests`
+        `${stat.month}: ${stat.total} leave requests (${stat.approved} approved, ${stat.pending} pending, ${stat.rejected} rejected)`
       )
     ].join('\n');
 
@@ -195,6 +337,31 @@ const AdminDashboard = () => {
     }
   };
 
+  const formatValue = (value, isCurrency = false) => {
+    if (isCurrency) {
+      return new Intl.NumberFormat('en-US', { 
+        style: 'currency', 
+        currency: 'USD',
+        maximumFractionDigits: 0 
+      }).format(value);
+    }
+    
+    return value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value;
+  };
+
+  const getStatusIcon = (status) => {
+    switch(status) {
+      case 'success':
+      case 'approved':
+        return <CheckCircle size={16} className="status-icon success" />;
+      case 'error':
+      case 'rejected':
+        return <XCircle size={16} className="status-icon error" />;
+      default:
+        return <Clock size={16} className="status-icon pending" />;
+    }
+  };
+
   return (
     <div className="admin-dashboard">
       {notificationMessage && (
@@ -209,7 +376,29 @@ const AdminDashboard = () => {
       )}
 
       <div className="dashboard-header">
-        <h1>Admin Dashboard</h1>
+        <div className="header-content">
+          <h1>Admin Dashboard</h1>
+          <div className="time-filters">
+            <button 
+              className={`time-filter-btn ${timeRange === 'week' ? 'active' : ''}`}
+              onClick={() => setTimeRange('week')}
+            >
+              Week
+            </button>
+            <button 
+              className={`time-filter-btn ${timeRange === 'month' ? 'active' : ''}`}
+              onClick={() => setTimeRange('month')}
+            >
+              Month
+            </button>
+            <button 
+              className={`time-filter-btn ${timeRange === 'year' ? 'active' : ''}`}
+              onClick={() => setTimeRange('year')}
+            >
+              Year
+            </button>
+          </div>
+        </div>
         <div className="dashboard-actions">
           <button 
             className="report-button"
@@ -228,70 +417,222 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="stats-grid">
-        <div className="stats-card">
-          <h3 className="card-title">Total Employees</h3>
-          <div className="stats-value">{employeeStats.total}</div>
-          <div className="stats-detail">
-            Active: {employeeStats.active} | On Leave: {employeeStats.onLeave}
+      <div className="summary-cards">
+        {summaryCards.map((card, index) => (
+          <div className="summary-card" key={index}>
+            <div className="card-icon" style={{ backgroundColor: `${card.color}20` }}>
+              <card.icon size={24} color={card.color} />
+            </div>
+            <div className="card-content">
+              <h3>{card.title}</h3>
+              <div className="card-value">{formatValue(card.value, card.isCurrency)}</div>
+              <div className={`card-change ${card.change >= 0 ? 'positive' : 'negative'}`}>
+                {card.change >= 0 ? <TrendingUp size={16} /> : <TrendingUp size={16} className="down" />}
+                {Math.abs(card.change)}% from last {timeRange}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="dashboard-grid">
+        <div className="chart-card employee-distribution">
+          <div className="card-header">
+            <h2>Employee Distribution</h2>
+          </div>
+          <div className="card-body">
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={employeeStats.departments}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  labelLine={false}
+                >
+                  {employeeStats.departments.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => [`${value} employees`, 'Count']} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="card-footer">
+            <div className="stat-item">
+              <span className="stat-label">Active</span>
+              <span className="stat-value">{employeeStats.active}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">On Leave</span>
+              <span className="stat-value">{employeeStats.onLeave}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Total</span>
+              <span className="stat-value">{employeeStats.total}</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="charts-grid">
-        <div className="stats-card">
-          <h3 className="card-title">Leave Trends</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={leaveStats}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="leaves" stroke="#474787" />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="chart-card leave-trends">
+          <div className="card-header">
+            <h2>Leave Trends</h2>
+          </div>
+          <div className="card-body">
+            <ResponsiveContainer width="100%" height={250}>
+              <AreaChart data={leaveStats}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Area type="monotone" dataKey="approved" stackId="1" stroke="#4caf50" fill="#4caf50" />
+                <Area type="monotone" dataKey="pending" stackId="1" stroke="#ff9800" fill="#ff9800" />
+                <Area type="monotone" dataKey="rejected" stackId="1" stroke="#f44336" fill="#f44336" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="card-footer">
+            <div className="legend-item">
+              <span className="legend-color" style={{ backgroundColor: '#4caf50' }}></span>
+              <span>Approved</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-color" style={{ backgroundColor: '#ff9800' }}></span>
+              <span>Pending</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-color" style={{ backgroundColor: '#f44336' }}></span>
+              <span>Rejected</span>
+            </div>
+          </div>
         </div>
 
-        <div className="stats-card">
-          <h3 className="card-title">Team Performance</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={teamPerformance}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis domain={[0, 5]} />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="rating" stroke="#474787" />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="chart-card team-performance">
+          <div className="card-header">
+            <h2>Team Performance</h2>
+          </div>
+          <div className="card-body">
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={teamPerformance}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="rating" name="Rating" fill="#8884d8" />
+                <Bar dataKey="productivity" name="Productivity" fill="#82ca9d" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="card-footer">
+            <button className="view-details-btn">
+              View detailed report <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
 
-        <div className="stats-card">
-          <h3 className="card-title">Department Distribution</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={employeeStats.departments}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                label
+        <div className="chart-card key-metrics">
+          <div className="card-header">
+            <h2>Key Performance Metrics</h2>
+          </div>
+          <div className="card-body">
+            <ResponsiveContainer width="100%" height={250}>
+              <RadialBarChart 
+                cx="50%" 
+                cy="50%" 
+                innerRadius="10%" 
+                outerRadius="80%" 
+                barSize={10} 
+                data={kpiData}>
+                <RadialBar
+                  minAngle={15}
+                  background
+                  clockWise
+                  dataKey="value"
+                  cornerRadius={10}
+                />
+                <Legend
+                  iconSize={10}
+                  layout="vertical"
+                  verticalAlign="middle"
+                  align="right"
+                />
+                <Tooltip formatter={(value) => [`${value}%`, 'Progress']} />
+              </RadialBarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="card-footer">
+            <div className="progress-summary">
+              Overall performance score: 
+              <span className="highlight">{Math.round(kpiData.reduce((sum, item) => sum + item.value, 0) / kpiData.length)}%</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="chart-card recent-activity">
+          <div className="card-header">
+            <h2>Recent Activity</h2>
+          </div>
+          <div className="card-body activity-list">
+            {recentActivity.map((activity, index) => (
+              <div className="activity-item" key={index}>
+                <div className="activity-icon">
+                  {activity.type === 'leave' ? <Calendar size={16} /> : 
+                   activity.type === 'employee' ? <Users size={16} /> : 
+                   <Briefcase size={16} />}
+                </div>
+                <div className="activity-content">
+                  <div className="activity-header">
+                    <h4>{activity.title}</h4>
+                    <span className="activity-time">
+                      {new Date(activity.timestamp).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p>{activity.description}</p>
+                </div>
+                <div className="activity-status">
+                  {getStatusIcon(activity.status)}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="card-footer">
+            <button className="view-all-btn">
+              View all activity <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div className="chart-card announcements">
+          <div className="card-header">
+            <h2>Branch Announcements</h2>
+            <button 
+              className="create-btn"
+              onClick={() => setIsAnnouncementModalOpen(true)}
+            >
+              <FilePlus size={16} />
+              Create
+            </button>
+          </div>
+          {selectedBranch && <AnnouncementsList branchId={selectedBranch} className="announcements-wrapper" />}
+          {!selectedBranch && (
+            <div className="empty-state">
+              <AlertTriangle size={32} />
+              <p>No branch selected for announcements</p>
+              <button 
+                className="create-announcement-btn"
+                onClick={() => setIsAnnouncementModalOpen(true)}
               >
-                {employeeStats.departments.map((entry, index) => (
-                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+                Create your first announcement
+              </button>
+            </div>
+          )}
         </div>
       </div>
-
-      {selectedBranch && <AnnouncementsList branchId={selectedBranch} />}
 
       <AnnouncementModal
         isOpen={isAnnouncementModalOpen}

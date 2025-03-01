@@ -124,6 +124,8 @@
 }
 
 .status.active {
+margin-top: -10px;  width: 50px;
+margin-left: -6px;
   background: #e6f4ea;
   color: #137333;
 }

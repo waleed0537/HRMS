@@ -1,0 +1,231 @@
+
+.kanban-card-content h4 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .kanban-card-content p {
+    margin: 0 0 8px;
+    color: var(--text-muted);
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .kanban-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  
+  .kanban-card-actions {
+    padding: 8px 16px;
+    background: var(--background-color);
+    border-top: 1px solid var(--border-color);
+  }
+  
+  .kanban-status-select {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    transition: var(--transition);
+  }
+  
+  .kanban-status-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--primary-lighter);
+  }
+  
+  .kanban-empty {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+  
+  .pending-column .kanban-column-header {
+    border-top: 3px solid var(--yellow);
+  }
+  
+  .reviewed-column .kanban-column-header {
+    border-top: 3px solid var(--blue);
+  }
+  
+  .shortlisted-column .kanban-column-header {
+    border-top: 3px solid var(--green);
+  }
+  
+  .rejected-column .kanban-column-header {
+    border-top: 3px solid var(--red);
+  }
+  
+  /* Table View */
+  .applicants-table-container {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow-x: auto;
+  }
+  
+  .applicants-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .applicants-table th,
+  .applicants-table td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .applicants-table th {
+    background: var(--background-color);
+    font-weight: 600;
+    color: var(--text-color);
+  }
+  
+  .applicants-table th.sortable {
+    cursor: pointer;
+    position: relative;
+    padding-right: 30px;
+  }
+  
+  .sort-icon {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.6;
+  }
+  
+  .sort-icon.asc {
+    transform: translateY(-50%) rotate(180deg);
+  }
+  
+  .name-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .contact-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .contact-cell > div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+  
+  .table-status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    max-width: fit-content;
+  }
+  
+  .table-status-badge.shortlisted {
+    background: var(--green-light);
+    color: var(--green);
+  }
+  
+  .table-status-badge.reviewed {
+    background: var(--blue-light);
+    color: var(--blue);
+  }
+  
+  .table-status-badge.pending {
+    background: var(--yellow-light);
+    color: var(--yellow);
+  }
+  
+  .table-status-badge.rejected {
+    background: var(--red-light);
+    color: var(--red);
+  }
+  
+  .actions-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  
+  .table-avatar {
+    width: 32px;
+    height: 32px;
+    background: var(--primary-color);
+    color: var(--white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  
+  .table-status-select {
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    min-width: 120px;
+    transition: var(--transition);
+  }
+  
+  .table-view-btn,
+  .table-download-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  
+  .table-view-btn {
+    background: var(--primary-color);
+    color: var(--white);
+    border: none;
+  }
+  
+  .table-view-btn:hover {
+    background: var(--primary-hover);
+  }
+  
+  .table-download-btn {
+    background: var(--white);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+  }
+  
+  .table-download-btn:hover {
+    background: var(--primary-lighter);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+  } 

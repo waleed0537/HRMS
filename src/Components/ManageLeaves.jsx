@@ -321,7 +321,7 @@ const ManageLeaves = () => {
               Compact
             </button>
           </div>
-
+          <div class="filters-container">
           <div className="filter-section">
             <span>Filter by status:</span>
             <select
@@ -337,7 +337,7 @@ const ManageLeaves = () => {
           </div>
         </div>
       </div>
-
+      </div>
       {filteredRequests.length === 0 ? (
         <div className="no-leaves">No leave requests found.</div>
       ) : (

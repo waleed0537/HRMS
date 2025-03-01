@@ -176,13 +176,7 @@ const EmployeeManagement = () => {
   return (
     <div className="employee-management-container">
       <div className="tab-buttons">
-        <button
-          onClick={() => setActiveTab('employees')}
-          className={`tab-button ${activeTab === 'employees' ? 'active' : ''}`}
-        >
-          <Users size={20} />
-          Manage Employees
-        </button>
+     
         <button
           onClick={() => setActiveTab('branches')}
           className={`tab-button ${activeTab === 'branches' ? 'active' : ''}`}

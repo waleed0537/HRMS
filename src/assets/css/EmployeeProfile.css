@@ -2,8 +2,8 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px;
-  margin-top: 140px; /* Changed from padding-top */
-  margin-left: 240px; /* Add space for sidebar */
+  margin-top: 81px;
+  margin-left: 400px;
   position: relative;
   z-index: 1;
 }

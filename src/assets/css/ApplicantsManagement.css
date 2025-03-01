@@ -95,6 +95,7 @@
   }
   
   .status-select {
+    height: fit-content;
     flex: 1;
     padding: 8px 12px;
     border: 1px solid #e5e7eb;
@@ -124,6 +125,7 @@
   }
   
   .view-details-btn {
+    height: fit-content;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -160,7 +162,7 @@
     color: #6b7280;
   }
   
-  /* Modal Styles */
+    Modal Styles */
 .modal-content {
     padding: 24px;
   }
@@ -293,6 +295,7 @@
   }
   
   .status-select-large {
+    height: fit-content;
     width: 100%;
     padding: 12px;
     border: 1px solid #e5e7eb;
@@ -517,6 +520,7 @@
     height: 20px;
   }
   .search-bar input {
+    height: fit-content;
     width: 100%;
     padding: 10px 12px 10px 40px;
     border: 1px solid #e5e7eb;
@@ -538,7 +542,7 @@
   .applicants-management {
     padding: 24px;
     margin: 64px 0 0 16rem;
-    background-color: #f8fafc;
+  
     min-height: calc(100vh - 64px);
   }
   .search-bar {
@@ -554,6 +558,7 @@
   }
   
   .filter-select {
+    height: fit-content;
     padding: 10px 12px;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
@@ -841,6 +846,7 @@
 }
 
 .status-select-compact {
+  height: fit-content;
   width: 100%;
   padding: 6px;
   border: 1px solid #e2e8f0;
@@ -1158,3 +1164,13 @@
     }
   }
   
+
+
+
+
+
+
+
+
+
+

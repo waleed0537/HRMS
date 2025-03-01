@@ -1,7 +1,7 @@
 .dashboard-container {
   padding: 2rem;
   margin: 64px 0 0 16rem;
-  background-color: #f8fafc;
+
   min-height: calc(100vh - 64px);
 }
 

@@ -6,20 +6,20 @@
   import SignIn from "./Components/signin";
   import StaffRequests from './Components/StaffRequests';
   import LeaveRequest from './Components/LeaveRequest';
-  // import ManageLeaves from './Components/ManageLeaves';
+ import ManageLeaves from './Components/ManageLeaves';
   import EmployeeManagement from './Components/EmployeeManagement';
   import EmployeeDetails from './Components/EmployeeDetails';
   import EmployeeCards from './Components/EmployeeCards';
   import LeaveHistory from './Components/LeaveHistory';
   import EmployeeProfile from './Components/EmployeeProfile';
-  // import EditProfiles from './Components/EditProfile';
+   import EditProfiles from './Components/EditProfile';
   import BranchManagement from './Components/BranchManagement';
   import AdminDashboard from './Components/AdminDashboard';
   import AttendanceManagement from './Components/AttendanceManagement';
   import EmployeeDashboard from './Components/EmployeeDashboard';
   import Holiday from './Components/Holiday';
   import ApplicantForm from './Components/ApplicantForm';
-  // import ApplicantsManagement from './Components/ApplicantsManagement';
+   import ApplicantsManagement from './Components/ApplicantsManagement';
   import '../src/assets/css/global.css';
 
   function App() {

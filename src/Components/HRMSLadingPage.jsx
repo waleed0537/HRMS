@@ -387,7 +387,7 @@ const LandingPage = () => {
                 <div className="row justify-content-center">
                   <div className="col-xl-7 col-lg-8 col-md-10">
                     <div className="section-title mb-75">
-                      <h2>Empowering Workforce Management with Smart Solutions</h2>
+                      <h2 style={{marginBottom:'120px',fontSize:'40px'}}>Empowering Workforce Management with Smart Solutions</h2>
                     </div>
                   </div>
                 </div>
@@ -432,7 +432,7 @@ const LandingPage = () => {
                 <div className="row align-items-center">
                   <div className="col-xl-7 col-lg-6">
                     <div className="about-image rmb-55 wow fadeInLeft delay-0-2s">
-                      <img src={HRMSImage2} alt="About HRMS" />
+                      <img src={HRMSImage2} style={{paddingRight:'180px',height:'100%',width:'100%'}}    alt="About HRMS" />
                     </div>
                   </div>
                   <div className="col-xl-5 col-lg-6">
@@ -482,8 +482,8 @@ const LandingPage = () => {
                     </div>
                   </div>
                   <div className="col-xl-7 col-lg-6">
-                    <div className="browswr-support-image text-lg-right wow fadeInLeft delay-0-2s">
-                      <img src={HRMSImage3} alt="HRMS Accessibility" />
+                    <div className="browswr-support-image text-lg-right wow fadeInLeft delay-0-2s" >
+                      <img src={HRMSImage3} style={{marginLeft:'180px'}} alt="HRMS Accessibility" />
                     </div>
                   </div>
                 </div>

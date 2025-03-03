@@ -7,14 +7,31 @@ import {
 import { 
   Bell, CheckCircle, XCircle, Download, Users, Calendar, 
   TrendingUp, CreditCard, DollarSign, Activity, Briefcase,
-  ChevronRight, AlertTriangle, FilePlus, Eye, Clock, Archive
+  ChevronRight, AlertTriangle, FilePlus, Eye, Clock, Archive,
+  Award, Code, MessageCircle, Layers, GitPullRequest
 } from 'lucide-react';
 import AnnouncementModal from './AnnouncementModal';
 import AnnouncementsList from './AnnouncementsList';
 import '../assets/css/AdminDashboard.css';
 import API_BASE_URL from '../config/api.js';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+// Enhanced color palette
+const COLORS = [
+  '#4361ee', '#3a0ca3', '#7209b7', '#f72585', '#4cc9f0', 
+  '#4895ef', '#560bad', '#f15bb5', '#00b4d8', '#0077b6'
+];
+
+// Avatar backgrounds for activities
+const AVATAR_COLORS = [
+  'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%)',
+  'linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%)',
+  'linear-gradient(to right, #ffecd2 0%, #fcb69f 100%)',
+  'linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%)',
+  'linear-gradient(to top, #fbc2eb 0%, #a6c1ee 100%)',
+  'linear-gradient(120deg, #d4fc79 0%, #96e6a1 100%)',
+  'linear-gradient(to right, #6a11cb 0%, #2575fc 100%)',
+  'linear-gradient(to top, #c471f5 0%, #fa71cd 100%)'
+];
 
 const AdminDashboard = () => {
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
@@ -34,10 +51,10 @@ const AdminDashboard = () => {
   const [timeRange, setTimeRange] = useState('month');
   const [isLoading, setIsLoading] = useState(true);
   const [summaryCards, setSummaryCards] = useState([
-    { title: 'Total Employees', value: 0, change: 0, icon: Users, color: '#0088FE' },
-    { title: 'Pending Leaves', value: 0, change: 0, icon: Calendar, color: '#00C49F' },
-    { title: 'This Month Revenue', value: 0, change: 0, icon: DollarSign, color: '#FFBB28' },
-    { title: 'Active Projects', value: 0, change: 0, icon: Briefcase, color: '#FF8042' }
+    { title: 'Total Employees', value: 0, change: 0, icon: Users, color: '#4361ee' },
+    { title: 'Pending Leaves', value: 0, change: 0, icon: Calendar, color: '#7209b7' },
+    { title: 'This Month Revenue', value: 0, change: 0, icon: DollarSign, color: '#f72585' },
+    { title: 'Active Projects', value: 0, change: 0, icon: Briefcase, color: '#4cc9f0' }
   ]);
 
   useEffect(() => {
@@ -217,38 +234,104 @@ const AdminDashboard = () => {
   };
 
   const generateRecentActivity = (employees, leaves, projects) => {
-    // Create mock activity data based on real data
+    // Generate avatars
+    const generateAvatar = (name) => {
+      if (!name) return '';
+      return name.split(' ').map(part => part[0]).join('').toUpperCase();
+    };
+    
+    // Create mock activity data based on real data with enhanced variety
     const activities = [
-      ...leaves.slice(0, 3).map(leave => ({
+      ...leaves.slice(0, 3).map((leave, index) => ({
         id: `leave-${leave._id}`,
         type: 'leave',
         title: `Leave ${leave.status === 'approved' ? 'Approved' : leave.status === 'rejected' ? 'Rejected' : 'Requested'}`,
         description: `${leave.employeeName} - ${leave.leaveType} leave`,
         timestamp: leave.updatedAt || leave.createdAt,
-        status: leave.status
+        status: leave.status,
+        avatar: generateAvatar(leave.employeeName),
+        avatarColor: AVATAR_COLORS[index % AVATAR_COLORS.length],
+        icon: Calendar
       })),
-      ...employees.slice(0, 2).map(emp => ({
+      ...employees.slice(0, 2).map((emp, index) => ({
         id: `emp-${emp._id}`,
         type: 'employee',
         title: 'New Employee',
         description: `${emp.personalDetails?.name} joined as ${emp.professionalDetails?.role}`,
         timestamp: emp.createdAt,
-        status: 'success'
+        status: 'success',
+        avatar: generateAvatar(emp.personalDetails?.name),
+        avatarColor: AVATAR_COLORS[(index + 3) % AVATAR_COLORS.length],
+        icon: Users
       })),
-      ...(projects || []).slice(0, 2).map(project => ({
+      ...(projects || []).slice(0, 2).map((project, index) => ({
         id: `project-${project.id || Math.random()}`,
         type: 'project',
         title: 'Project Update',
         description: `${project.name || 'Project'} - ${project.status || 'In Progress'}`,
         timestamp: project.updatedAt || new Date().toISOString(),
-        status: project.status === 'completed' ? 'success' : 'pending'
+        status: project.status === 'completed' ? 'success' : 'pending',
+        avatar: project.name ? project.name[0].toUpperCase() : 'P',
+        avatarColor: AVATAR_COLORS[(index + 5) % AVATAR_COLORS.length],
+        icon: Briefcase
       }))
     ];
+    
+    // Add some extra variety with mock activities
+    const mockActivities = [
+      {
+        id: 'code-1',
+        type: 'code',
+        title: 'Code Review Completed',
+        description: 'Frontend dashboard components reviewed and approved',
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
+        status: 'success',
+        avatar: 'CR',
+        avatarColor: AVATAR_COLORS[0],
+        icon: Code
+      },
+      {
+        id: 'message-1',
+        type: 'message',
+        title: 'New Comment',
+        description: 'Sarah commented on task HR-432 - Employee onboarding',
+        timestamp: new Date(Date.now() - 7200000).toISOString(),
+        status: 'pending',
+        avatar: 'SC',
+        avatarColor: AVATAR_COLORS[1],
+        icon: MessageCircle
+      },
+      {
+        id: 'pull-1',
+        type: 'pull',
+        title: 'Pull Request Merged',
+        description: 'Feature: Improved leave request workflow',
+        timestamp: new Date(Date.now() - 10800000).toISOString(),
+        status: 'success',
+        avatar: 'PR',
+        avatarColor: AVATAR_COLORS[2],
+        icon: GitPullRequest
+      },
+      {
+        id: 'award-1',
+        type: 'award',
+        title: 'Achievement Unlocked',
+        description: 'Team completed quarterly targets ahead of schedule',
+        timestamp: new Date(Date.now() - 18000000).toISOString(),
+        status: 'success',
+        avatar: 'AW',
+        avatarColor: AVATAR_COLORS[3],
+        icon: Award
+      }
+    ];
+    
+    // Combine real and mock activities
+    const allActivities = [...activities, ...mockActivities];
 
     // Sort by timestamp (newest first)
-    activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    allActivities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     
-    setRecentActivity(activities.slice(0, 5));
+    setRecentActivity(allActivities.slice(0, 6)); // Show more activities
   };
 
   const generateKpiData = () => {
@@ -269,10 +352,10 @@ const AdminDashboard = () => {
     const activeProjects = (projects || []).filter(p => p.status !== 'completed').length || Math.floor(Math.random() * 20) + 5;
 
     setSummaryCards([
-      { title: 'Total Employees', value: employees.length, change: 2.5, icon: Users, color: '#0088FE' },
-      { title: 'Pending Leaves', value: pendingLeaves, change: -1.2, icon: Calendar, color: '#00C49F' },
-      { title: 'This Month Revenue', value: revenue, isCurrency: true, change: 4.7, icon: DollarSign, color: '#FFBB28' },
-      { title: 'Active Projects', value: activeProjects, change: 0.8, icon: Briefcase, color: '#FF8042' }
+      { title: 'Total Employees', value: employees.length, change: 2.5, icon: Users, color: '#4361ee' },
+      { title: 'Pending Leaves', value: pendingLeaves, change: -1.2, icon: Calendar, color: '#7209b7' },
+      { title: 'This Month Revenue', value: revenue, isCurrency: true, change: 4.7, icon: DollarSign, color: '#f72585' },
+      { title: 'Active Projects', value: activeProjects, change: 0.8, icon: Briefcase, color: '#4cc9f0' }
     ]);
   };
 
@@ -353,13 +436,26 @@ const AdminDashboard = () => {
     switch(status) {
       case 'success':
       case 'approved':
-        return <CheckCircle size={16} className="status-icon success" />;
+        return <CheckCircle size={18} className="status-icon success" />;
       case 'error':
       case 'rejected':
-        return <XCircle size={16} className="status-icon error" />;
+        return <XCircle size={18} className="status-icon error" />;
       default:
-        return <Clock size={16} className="status-icon pending" />;
+        return <Clock size={18} className="status-icon pending" />;
     }
+  };
+
+  // Format relative time for activities
+  const getRelativeTime = (timestamp) => {
+    const now = new Date();
+    const activityTime = new Date(timestamp);
+    const diffInSeconds = Math.floor((now - activityTime) / 1000);
+    
+    if (diffInSeconds < 60) return 'just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return new Date(timestamp).toLocaleDateString();
   };
 
   return (
@@ -420,7 +516,7 @@ const AdminDashboard = () => {
       <div className="summary-cards">
         {summaryCards.map((card, index) => (
           <div className="summary-card" key={index}>
-            <div className="card-icon" style={{ backgroundColor: `${card.color}20` }}>
+            <div className="card-icon" style={{ backgroundColor: `${card.color}15` }}>
               <card.icon size={24} color={card.color} />
             </div>
             <div className="card-content">
@@ -436,12 +532,13 @@ const AdminDashboard = () => {
       </div>
 
       <div className="admin-dashboard-grid">
+        {/* Employee Distribution Chart */}
         <div className="chart-card employee-distribution">
           <div className="admin-card-header">
             <h2>Employee Distribution</h2>
           </div>
           <div className="card-body">
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie
                   data={employeeStats.departments}
@@ -449,19 +546,29 @@ const AdminDashboard = () => {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={80}
+                  outerRadius={100}
+                  innerRadius={60}
+                  paddingAngle={2}
                   label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                   labelLine={false}
                 >
                   {employeeStats.departments.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={COLORS[index % COLORS.length]} 
+                      stroke="transparent"
+                      strokeWidth={2}
+                    />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => [`${value} employees`, 'Count']} />
+                <Tooltip 
+                  formatter={(value) => [`${value} employees`, 'Count']} 
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="card-footer">
+          <div className="card-footer employee-stats-footer">
             <div className="stat-item">
               <span className="stat-label">Active</span>
               <span className="stat-value">{employeeStats.active}</span>
@@ -477,54 +584,153 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* Leave Trends Chart */}
         <div className="chart-card leave-trends">
           <div className="admin-card-header">
             <h2>Leave Trends</h2>
           </div>
           <div className="card-body">
-            <ResponsiveContainer width="100%" height={250}>
-              <AreaChart data={leaveStats}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Area type="monotone" dataKey="approved" stackId="1" stroke="#4caf50" fill="#4caf50" />
-                <Area type="monotone" dataKey="pending" stackId="1" stroke="#ff9800" fill="#ff9800" />
-                <Area type="monotone" dataKey="rejected" stackId="1" stroke="#f44336" fill="#f44336" />
+            <ResponsiveContainer width="100%" height={280}>
+              <AreaChart data={leaveStats} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorApproved" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#4cc9f0" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#4cc9f0" stopOpacity={0.1}/>
+                  </linearGradient>
+                  <linearGradient id="colorPending" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f72585" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#f72585" stopOpacity={0.1}/>
+                  </linearGradient>
+                  <linearGradient id="colorRejected" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#7209b7" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#7209b7" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="month" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#64748b', fontSize: 12 }}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#64748b', fontSize: 12 }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    borderRadius: '8px', 
+                    border: 'none', 
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    fontSize: '12px'
+                  }} 
+                />
+                <Legend 
+                  iconType="circle" 
+                  iconSize={8} 
+                  wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="approved" 
+                  stackId="1" 
+                  stroke="#4cc9f0" 
+                  fill="url(#colorApproved)" 
+                  strokeWidth={2}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="pending" 
+                  stackId="1" 
+                  stroke="#f72585" 
+                  fill="url(#colorPending)" 
+                  strokeWidth={2}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="rejected" 
+                  stackId="1" 
+                  stroke="#7209b7" 
+                  fill="url(#colorRejected)" 
+                  strokeWidth={2}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-          <div className="card-footer">
+          <div className="card-footer leave-legend-footer">
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#4caf50' }}></span>
+              <span className="legend-color" style={{ backgroundColor: '#4cc9f0' }}></span>
               <span>Approved</span>
             </div>
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#ff9800' }}></span>
+              <span className="legend-color" style={{ backgroundColor: '#f72585' }}></span>
               <span>Pending</span>
             </div>
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#f44336' }}></span>
+              <span className="legend-color" style={{ backgroundColor: '#7209b7' }}></span>
               <span>Rejected</span>
             </div>
           </div>
         </div>
 
+        {/* Team Performance Chart */}
         <div className="chart-card team-performance">
           <div className="admin-card-header">
             <h2>Team Performance</h2>
           </div>
           <div className="card-body">
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={teamPerformance}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="rating" name="Rating" fill="#8884d8" />
-                <Bar dataKey="productivity" name="Productivity" fill="#82ca9d" />
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart 
+                data={teamPerformance}
+                margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
+                barSize={20}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#64748b', fontSize: 12 }}
+                  padding={{ left: 10, right: 10 }}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#64748b', fontSize: 12 }}
+                />
+                <Tooltip 
+                  cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
+                  contentStyle={{ 
+                    borderRadius: '8px', 
+                    border: 'none', 
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    fontSize: '12px'
+                  }}
+                />
+                <Legend 
+                  iconType="circle" 
+                  iconSize={8}
+                  layout="horizontal"
+                  verticalAlign="bottom"
+                  align="center"
+                  wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
+                />
+                <Bar 
+                  dataKey="rating" 
+                  name="Rating" 
+                  fill="#4361ee" 
+                  radius={[4, 4, 0, 0]}
+                  animationDuration={1500}
+                />
+                <Bar 
+                  dataKey="productivity" 
+                  name="Productivity" 
+                  fill="#f72585" 
+                  radius={[4, 4, 0, 0]}
+                  animationDuration={1500}
+                  animationBegin={300}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -535,44 +741,72 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* KPI Metrics Chart */}
         <div className="chart-card key-metrics">
           <div className="admin-card-header">
             <h2>Key Performance Metrics</h2>
           </div>
           <div className="card-body">
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={280}>
               <RadialBarChart 
                 cx="50%" 
                 cy="50%" 
-                innerRadius="10%" 
-                outerRadius="80%" 
-                barSize={10} 
-                data={kpiData}>
+                innerRadius="20%" 
+                outerRadius="90%" 
+                barSize={20} 
+                data={kpiData}
+                startAngle={90}
+                endAngle={-270}
+              >
                 <RadialBar
                   minAngle={15}
                   background
                   clockWise
                   dataKey="value"
-                  cornerRadius={10}
-                />
+                  cornerRadius={12}
+                  label={{
+                    position: 'insideStart',
+                    fill: '#fff',
+                    fontWeight: 600,
+                    fontSize: 12
+                  }}
+                >
+                  {kpiData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={COLORS[index % COLORS.length]} 
+                    />
+                  ))}
+                </RadialBar>
                 <Legend
+                  iconType="circle"
                   iconSize={10}
                   layout="vertical"
                   verticalAlign="middle"
                   align="right"
+                  wrapperStyle={{ fontSize: '12px' }}
                 />
-                <Tooltip formatter={(value) => [`${value}%`, 'Progress']} />
+                <Tooltip 
+                  formatter={(value) => [`${value}%`, 'Progress']}
+                  contentStyle={{ 
+                    borderRadius: '8px', 
+                    border: 'none', 
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    fontSize: '12px'
+                  }}  
+                />
               </RadialBarChart>
             </ResponsiveContainer>
           </div>
           <div className="card-footer">
             <div className="progress-summary">
-              Overall performance score: 
+              Overall performance: 
               <span className="highlight">{Math.round(kpiData.reduce((sum, item) => sum + item.value, 0) / kpiData.length)}%</span>
             </div>
           </div>
         </div>
 
+        {/* Recent Activity List */}
         <div className="chart-card recent-activity">
           <div className="admin-card-header">
             <h2>Recent Activity</h2>
@@ -580,16 +814,14 @@ const AdminDashboard = () => {
           <div className="card-body activity-list">
             {recentActivity.map((activity, index) => (
               <div className="activity-item" key={index}>
-                <div className="activity-icon">
-                  {activity.type === 'leave' ? <Calendar size={16} /> : 
-                   activity.type === 'employee' ? <Users size={16} /> : 
-                   <Briefcase size={16} />}
+                <div className="activity-avatar" style={{ background: activity.avatarColor }}>
+                  {activity.avatar}
                 </div>
                 <div className="activity-content">
                   <div className="activity-header">
                     <h4>{activity.title}</h4>
                     <span className="activity-time">
-                      {new Date(activity.timestamp).toLocaleDateString()}
+                      {getRelativeTime(activity.timestamp)}
                     </span>
                   </div>
                   <p>{activity.description}</p>
@@ -607,6 +839,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* Announcements */}
         <div className="chart-card announcements">
           <div className="admin-card-header">
             <h2>Branch Announcements</h2>

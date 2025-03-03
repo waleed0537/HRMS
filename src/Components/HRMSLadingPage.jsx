@@ -320,7 +320,7 @@ const LandingPage = () => {
                 <div className="row align-items-center">
                   <div className="col-lg-6 col-md-11">
                     <div className="hero-content-three rpt-15 rmb-75">
-                      <h1 className="mb-15 wow fadeInUp delay-0-2s" style={{marginTop:'200px',fontSize:'xxx-large',color:'white'}}>
+                      <h1 className="mb-15 wow fadeInUp delay-0-2s" style={{marginTop:'100px',fontSize:'xxx-large',color:'white',marginBottom:'100px'}}>
                         Streamline Your Workforce with Our HRMS
                       </h1>
                       <p className="wow fadeInUp delay-0-4s" style={{color:'white'}}>

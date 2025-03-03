@@ -28,7 +28,7 @@
   font-size: 14px;
 }
 
-.dashboard-grid {
+.employee-dashboard-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 24px;
@@ -565,7 +565,7 @@
     margin-left: 0;
   }
   
-  .dashboard-grid {
+  .employee-dashboard-grid {
     grid-template-columns: repeat(6, 1fr);
   }
   
@@ -588,7 +588,7 @@
 }
 
 @media (max-width: 1024px) {
-  .dashboard-grid {
+  .employee-dashboard-grid {
     grid-template-columns: repeat(4, 1fr);
     gap: 16px;
   }
@@ -621,7 +621,7 @@
     margin-bottom: 16px;
   }
   
-  .dashboard-grid {
+  .employee-dashboard-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }

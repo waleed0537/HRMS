@@ -435,9 +435,9 @@ const AdminDashboard = () => {
         ))}
       </div>
 
-      <div className="dashboard-grid">
+      <div className="admin-dashboard-grid">
         <div className="chart-card employee-distribution">
-          <div className="card-header">
+          <div className="admin-card-header">
             <h2>Employee Distribution</h2>
           </div>
           <div className="card-body">
@@ -478,7 +478,7 @@ const AdminDashboard = () => {
         </div>
 
         <div className="chart-card leave-trends">
-          <div className="card-header">
+          <div className="admin-card-header">
             <h2>Leave Trends</h2>
           </div>
           <div className="card-body">
@@ -512,7 +512,7 @@ const AdminDashboard = () => {
         </div>
 
         <div className="chart-card team-performance">
-          <div className="card-header">
+          <div className="admin-card-header">
             <h2>Team Performance</h2>
           </div>
           <div className="card-body">
@@ -536,7 +536,7 @@ const AdminDashboard = () => {
         </div>
 
         <div className="chart-card key-metrics">
-          <div className="card-header">
+          <div className="admin-card-header">
             <h2>Key Performance Metrics</h2>
           </div>
           <div className="card-body">
@@ -574,7 +574,7 @@ const AdminDashboard = () => {
         </div>
 
         <div className="chart-card recent-activity">
-          <div className="card-header">
+          <div className="admin-card-header">
             <h2>Recent Activity</h2>
           </div>
           <div className="card-body activity-list">
@@ -608,7 +608,7 @@ const AdminDashboard = () => {
         </div>
 
         <div className="chart-card announcements">
-          <div className="card-header">
+          <div className="admin-card-header">
             <h2>Branch Announcements</h2>
             <button 
               className="create-btn"

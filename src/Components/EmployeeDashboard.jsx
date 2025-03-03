@@ -249,7 +249,7 @@ const EmployeeDashboard = () => {
         </div>
       </div>
       
-      <div className="dashboard-grid">
+      <div className="employee-dashboard-grid">
         {/* Profile Summary Card */}
         <div className="profile-card">
           <div className="profile-header">

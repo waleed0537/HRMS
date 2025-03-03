@@ -83,7 +83,7 @@ body {
 }
 
 a {
-    color: var(--base-color);
+    color: white;
     cursor: pointer;
     outline: none;
     -webkit-transition: 0.5s;

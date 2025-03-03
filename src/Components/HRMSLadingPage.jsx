@@ -146,7 +146,7 @@ const LandingPage = () => {
                     </div>
 
                     {/* Navigation Section */}
-                    <div className="nav-outer clearfix" >
+                    <div className="nav-outer clearfix" style={{color:'white'}} >
                       {/* Desktop Menu */}
                       <nav className="main-menu navbar-expand-lg d-none d-lg-block" style={{ color: '#5b5675' }}>
                         <div className="navbar-collapse" >
@@ -315,16 +315,15 @@ const LandingPage = () => {
 
             {/* Hero Section */}
             <section className="hero-section-three rel z-2 pt-235 rpt-150 pb-130 rpb-100" style={{
-
-            }}>
+              backgroundColor:'#222b40'            }}>
               <div className="container" style={{marginTop:'-100px',marginBottom:'50px'}}>
                 <div className="row align-items-center">
                   <div className="col-lg-6 col-md-11">
                     <div className="hero-content-three rpt-15 rmb-75">
-                      <h1 className="mb-15 wow fadeInUp delay-0-2s" style={{marginTop:'200px',fontSize:'xxx-large'}}>
+                      <h1 className="mb-15 wow fadeInUp delay-0-2s" style={{marginTop:'200px',fontSize:'xxx-large',color:'white'}}>
                         Streamline Your Workforce with Our HRMS
                       </h1>
-                      <p className="wow fadeInUp delay-0-4s">
+                      <p className="wow fadeInUp delay-0-4s" style={{color:'white'}}>
                         Manage employees, branches, recruitment, communication, and performance seamlessly with our advanced HRMS solution.
                         Built for scalability, security, and efficiency.
                       </p>
@@ -381,10 +380,10 @@ const LandingPage = () => {
             {/* Solutions Section */}
             <section
               className="solutions-section-three text-white text-center rel bg-blue pt-130 rpt-100 z-1 pb-75 rpb-45"
-              style={{ backgroundImage: `url(${bgDots})` }}
+              style={{ backgroundImage: `url(${bgDots})`,backgroundColor:' #141B2D' }}
 
             >
-              <div className="container">
+              <div className="container" style={{}}>
                 <div className="row justify-content-center">
                   <div className="col-xl-7 col-lg-8 col-md-10">
                     <div className="section-title mb-75">
@@ -392,11 +391,11 @@ const LandingPage = () => {
                     </div>
                   </div>
                 </div>
-                <div className="row justify-content-center">
+                <div className="row justify-content-center" >
                   <div className="col-xl-4 col-md-6">
-                    <div className="solution-item-three wow fadeInUp delay-0-2s">
-                      <i className="far fa-user"></i>
-                      <h3><a href="/single-service">Employee Management</a></h3>
+                    <div className="solution-item-three wow fadeInUp delay-0-2s" >
+                      <i className="far fa-user" ></i>
+                      <h3><a href="/single-service" >Employee Management</a></h3>
                       <p>Maintain detailed employee profiles, track roles, and manage hierarchical structures efficiently across branches.</p>
                       <a href="/single-service" className="read-more">
                         Learn More <i className="fas fa-arrow-right"></i>
@@ -428,7 +427,7 @@ const LandingPage = () => {
             </section>
 
 
-            <section className="about-section-three rel z-1 pt-130 rpt-100">
+            <section className="about-section-three rel z-1 pt-130 rpt-100" style={{backgroundColor:' #222b40',color:'white'}}>
               <div className="container">
                 <div className="row align-items-center">
                   <div className="col-xl-7 col-lg-6">
@@ -440,14 +439,14 @@ const LandingPage = () => {
                     <div className="about-content-three wow fadeInRight delay-0-2s">
                       <div className="section-title mb-25">
 
-                        <h2>Transform Workforce Management with Our HRMS</h2>
+                        <h2 style={{color:'white'}}>Transform Workforce Management with Our HRMS</h2>
                       </div>
                       <p>Our HRMS streamlines employee management, recruitment, performance tracking, and communication. Designed for efficiency, scalability, and seamless integration, it empowers businesses to optimize their workforce operations.</p>
-                      <ul className="list-style-one mt-25 mb-35">
-                        <li>Employee & Branch Management</li>
-                        <li>Performance Tracking & Analytics</li>
-                        <li>Recruitment & Onboarding</li>
-                        <li>Messaging & Communication</li>
+                      <ul className="list-style-one mt-25 mb-35" >
+                        <li style={{color:'white'}}>Employee & Branch Management</li>
+                        <li style={{color:'white'}}>Performance Tracking & Analytics</li>
+                        <li style={{color:'white'}}>Recruitment & Onboarding</li>
+                        <li style={{color:'white'}}>Messaging & Communication</li>
                       </ul>
                       <a href="about.html" className="theme-btn style-three">Get Started <i className="fas fa-arrow-right"></i></a>
                     </div>
@@ -455,27 +454,27 @@ const LandingPage = () => {
                 </div>
               </div>
             </section>
-            <section className="browswr-support-section rel z-1 py-130 rpy-100">
+            <section className="browswr-support-section rel z-1 py-130 rpy-100" style={{backgroundColor:' #222b40',color:'white'}}>
               <div className="container">
                 <div className="row align-items-center">
                   <div className="col-xl-5 col-lg-6">
                     <div className="browswr-support-content rmb-55 wow fadeInRight delay-0-2s">
                       <div className="section-title">
 
-                        <h2>Access Your HRMS Anytime, Anywhere</h2>
+                        <h2 style={{color:'white'}}>Access Your HRMS Anytime, Anywhere</h2>
                       </div>
                       <div className="row">
                         <div className="col-md-6">
                           <div className="solution-item-two">
                             <i className="fas fa-check"></i>
-                            <h4>Cross-Platform Compatibility</h4>
+                            <h4 style={{color:'white'}}>Cross-Platform Compatibility</h4>
                             <p>Access HRMS on any device—desktop, tablet, or mobile—ensuring seamless employee and branch management on the go.</p>
                           </div>
                         </div>
                         <div className="col-md-6">
                           <div className="solution-item-two color-two">
                             <i className="fas fa-check"></i>
-                            <h4>Secure & Role-Based Access</h4>
+                            <h4 style={{color:'white'}}>Secure & Role-Based Access</h4>
                             <p>Ensure data security with granular access controls, allowing employees to access only what they need based on their role.</p>
                           </div>
                         </div>
@@ -491,18 +490,18 @@ const LandingPage = () => {
               </div>
             </section>
 
-            <section className="newsletter-section-two mt-30 rmt-0 rel z-2">
-              <div className="container">
-                <div className="newsletter-inner style-two bg-gray bgs-cover text-white rel z-1">
-                  <div className="row align-items-center align-items-xl-start">
-                    <div className="col-lg-6">
-                      <div className="newsletter-content p-60 wow fadeInUp delay-0-2s">
+            <section className="newsletter-section-two mt-30 rmt-0 rel z-2" style={{background:' #222b40'}}>
+              <div className="container"  >
+                <div className="newsletter-inner style-two bg-gray bgs-cover text-white rel z-1" style={{background:'rgb(22, 30, 46)'}}>
+                  <div className="row align-items-center align-items-xl-start" >
+                    <div className="col-lg-6" >
+                      <div className="newsletter-content p-60" >
                         <div className="section-title mb-30">
 
-                          <h2>Subscribe to HRMS Insights & Feature Updates</h2>
+                          <h1 style={{marginBottom:'120px',fontSize:'40px'}}>Subscribe to HRMS Insights & Feature Updates</h1>
                         </div>
                         <form className="newsletter-form" onSubmit={handleNewsletterSubmit}>
-                          <div className="newsletter-email">
+                          <div className="newsletter-email" style={{backgroundColor:' #131b2c'}}>
                             <input
                               type="email"
                               placeholder="Enter Email Address"
@@ -527,67 +526,67 @@ const LandingPage = () => {
                 </div>
               </div>
             </section>
-            <section className="services-section-three bg-lighter rel z-1 pt-250 pb-100 rpb-70">
+            <section className="services-section-three bg-lighter rel z-1 pt-250 pb-100 rpb-70" style={{backgroundColor:' #131b2c'}}>
               <div className="container">
                 <div className="row justify-content-center text-center">
                   <div className="col-xl-7 col-lg-8 col-md-10">
                     <div className="section-title mt-100 rmt-70 mb-55">
 
-                      <h2>Enhancing Workforce Efficiency with Smart HRMS</h2>
+                      <h2 style={{color:'white'}}>Enhancing Workforce Efficiency with Smart HRMS</h2>
                     </div>
                   </div>
                 </div>
-                <div className="row">
-                  <div className="col-xl-4 col-md-6">
-                    <div className="service-item wow fadeInUp delay-0-2s">
+                <div className="row" style={{color:'white'}}>
+                  <div className="col-xl-4 col-md-6" >
+                    <div className="service-item wow fadeInUp delay-0-2s" style={{backgroundColor:'#222b40'}}>
                       <i className="flaticon-file"></i>
                       <div className="content">
-                        <h3><a href="single-service.html">Employee Management</a></h3>
+                        <h3><a href="single-service.html" style={{color:'white'}}>Employee Management</a></h3>
                         <p>Maintain employee records, track roles, and ensure seamless HR operations across all branches.</p>
                       </div>
                     </div>
                   </div>
                   <div className="col-xl-4 col-md-6">
-                    <div className="service-item wow fadeInUp delay-0-4s">
+                    <div className="service-item wow fadeInUp delay-0-4s" style={{backgroundColor:'#222b40'}}>
                       <i className="flaticon-responsive-design"></i>
                       <div className="content">
-                        <h3><a href="single-service.html">Recruitment & Onboarding</a></h3>
+                        <h3><a href="single-service.html" style={{color:'white'}}>Recruitment & Onboarding</a></h3>
                         <p>Automate candidate tracking, streamline hiring, and facilitate smooth onboarding experiences.</p>
                       </div>
                     </div>
                   </div>
                   <div className="col-xl-4 col-md-6">
-                    <div className="service-item wow fadeInUp delay-0-6s">
+                    <div className="service-item wow fadeInUp delay-0-6s" style={{backgroundColor:'#222b40'}}>
                       <i className="flaticon-security"></i>
                       <div className="content">
-                        <h3><a href="single-service.html">Role-Based Security</a></h3>
+                        <h3><a href="single-service.html" style={{color:'white'}}>Role-Based Security</a></h3>
                         <p>Ensure secure access controls, protecting sensitive employee and branch data at all levels.</p>
                       </div>
                     </div>
                   </div>
                   <div className="col-xl-4 col-md-6">
-                    <div className="service-item wow fadeInUp delay-0-8s">
+                    <div className="service-item wow fadeInUp delay-0-8s" style={{backgroundColor:'#222b40'}}>
                       <i className="flaticon-puzzle"></i>
                       <div className="content">
-                        <h3><a href="single-service.html">Performance Tracking</a></h3>
+                        <h3><a href="single-service.html" style={{color:'white'}}>Performance Tracking</a></h3>
                         <p>Evaluate employee performance with real-time KPIs, attendance tracking, and scorecards.</p>
                       </div>
                     </div>
                   </div>
                   <div className="col-xl-4 col-md-6">
-                    <div className="service-item wow fadeInUp delay-1-0s">
+                    <div className="service-item wow fadeInUp delay-1-0s" style={{backgroundColor:'#222b40'}}>
                       <i className="flaticon-badge"></i>
                       <div className="content">
-                        <h3><a href="single-service.html">Messaging & Communication</a></h3>
+                        <h3><a href="single-service.html" style={{color:'white'}}>Messaging & Communication</a></h3>
                         <p>Enable seamless communication between HR, management, and employees with in-platform messaging.</p>
                       </div>
                     </div>
                   </div>
                   <div className="col-xl-4 col-md-6">
-                    <div className="service-item wow fadeInUp delay-1-2s">
+                    <div className="service-item wow fadeInUp delay-1-2s" style={{backgroundColor:'#222b40'}}>
                       <i className="flaticon-analytics"></i>
                       <div className="content">
-                        <h3><a href="single-service.html">Advanced Analytics</a></h3>
+                        <h3><a href="single-service.html" style={{color:'white'}}>Advanced Analytics</a></h3>
                         <p>Gain insights into workforce trends, sales performance, and HR metrics with data-driven reports.</p>
                       </div>
                     </div>
@@ -597,13 +596,13 @@ const LandingPage = () => {
             </section>
 
             {/* Dashboard Section */}
-            <section className="dashboard-section rel z-1 py-130 rpy-100">
+            <section className="dashboard-section rel z-1 py-130 rpy-100" style={{backgroundColor:'#222b40'}}>
               <div className="container">
                 <div className="row justify-content-center text-center">
                   <div className="col-xl-7 col-lg-8 col-md-10">
                     <div className="section-title mb-60">
 
-                      <h2>Monitor & Manage Your Workforce with an Intuitive Dashboard</h2>
+                      <h2 style={{color:'white'}}>Monitor & Manage Your Workforce with an Intuitive Dashboard</h2>
                     </div>
                   </div>
                 </div>
@@ -661,6 +660,7 @@ const LandingPage = () => {
   padding: '115px 0 130px',
   position: 'relative',
   zIndex: 1,
+  backgroundColor:'#222b40'
 }}>
   <div style={{
     maxWidth: '1200px',
@@ -674,8 +674,8 @@ const LandingPage = () => {
       <h2 style={{
         fontSize: '42px',
         marginBottom: '20px',
-        color: '#333',
-        fontWeight: '600'
+        color: 'white',
+        fontWeight: '600',
       }}>Contact Us</h2>
     </div>
 
@@ -690,8 +690,9 @@ const LandingPage = () => {
           padding: '45px',
           backgroundColor: 'white',
           borderRadius: '15px',
+          background:'#131b2c',
           boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)',
-          border: '1px solid rgba(255, 255, 255, 0.3)'
+         
         }}
       >
         <div style={{

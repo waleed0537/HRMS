@@ -560,68 +560,171 @@ const LandingPage = () => {
             </section>
 
 
-            <section className="about-section-three rel z-1 pt-130 rpt-100" style={{ backgroundColor: ' #222b40', color: 'white' }}>
-              <div className="container">
-                <div className="row align-items-center">
-                  <div className="col-xl-7 col-lg-6">
-                    <div className="about-image rmb-55 wow fadeInLeft delay-0-2s">
-                      <img src={HRMSImage2} style={{}} alt="About HRMS" />
-                    </div>
-                  </div>
-                  <div className="col-xl-5 col-lg-6">
-                    <div className="about-content-three wow fadeInRight delay-0-2s">
-                      <div className="section-title mb-25">
+            <section className="about-section-three rel z-1 pt-130 rpt-100" style={{ backgroundColor: '#222b40', color: 'white', padding: '60px 0' }}>
+  <div className="container">
+    <div className="row align-items-center">
+      <div className="col-xl-7 col-lg-6">
+        <div className="about-image rmb-55 wow fadeInLeft delay-0-2s" style={{ marginBottom: '30px', textAlign: 'center' }}>
+          <img 
+            src={HRMSImage2} 
+            alt="About HRMS" 
+            style={{ 
+              maxWidth: '100%', 
+              height: 'auto', 
+              borderRadius: '8px', 
 
-                        <h2 style={{ color: 'white' }}>Transform Workforce Management with Our HRMS</h2>
-                      </div>
-                      <p>Our HRMS streamlines employee management, recruitment, performance tracking, and communication. Designed for efficiency, scalability, and seamless integration, it empowers businesses to optimize their workforce operations.</p>
-                      <ul className="list-style-one mt-25 mb-35" >
-                        <li style={{ color: 'white' }}>Employee & Branch Management</li>
-                        <li style={{ color: 'white' }}>Performance Tracking & Analytics</li>
-                        <li style={{ color: 'white' }}>Recruitment & Onboarding</li>
-                        <li style={{ color: 'white' }}>Messaging & Communication</li>
-                      </ul>
-                      <a href="about.html" className="theme-btn style-three">Get Started <i className="fas fa-arrow-right"></i></a>
-                    </div>
+            }} 
+          />
+        </div>
+      </div>
+      <div className="col-xl-5 col-lg-6">
+        <div className="about-content-three wow fadeInRight delay-0-2s" style={{ padding: '0 15px' }}>
+          <div className="section-title mb-25" style={{ marginBottom: '20px' }}>
+            <h2 style={{ 
+              color: 'white', 
+              fontSize: '32px', 
+              lineHeight: '1.3', 
+              marginBottom: '20px',
+              '@media (max-width: 767px)': { fontSize: '26px' } 
+            }}>Transform Workforce Management with Our HRMS</h2>
+          </div>
+          <p style={{ 
+            fontSize: '16px', 
+            lineHeight: '1.6', 
+            marginBottom: '25px' 
+          }}>Our HRMS streamlines employee management, recruitment, performance tracking, and communication. Designed for efficiency, scalability, and seamless integration, it empowers businesses to optimize their workforce operations.</p>
+          <ul className="list-style-one mt-25 mb-35" style={{ 
+            listStyle: 'none', 
+            padding: '0', 
+            margin: '25px 0 35px' 
+          }}>
+            {['Employee & Branch Management', 'Performance Tracking & Analytics', 'Recruitment & Onboarding', 'Messaging & Communication'].map((item, index) => (
+              <li key={index} style={{ 
+                color: 'white', 
+                position: 'relative', 
+                paddingLeft: '30px', 
+                marginBottom: '12px',
+                fontSize: '16px'
+              }}>
+                <i className="fas fa-check" style={{ 
+                  color: '#4e61ff', 
+                  position: 'absolute', 
+                  left: '0', 
+                  top: '5px' 
+                }}></i>
+                {item}
+              </li>
+            ))}
+          </ul>
+          <a href="about.html" className="theme-btn style-three" style={{
+            display: 'inline-block',
+            padding: '12px 25px',
+            backgroundColor: '#4e61ff',
+            color: 'white',
+            borderRadius: '5px',
+            textDecoration: 'none',
+            fontWeight: '600',
+            transition: 'all 0.3s ease'
+          }}>Get Started <i className="fas fa-arrow-right" style={{ marginLeft: '8px' }}></i></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section className="browser-support-section rel z-1 py-130 rpy-100" style={{ 
+  backgroundColor: '#222b40', 
+  color: 'white', 
+  padding: '60px 0',
+
+}}>
+  <div className="container">
+    <div className="row align-items-center">
+      <div className="col-xl-5 col-lg-6 order-lg-1 order-2">
+        <div className="browser-support-content rmb-55 wow fadeInRight delay-0-2s" style={{ 
+          padding: '0 15px',
+          marginBottom: '30px'
+        }}>
+          <div className="section-title" style={{ marginBottom: '30px' }}>
+            <h2 style={{ 
+              color: 'white', 
+              fontSize: '32px', 
+              lineHeight: '1.3', 
+              marginBottom: '20px' 
+            }}>Access Your HRMS Anytime, Anywhere</h2>
+          </div>
+          <div className="row">
+            {[
+              {
+                icon: 'fas fa-check',
+                title: 'Cross-Platform Compatibility',
+                desc: 'Access HRMS on any device—desktop, tablet, or mobile—ensuring seamless employee and branch management on the go.'
+              },
+              {
+                icon: 'fas fa-check',
+                title: 'Secure & Role-Based Access',
+                desc: 'Ensure data security with granular access controls, allowing employees to access only what they need based on their role.'
+              }
+            ].map((item, index) => (
+              <div key={index} className="col-md-6" style={{ marginBottom: '25px' }}>
+                <div className={`solution-item-two ${index === 1 ? 'color-two' : ''}`} style={{
+                  padding: '20px',
+                  borderRadius: '8px',
+                  minHeight: '220px', // Set minimum height to ensure complete content display
+        
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}>
+                  <div style={{ marginBottom: '15px' }}>
+                    <i className={item.icon} style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      backgroundColor: index === 0 ? '#4e61ff' : '#FFB200',
+                      color: 'white',
+                      fontSize: '16px'
+                    }}></i>
                   </div>
+                  <h4 style={{ 
+                    color: 'white', 
+                    fontSize: '20px', 
+                    marginBottom: '10px',
+                    wordBreak: 'break-word' // Prevents text from overflowing
+                  }}>{item.title}</h4>
+                  <p style={{ 
+                    fontSize: '15px', 
+                    lineHeight: '1.6',
+                    wordBreak: 'break-word', // Ensures text wraps properly
+                    flex: '1' // Takes remaining space
+                  }}>{item.desc}</p>
                 </div>
               </div>
-            </section>
-            <section className="browswr-support-section rel z-1 py-130 rpy-100" style={{ backgroundColor: ' #222b40', color: 'white' }}>
-              <div className="container">
-                <div className="row align-items-center">
-                  <div className="col-xl-5 col-lg-6">
-                    <div className="browswr-support-content rmb-55 wow fadeInRight delay-0-2s">
-                      <div className="section-title">
-
-                        <h2 style={{ color: 'white' }}>Access Your HRMS Anytime, Anywhere</h2>
-                      </div>
-                      <div className="row">
-                        <div className="col-md-6">
-                          <div className="solution-item-two">
-                            <i className="fas fa-check"></i>
-                            <h4 style={{ color: 'white' }}>Cross-Platform Compatibility</h4>
-                            <p>Access HRMS on any device—desktop, tablet, or mobile—ensuring seamless employee and branch management on the go.</p>
-                          </div>
-                        </div>
-                        <div className="col-md-6">
-                          <div className="solution-item-two color-two">
-                            <i className="fas fa-check"></i>
-                            <h4 style={{ color: 'white' }}>Secure & Role-Based Access</h4>
-                            <p>Ensure data security with granular access controls, allowing employees to access only what they need based on their role.</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-xl-7 col-lg-6">
-                    <div className="browswr-support-image text-lg-right " >
-                      <img src={HRMSImage3} alt="HRMS Accessibility" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="col-xl-7 col-lg-6 order-lg-2 order-1" style={{ marginBottom: '30px' }}>
+        <div className="browser-support-image text-center text-lg-right">
+          <img 
+            src={HRMSImage3} 
+            alt="HRMS Accessibility" 
+            style={{ 
+              maxWidth: '100%', 
+              height: 'auto', 
+              borderRadius: '8px',
+            
+              display: 'inline-block'
+            }} 
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
             <section className="newsletter-section-two mt-30 rmt-0 rel z-2" style={{ background: ' #222b40' }}>
               <div className="container"  >

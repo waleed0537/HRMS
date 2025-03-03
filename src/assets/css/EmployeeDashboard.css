@@ -1,221 +1,824 @@
+/* EmployeeDashboard.css */
 .dashboard-container {
-  padding: 2rem;
+  padding: 24px;
   margin: 64px 0 0 16rem;
-
+  background-color: #f8fafc;
   min-height: calc(100vh - 64px);
 }
 
-.announcements-section,
-.leave-section {
-  margin-bottom: 2.5rem;
-}
-
-.section-header {
+.dashboard-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 24px;
 }
 
-.section-title {
-  font-size: 1.75rem;
+.dashboard-header h1 {
+  font-size: 28px;
   font-weight: 600;
   color: #1e293b;
-  margin-bottom: 1rem;
+  margin: 0;
 }
 
-.announcements-grid,
-.leave-grid {
+.dashboard-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
 }
 
-.announcement-card,
+/* Card Styles */
+.profile-card,
+.leave-quotas-card,
+.attendance-card,
+.activities-card,
+.holidays-card,
+.team-card,
+.announcements-card,
 .leave-card {
   background: white;
-  border-radius: 1rem;
+  border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
+  padding: 20px;
   transition: all 0.2s ease;
   border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
 }
 
-.announcement-card:hover,
+.profile-card:hover,
+.leave-quotas-card:hover,
+.attendance-card:hover,
+.activities-card:hover,
+.holidays-card:hover,
+.team-card:hover,
+.announcements-card:hover,
 .leave-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
-.announcement-header {
+/* Card Placement */
+.profile-card {
+  grid-column: span 4;
+}
+
+.leave-quotas-card {
+  grid-column: span 4;
+}
+
+.attendance-card {
+  grid-column: span 4;
+}
+
+.activities-card {
+  grid-column: span 6;
+}
+
+.holidays-card {
+  grid-column: span 3;
+}
+
+.team-card {
+  grid-column: span 3;
+}
+
+.announcements-card {
+  grid-column: span 6;
+}
+
+.leave-card {
+  grid-column: span 6;
+}
+
+/* Card Headers */
+.card-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
-}
-
-.priority-badge {
-  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 1rem;
-  font-weight: 500;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.priority-high {
-  background-color: #fef2f2;
-  color: #dc2626;
-}
-
-.priority-medium {
-  background-color: #fffbeb;
-  color: #d97706;
-}
-
-.priority-low {
-  background-color: #f0fdf4;
-  color: #16a34a;
-}
-
-.announcement-title {
-  font-size: 1.125rem;
+.card-header h3 {
+  font-size: 18px;
   font-weight: 600;
   color: #1e293b;
-  margin: 0.75rem 0;
+  margin: 0;
 }
 
-.announcement-content {
-  color: #475569;
-  line-height: 1.5;
-  margin-bottom: 1rem;
-}
-
-.announcement-footer {
-  font-size: 0.875rem;
+.card-header span {
+  font-size: 14px;
   color: #64748b;
-  padding-top: 1rem;
+}
+
+/* Profile Card */
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+  background-color: #474787;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.profile-info h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.profile-info p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.profile-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #475569;
+  font-size: 14px;
+}
+
+.profile-detail-item svg {
+  color: #64748b;
+}
+
+.profile-footer {
+  margin-top: auto;
+  padding-top: 16px;
   border-top: 1px solid #e2e8f0;
 }
 
-.leave-header {
+.view-profile-btn {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 0;
+  background-color: #f8fafc;
+  color: #474787;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.leave-type {
+.view-all-btn:hover {
+  background-color: #f1f5f9;
+}
+
+/* Holidays Card */
+.holidays-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  max-height: 250px;
+}
+
+.holiday-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  transition: background-color 0.2s;
+}
+
+.holiday-item:hover {
+  background-color: #f1f5f9;
+}
+
+.holiday-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+  padding: 8px;
+  background-color: #474787;
+  color: white;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.holiday-date .day {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.holiday-date .month {
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.holiday-details {
+  flex: 1;
+}
+
+.holiday-details h4 {
+  margin: 0;
+  font-size: 14px;
   font-weight: 600;
   color: #1e293b;
 }
 
-.status-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 1rem;
-  font-size: 0.75rem;
+.holiday-day {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Team Card */
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  max-height: 250px;
+}
+
+.team-member {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  transition: background-color 0.2s;
+}
+
+.team-member:hover {
+  background-color: #f1f5f9;
+}
+
+.member-avatar {
+  width: 40px;
+  height: 40px;
+  background-color: #474787;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.member-info {
+  flex: 1;
+}
+
+.member-info h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.member-info p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Announcements Card */
+.branch-tag {
+  padding: 4px 8px;
+  background-color: #f1f5f9;
+  color: #1e293b;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.announcements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  max-height: 275px;
+}
+
+.announcement-item {
+  padding: 16px;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  transition: all 0.2s;
+}
+
+.announcement-item:hover {
+  background-color: #f1f5f9;
+}
+
+.announcement-priority {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.announcement-item h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.announcement-item p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.announcement-footer {
+  font-size: 12px;
+  color: #94a3b8;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 8px;
+}
+
+.empty-announcements {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.empty-announcements svg {
+  margin-bottom: 16px;
+  color: #cbd5e1;
+}
+
+/* Leave Card */
+.new-leave-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background-color: #474787;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.new-leave-btn:hover {
+  background-color: #373769;
+}
+
+.leave-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  max-height: 275px;
+}
+
+.leave-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  transition: background-color 0.2s;
+}
+
+.leave-item:hover {
+  background-color: #f1f5f9;
+}
+
+.leave-type {
+  min-width: 80px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 8px;
+  background-color: #e2e8f0;
+  color: #475569;
+  border-radius: 4px;
+}
+
+.leave-details {
+  flex: 1;
+}
+
+.leave-dates {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.leave-reason {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+}
+
+.leave-status {
+  min-width: 80px;
+  padding: 4px 8px;
+  text-align: center;
+  border-radius: 4px;
+  font-size: 12px;
   font-weight: 500;
   text-transform: capitalize;
 }
 
-.status-badge.pending {
+.leave-status.approved {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.leave-status.pending {
   background-color: #fff7ed;
   color: #c2410c;
 }
 
-.status-badge.approved {
-  background-color: #ecfdf5;
-  color: #047857;
-}
-
-.status-badge.rejected {
+.leave-status.rejected {
   background-color: #fef2f2;
   color: #b91c1c;
 }
 
-.leave-dates {
+.empty-leaves {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  color: #64748b;
-  font-size: 0.875rem;
-  margin: 0.75rem 0;
+  justify-content: center;
+  padding: 32px;
+  color: #94a3b8;
+  text-align: center;
 }
 
-.leave-reason {
-  color: #475569;
-  line-height: 1.5;
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid #e2e8f0;
+.empty-leaves svg {
+  margin-bottom: 16px;
+  color: #cbd5e1;
 }
 
-/* Loading and Error States */
+/* Loading Container */
 .loading-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: calc(100vh - 64px);
   margin-top: -64px;
+  color: #475569;
+  gap: 16px;
 }
 
-.error-container {
-  padding: 1rem;
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #474787;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error Message */
+.error-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 32px;
   background-color: #fef2f2;
-  border-radius: 0.5rem;
-  color: #dc2626;
+  border-radius: 8px;
+  color: #b91c1c;
+  text-align: center;
+}
+
+.retry-button {
+  padding: 8px 16px;
+  background-color: #b91c1c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-button:hover {
+  background-color: #991b1b;
 }
 
 /* Responsive Design */
 @media (max-width: 1280px) {
   .dashboard-container {
-    margin-left: 14rem;
+    margin-left: 0;
+  }
+  
+  .dashboard-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  
+  .profile-card,
+  .leave-quotas-card,
+  .attendance-card {
+    grid-column: span 2;
+  }
+  
+  .activities-card,
+  .announcements-card,
+  .leave-card {
+    grid-column: span 3;
+  }
+  
+  .holidays-card,
+  .team-card {
+    grid-column: span 3;
   }
 }
 
 @media (max-width: 1024px) {
-  .dashboard-container {
-    margin-left: 0;
-    padding: 1.5rem;
+  .dashboard-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
   }
-
-  .announcements-grid,
-  .leave-grid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  
+  .profile-card,
+  .leave-quotas-card,
+  .attendance-card,
+  .holidays-card,
+  .team-card {
+    grid-column: span 2;
+  }
+  
+  .activities-card,
+  .announcements-card,
+  .leave-card {
+    grid-column: span 4;
   }
 }
 
 @media (max-width: 768px) {
   .dashboard-container {
-    margin: 64px 0 0 0;
-    padding: 1rem;
+    padding: 16px;
+    margin-top: 56px;
   }
-
-  .announcements-grid,
-  .leave-grid {
+  
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  
+  .dashboard-grid {
     grid-template-columns: 1fr;
-    gap: 1rem;
+    gap: 16px;
   }
-
-  .section-title {
-    font-size: 1.5rem;
+  
+  .profile-card,
+  .leave-quotas-card,
+  .attendance-card,
+  .activities-card,
+  .holidays-card,
+  .team-card,
+  .announcements-card,
+  .leave-card {
+    grid-column: span 1;
+  }
+  
+  .card-header {
+    margin-bottom: 12px;
+  }
+  
+  .card-header h3 {
+    font-size: 16px;
   }
 }
 
-@media (max-width: 640px) {
-  .dashboard-container {
-    padding: 1rem 0.75rem;
-  }
 
-  .announcement-card,
-  .leave-card {
-    padding: 1rem;
-  }
+.view-profile-btn:hover {
+  background-color: #f1f5f9;
+}
 
-  .section-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
+/* Leave Quotas Card */
+.leave-quotas-chart {
+  margin-bottom: 16px;
+}
+
+.leave-quotas-summary {
+  display: flex;
+  justify-content: space-around;
+  margin-top: auto;
+}
+
+.quota-item {
+  text-align: center;
+}
+
+.quota-label {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.quota-value {
+  font-weight: 600;
+}
+
+.quota-value .remaining {
+  font-size: 20px;
+  color: #474787;
+}
+
+.quota-value .total {
+  font-size: 16px;
+  color: #94a3b8;
+}
+
+/* Attendance Card */
+.attendance-chart {
+  margin-bottom: 16px;
+}
+
+.attendance-summary {
+  display: flex;
+  justify-content: space-around;
+  margin-top: auto;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.summary-item svg {
+  color: #474787;
+}
+
+.summary-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-label {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.summary-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Activities Card */
+.activities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  max-height: 275px;
+}
+
+.activity-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  transition: background-color 0.2s;
+}
+
+.activity-item:hover {
+  background-color: #f1f5f9;
+}
+
+.activity-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #474787;
+  color: white;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.activity-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.activity-time {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.activity-content p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.activity-status {
+  display: flex;
+  align-items: center;
+}
+
+.status-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.status-icon.success {
+  color: #10b981;
+}
+
+.status-icon.error {
+  color: #ef4444;
+}
+
+.status-icon.pending {
+  color: #f59e0b;
+}
+
+.activities-footer, .leave-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  text-align: center;
+}
+
+.view-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #f8fafc;
+  color: #474787;
+  border: 1px solid;
 }

@@ -670,8 +670,7 @@ const LandingPage = () => {
                 <div className={`solution-item-two ${index === 1 ? 'color-two' : ''}`} style={{
                   padding: '20px',
                   borderRadius: '8px',
-                  minHeight: '220px', // Set minimum height to ensure complete content display
-        
+                  height: '320px',
                   transition: 'all 0.3s ease',
                   display: 'flex',
                   flexDirection: 'column'
@@ -696,6 +695,7 @@ const LandingPage = () => {
                     wordBreak: 'break-word' // Prevents text from overflowing
                   }}>{item.title}</h4>
                   <p style={{ 
+                  
                     fontSize: '15px', 
                     lineHeight: '1.6',
                     wordBreak: 'break-word', // Ensures text wraps properly

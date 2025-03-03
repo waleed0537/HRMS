@@ -82,34 +82,38 @@ const Preloader = ({ images, children }) => {
             width: 100%;
             height: 100%;
             z-index: 9999;
-            background: #f8f2e8; /* Updated to match the beige background */
+            background: #1e2547; /* Dark blue background to match the theme */
             display: flex;
             align-items: center;
             justify-content: center;
           }
           
           .loader-container {
+          color:white;
             text-align: center;
           }
 
           .spinner {
+          color:white;
             animation: spinner 1.5s infinite ease;
             border-radius: 50%;
-            border: 4px solid rgba(66, 84, 244, 0.2); /* Lighter blue border */
-            border-top-color: #4254f4; /* Main blue color from buttons */
+            border: 4px solid rgba(78, 97, 255, 0.3); /* Lighter blue border */
+            border-top-color: #4e61ff; /* Bright blue color from the UI */
             height: 120px;
             margin: 0 auto 45px auto;
             width: 120px;
           }
 
           .txt-loading {
+          color:white;
             text-align: center;
             user-select: none;
             margin-bottom: 20px;
           }
 
           .letters-loading {
-            color: rgba(66, 84, 244, 0.15); /* Very light blue */
+          color:white;
+            
             font-size: 60px;
             font-weight: 600;
             line-height: 70px;
@@ -117,7 +121,7 @@ const Preloader = ({ images, children }) => {
             display: inline-block;
             position: relative;
             -webkit-text-stroke-width: 0.3px;
-            -webkit-text-stroke-color: rgba(66, 84, 244, 0.3);
+            -webkit-text-stroke-color: rgba(78, 97, 255, 0.4);
             animation: wave-text 2s ease-in-out infinite;
           }
 
@@ -129,7 +133,7 @@ const Preloader = ({ images, children }) => {
           .letters-loading:nth-child(6) { animation-delay: 0.5s; }
 
           .loading-progress {
-            color: #4254f4; /* Main blue color */
+            color: #ffffff; /* White text for better contrast on dark background */
             font-size: 24px;
             font-weight: 600;
             margin-top: 20px;
@@ -141,7 +145,7 @@ const Preloader = ({ images, children }) => {
             display: block;
             width: ${progress}%;
             height: 4px;
-            background: #4254f4;
+            background: #4e61ff; /* Bright blue color to match buttons */
             border-radius: 4px;
             margin: 10px auto 0;
             transition: width 0.3s ease;

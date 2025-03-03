@@ -129,201 +129,334 @@ const LandingPage = () => {
             {/* Header Section */}
             {/* Header Section */}
             {/* Header Section */}
-            <header className="main-header header-three" >
-              <div className="header-upper">
-                <div className="container">
-                  <div className="header-inner py-3 px-4" >
-                    <div className="logo-outer">
-                      <div className="logo">
-                        <a href="/">
-                          <img
-                            src={HRMSLogo}
-                            alt="Logo"
-                            style={{ width: "150px", height: "auto" }}
-                          />
-                        </a>
-                      </div>
-                    </div>
+            <header className="main-header header-three">
+  <div className="header-upper">
+    <div className="container">
+      <div className="header-inner py-3 px-4" style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        position: 'relative'
+      }}>
+        <div className="logo-outer">
+          <div className="logo">
+            <a href="/">
+              <img
+                src={HRMSLogo}
+                alt="Logo"
+                style={{ 
+                  width: "150px", 
+                  height: "auto",
+                  transition: 'transform 0.3s ease'
+                }}
+                onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+                onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+              />
+            </a>
+          </div>
+        </div>
 
-                    {/* Navigation Section */}
-                    <div className="nav-outer clearfix" style={{color:'white'}} >
-                      {/* Desktop Menu */}
-                      <nav className="main-menu navbar-expand-lg d-none d-lg-block" style={{ color: '#5b5675' }}>
-                        <div className="navbar-collapse" >
-                          <ul className="navigation" >
-                            <li><a href="/" className="text-white1" >Home</a></li>
-                            <li><a href="/about" className="text-white1">About</a></li>
-                            <li><a href="/services" className="text-white1">Services</a></li>
-                            <li><a href="/contact" className="text-white1">Contact</a></li>
-                          </ul>
-                        </div>
-                      </nav>
+        {/* Navigation Section */}
+        <div className="nav-outer clearfix" style={{color: 'white'}}>
+          {/* Desktop Menu */}
+          <nav className="main-menu navbar-expand-lg d-none d-lg-block">
+            <div className="navbar-collapse">
+              <ul className="navigation" style={{
+                display: 'flex',
+                listStyle: 'none',
+                margin: '0',
+                padding: '0'
+              }}>
+                <li style={{margin: '0 15px'}}><a href="/" className="text-white1" style={{
+                  color: '#ffffff',
+                  textDecoration: 'none',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  padding: '8px 5px',
+                  position: 'relative',
+                  transition: 'all 0.3s ease'
+                }}>Home</a></li>
+                <li style={{margin: '0 15px'}}><a href="/about" className="text-white1" style={{
+                  color: '#ffffff',
+                  textDecoration: 'none',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  padding: '8px 5px',
+                  position: 'relative',
+                  transition: 'all 0.3s ease'
+                }}>About</a></li>
+                <li style={{margin: '0 15px'}}><a href="/services" className="text-white1" style={{
+                  color: '#ffffff',
+                  textDecoration: 'none',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  padding: '8px 5px',
+                  position: 'relative',
+                  transition: 'all 0.3s ease'
+                }}>Services</a></li>
+                <li style={{margin: '0 15px'}}><a href="/contact" className="text-white1" style={{
+                  color: '#ffffff',
+                  textDecoration: 'none',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  padding: '8px 5px',
+                  position: 'relative',
+                  transition: 'all 0.3s ease'
+                }}>Contact</a></li>
+              </ul>
+            </div>
+          </nav>
 
-                      {/* Mobile Navigation */}
-                      <div className="d-flex d-lg-none align-items-center">
-                        <div className="nav-search me-3">
-                          <button
-                            className="fa fa-search"
-                            style={{
+          {/* Mobile Navigation */}
+          <div className="d-flex d-lg-none align-items-center">
+                
+            <button
+              type="button"
+              className="navbar-toggle"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '5px',
+                width: '40px',
+                height: '40px'
+              }}
+            >
+              <span style={{
+                display: 'block',
+                height: '2px',
+                width: '24px',
+                marginBottom: '5px',
+                backgroundColor: '#ffffff',
+                transition: 'all 0.3s ease',
+                transform: isMenuOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none'
+              }}></span>
+              <span style={{
+                display: 'block',
+                height: '2px',
+                width: '24px',
+                marginBottom: '5px',
+                backgroundColor: '#ffffff',
+                transition: 'all 0.3s ease',
+                opacity: isMenuOpen ? 0 : 1
+              }}></span>
+              <span style={{
+                display: 'block',
+                height: '2px',
+                width: '24px',
+                backgroundColor: '#ffffff',
+                transition: 'all 0.3s ease',
+                transform: isMenuOpen ? 'rotate(-45deg) translate(5px, -5px)' : 'none'
+              }}></span>
+            </button>
+          </div>
+        </div>
 
-                              border: "none",
-                              color: "#fff"
-                            }}
-                            onClick={() => setSearchOpen(!searchOpen)}
-                          ></button>
-                        </div>
-                        <button
-                          type="button"
-                          className="navbar-toggle"
-                          onClick={() => setIsMenuOpen(!isMenuOpen)}
-                          style={{
-                            border: "none",
-                            padding: "0",
+        {/* Desktop Buttons */}
+        <div className="menu-right d-none d-lg-flex align-items-center">
+          <button
+            onClick={() => navigate('/signin')}
+            className="theme-btn"
+            style={{
+              padding: '10px 20px',
+              marginRight: '15px',
+              borderRadius: '6px',
+              background: 'rgba(78, 97, 255, 0.9)',
+              color: '#ffffff',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '15px',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+            onMouseOver={(e) => {
+              e.target.style.background = 'rgba(78, 97, 255, 1)';
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 4px 8px rgba(78, 97, 255, 0.3)';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.background = 'rgba(78, 97, 255, 0.9)';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = 'none';
+            }}
+          >
+            Login <i className="fas fa-lock ms-1"></i>
+          </button>
+          <a href="/signup" 
+            className="theme-btn" 
+            style={{
+              padding: '10px 20px',
+              borderRadius: '6px',
+              background: 'transparent',
+              color: '#ffffff',
+              border: '2px solid rgba(78, 97, 255, 0.9)',
+              textDecoration: 'none',
+              fontWeight: '600',
+              fontSize: '15px',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+            onMouseOver={(e) => {
+              e.target.style.background = 'rgba(78, 97, 255, 0.9)';
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 4px 8px rgba(78, 97, 255, 0.3)';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.background = 'transparent';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = 'none';
+            }}
+          >
+            Sign Up <i className="fas fa-arrow-right ms-1"></i>
+          </a>
+        </div>
+      </div>
 
-                            marginLeft: "10px"
-                          }}
-                        >
-                          <span className="icon-bar" style={{
+      {/* Mobile Menu */}
+      <div
+        className={`mobile-menu ${isMenuOpen ? 'show' : ''}`}
+        style={{
+          position: "absolute",
+          top: "100%",
+          left: "0",
+          right: "0",
+          
+                backgroundColor:'rgb(34, 43, 64)',
+          padding: isMenuOpen ? "20px" : "0",
+          maxHeight: isMenuOpen ? "400px" : "0",
+          overflow: "hidden",
+          transition: "all 0.3s ease-in-out",
+          opacity: isMenuOpen ? "1" : "0",
+          visibility: isMenuOpen ? "visible" : "hidden",
+          zIndex: "1000",
+          boxShadow: isMenuOpen ? "0 6px 12px rgba(0, 0, 0, 0.15)" : "none",
+          borderTop: isMenuOpen ? "1px solid rgba(255, 255, 255, 0.1)" : "none"
+        }}
+      >
+        <ul className="navigation clearfix text-center" style={{
+          listStyle: 'none',
+          margin: '0',
+          padding: '0'
+        }}>
+          <li style={{
+            textAlign: 'center',
+            padding: '12px 0',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+          }}>
+            <a href="/" className="text-white" style={{
+              color: '#ffffff',
+              textDecoration: 'none',
+              fontSize: '16px',
+              fontWeight: '500',
+              display: 'block',
+              padding: '5px'
+            }}>Home</a>
+          </li>
+          <li style={{
+            textAlign: 'center',
+            padding: '12px 0',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+          }}>
+            <a href="/about" className="text-white" style={{
+              color: '#ffffff',
+              textDecoration: 'none',
+              fontSize: '16px',
+              fontWeight: '500',
+              display: 'block',
+              padding: '5px'
+            }}>About</a>
+          </li>
+          <li style={{
+            textAlign: 'center',
+            padding: '12px 0',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+          }}>
+            <a href="/services" className="text-white" style={{
+              color: '#ffffff',
+              textDecoration: 'none',
+              fontSize: '16px',
+              fontWeight: '500',
+              display: 'block',
+              padding: '5px'
+            }}>Services</a>
+          </li>
+          <li style={{
+            textAlign: 'center',
+            padding: '12px 0'
+          }}>
+            <a href="/contact" className="text-white" style={{
+              color: '#ffffff',
+              textDecoration: 'none',
+              fontSize: '16px',
+              fontWeight: '500',
+              display: 'block',
+              padding: '5px'
+            }}>Contact</a>
+          </li>
+          <li className="mt-3" style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '10px',
+            padding: '20px 0 5px'
+          }}>
+            <Link to="/signin" className="theme-btn d-inline-block" style={{
+              padding: '10px 20px',
+              borderRadius: '6px',
+              background: 'rgba(78, 97, 255, 0.9)',
+              color: '#ffffff',
+              border: 'none',
+              textDecoration: 'none',
+              fontWeight: '600',
+              fontSize: '14px',
+              width: '110px',
+              textAlign: 'center'
+            }}>
+              Login
+            </Link>
+            <a href="/signup" className="theme-btn d-inline-block" style={{
+              padding: '10px 20px',
+              borderRadius: '6px',
+              background: 'transparent',
+              color: '#ffffff',
+              border: '2px solid rgba(78, 97, 255, 0.9)',
+              textDecoration: 'none',
+              fontWeight: '600',
+              fontSize: '14px',
+              width: '110px',
+              textAlign: 'center'
+            }}>
+              Sign Up
+            </a>
+          </li>
+        </ul>
+      </div>
 
-                            height: "2px",
-                            width: "22px",
-                            marginBottom: "4px",
-                            display: "block"
-                          }}></span>
-                          <span className="icon-bar" style={{
-
-                            height: "2px",
-                            width: "22px",
-                            marginBottom: "4px",
-                            display: "block"
-                          }}></span>
-                          <span className="icon-bar" style={{
-
-                            height: "2px",
-                            width: "22px",
-                            display: "block"
-                          }}></span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Desktop Buttons */}
-                    <div className="menu-right d-none d-lg-flex align-items-center">
-                      <div className="menu-right d-none d-lg-flex align-items-center">
-                        <button
-                          onClick={() => navigate('/signin')}
-                          className="theme-btn"
-                          style={{
-                            padding: "8px 20px",
-                            marginRight: "10px",
-                            borderRadius: "5px",
-
-                            color: "#fff",
-                            border: "none",
-                            cursor: "pointer"
-                          }}
-                        >
-                          Login <i className="fas fa-lock ms-1"></i>
-                        </button>
-                        <a href="/signup" className="theme-btn" style={{
-                          padding: "8px 20px",
-                          borderRadius: "5px",
-
-                          color: "#fff",
-                          textDecoration: "none"
-                        }}>
-                          Sign Up <i className="fas fa-arrow-right ms-1"></i>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Mobile Menu */}
-                  <div
-                    className={`mobile-menu ${isMenuOpen ? 'show' : ''}`}
-                    style={{
-                      position: "absolute",
-                      top: "100%",
-                      left: "0",
-                      right: "0",
-
-                      padding: isMenuOpen ? "20px" : "0",
-                      transition: "all 0.3s ease",
-                      opacity: isMenuOpen ? "1" : "0",
-                      visibility: isMenuOpen ? "visible" : "hidden",
-                      zIndex: "1000"
-                    }}
-                  >
-                    <ul className="navigation clearfix text-center">
-                      <li><a href="/" className="text-white">Home</a></li>
-                      <li><a href="/about" className="text-white">About</a></li>
-                      <li><a href="/services" className="text-white">Services</a></li>
-                      <li><a href="/contact" className="text-white">Contact</a></li>
-                      <li className="mt-3">
-                        <Link to="/signin" className="theme-btn d-inline-block" style={{
-                          padding: "8px 20px",
-                          marginRight: "10px",
-                          borderRadius: "5px",
-
-                          textDecoration: "none"
-                        }}>
-                          Login
-                        </Link>
-                        <a href="/signup" className="theme-btn d-inline-block" style={{
-                          padding: "8px 20px",
-                          borderRadius: "5px",
-
-                          textDecoration: "none"
-                        }}>
-                          Sign Up
-                        </a>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Search Overlay */}
-                  {searchOpen && (
-                    <div className="search-overlay" style={{
-                      position: "absolute",
-                      top: "100%",
-                      left: "0",
-                      right: "0",
-                      padding: "20px",
-
-                      zIndex: "1000"
-                    }}>
-                      <form action="#" className="d-flex">
-                        <input
-                          type="text"
-                          placeholder="Search"
-                          className="form-control"
-                          style={{
-
-
-
-                          }}
-                        />
-                        <button type="submit" className="btn" >
-                          <i className="fa fa-search"></i>
-                        </button>
-                      </form>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </header>
+      {/* Search Overlay */}
+  
+    </div>
+  </div>
+</header>
 
             {/* Hero Section */}
             <section className="hero-section-three rel z-2 pt-235 rpt-150 pb-130 rpb-100" style={{
-              backgroundColor:'#222b40'            }}>
-              <div className="container" style={{marginTop:'-100px',marginBottom:'50px'}}>
+              backgroundColor: '#222b40'
+            }}>
+              <div className="container" style={{ marginTop: '-100px', marginBottom: '50px' }}>
                 <div className="row align-items-center">
                   <div className="col-lg-6 col-md-11">
                     <div className="hero-content-three rpt-15 rmb-75">
-                      <h1 className="mb-15 wow fadeInUp delay-0-2s" style={{marginTop:'100px',fontSize:'xxx-large',color:'white',marginBottom:'100px'}}>
+                      <h1 className="mb-15 wow fadeInUp delay-0-2s" style={{ marginTop: '100px', fontSize: 'xxx-large', color: 'white', marginBottom: '100px' }}>
                         Streamline Your Workforce with Our HRMS
                       </h1>
-                      <p className="wow fadeInUp delay-0-4s" style={{color:'white'}}>
+                      <p className="wow fadeInUp delay-0-4s" style={{ color: 'white' }}>
                         Manage employees, branches, recruitment, communication, and performance seamlessly with our advanced HRMS solution.
                         Built for scalability, security, and efficiency.
                       </p>
@@ -354,21 +487,21 @@ const LandingPage = () => {
                     </div>
                   </div>
                   <div className="col-lg-6">
-  <div className="hero-image-three wow fadeInLeft delay-0-4s">
-    <img
-      src={HRMSHeroImage}
-      alt="HRMS Dashboard Preview"
-      style={{
-        marginLeft:"80px",
-        maxWidth: "70%",
-        height: "auto",
-        marginTop: "-70px",
-        objectFit: "contain",
-        borderRadius: "12px"
-      }}
-    />
-  </div>
-</div>
+                    <div className="hero-image-three wow fadeInLeft delay-0-4s">
+                      <img
+                        src={HRMSHeroImage}
+                        alt="HRMS Dashboard Preview"
+                        style={{
+                          marginLeft: "80px",
+                          maxWidth: "70%",
+                          height: "auto",
+                          marginTop: "-70px",
+                          objectFit: "contain",
+                          borderRadius: "12px"
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
               <img className="dots-shape" src={ShapeDot} alt="Shape" />
@@ -380,14 +513,14 @@ const LandingPage = () => {
             {/* Solutions Section */}
             <section
               className="solutions-section-three text-white text-center rel bg-blue pt-130 rpt-100 z-1 pb-75 rpb-45"
-              style={{ backgroundImage: `url(${bgDots})`,backgroundColor:' #141B2D' }}
+              style={{ backgroundImage: `url(${bgDots})`, backgroundColor: ' #141B2D' }}
 
             >
               <div className="container" style={{}}>
                 <div className="row justify-content-center">
                   <div className="col-xl-7 col-lg-8 col-md-10">
                     <div className="section-title mb-75">
-                      <h2 style={{marginBottom:'120px',fontSize:'40px'}}>Empowering Workforce Management with Smart Solutions</h2>
+                      <h2 style={{ marginBottom: '120px', fontSize: '40px' }}>Empowering Workforce Management with Smart Solutions</h2>
                     </div>
                   </div>
                 </div>
@@ -427,26 +560,26 @@ const LandingPage = () => {
             </section>
 
 
-            <section className="about-section-three rel z-1 pt-130 rpt-100" style={{backgroundColor:' #222b40',color:'white'}}>
+            <section className="about-section-three rel z-1 pt-130 rpt-100" style={{ backgroundColor: ' #222b40', color: 'white' }}>
               <div className="container">
                 <div className="row align-items-center">
                   <div className="col-xl-7 col-lg-6">
                     <div className="about-image rmb-55 wow fadeInLeft delay-0-2s">
-                      <img src={HRMSImage2} style={{}}    alt="About HRMS" />
+                      <img src={HRMSImage2} style={{}} alt="About HRMS" />
                     </div>
                   </div>
                   <div className="col-xl-5 col-lg-6">
                     <div className="about-content-three wow fadeInRight delay-0-2s">
                       <div className="section-title mb-25">
 
-                        <h2 style={{color:'white'}}>Transform Workforce Management with Our HRMS</h2>
+                        <h2 style={{ color: 'white' }}>Transform Workforce Management with Our HRMS</h2>
                       </div>
                       <p>Our HRMS streamlines employee management, recruitment, performance tracking, and communication. Designed for efficiency, scalability, and seamless integration, it empowers businesses to optimize their workforce operations.</p>
                       <ul className="list-style-one mt-25 mb-35" >
-                        <li style={{color:'white'}}>Employee & Branch Management</li>
-                        <li style={{color:'white'}}>Performance Tracking & Analytics</li>
-                        <li style={{color:'white'}}>Recruitment & Onboarding</li>
-                        <li style={{color:'white'}}>Messaging & Communication</li>
+                        <li style={{ color: 'white' }}>Employee & Branch Management</li>
+                        <li style={{ color: 'white' }}>Performance Tracking & Analytics</li>
+                        <li style={{ color: 'white' }}>Recruitment & Onboarding</li>
+                        <li style={{ color: 'white' }}>Messaging & Communication</li>
                       </ul>
                       <a href="about.html" className="theme-btn style-three">Get Started <i className="fas fa-arrow-right"></i></a>
                     </div>
@@ -454,27 +587,27 @@ const LandingPage = () => {
                 </div>
               </div>
             </section>
-            <section className="browswr-support-section rel z-1 py-130 rpy-100" style={{backgroundColor:' #222b40',color:'white'}}>
+            <section className="browswr-support-section rel z-1 py-130 rpy-100" style={{ backgroundColor: ' #222b40', color: 'white' }}>
               <div className="container">
                 <div className="row align-items-center">
                   <div className="col-xl-5 col-lg-6">
                     <div className="browswr-support-content rmb-55 wow fadeInRight delay-0-2s">
                       <div className="section-title">
 
-                        <h2 style={{color:'white'}}>Access Your HRMS Anytime, Anywhere</h2>
+                        <h2 style={{ color: 'white' }}>Access Your HRMS Anytime, Anywhere</h2>
                       </div>
                       <div className="row">
                         <div className="col-md-6">
                           <div className="solution-item-two">
                             <i className="fas fa-check"></i>
-                            <h4 style={{color:'white'}}>Cross-Platform Compatibility</h4>
+                            <h4 style={{ color: 'white' }}>Cross-Platform Compatibility</h4>
                             <p>Access HRMS on any device—desktop, tablet, or mobile—ensuring seamless employee and branch management on the go.</p>
                           </div>
                         </div>
                         <div className="col-md-6">
                           <div className="solution-item-two color-two">
                             <i className="fas fa-check"></i>
-                            <h4 style={{color:'white'}}>Secure & Role-Based Access</h4>
+                            <h4 style={{ color: 'white' }}>Secure & Role-Based Access</h4>
                             <p>Ensure data security with granular access controls, allowing employees to access only what they need based on their role.</p>
                           </div>
                         </div>
@@ -482,7 +615,7 @@ const LandingPage = () => {
                     </div>
                   </div>
                   <div className="col-xl-7 col-lg-6">
-                    <div className="browswr-support-image text-lg-right wow fadeInLeft delay-0-2s" >
+                    <div className="browswr-support-image text-lg-right " >
                       <img src={HRMSImage3} alt="HRMS Accessibility" />
                     </div>
                   </div>
@@ -490,18 +623,18 @@ const LandingPage = () => {
               </div>
             </section>
 
-            <section className="newsletter-section-two mt-30 rmt-0 rel z-2" style={{background:' #222b40'}}>
+            <section className="newsletter-section-two mt-30 rmt-0 rel z-2" style={{ background: ' #222b40' }}>
               <div className="container"  >
-                <div className="newsletter-inner style-two bg-gray bgs-cover text-white rel z-1" style={{background:'rgb(22, 30, 46)'}}>
+                <div className="newsletter-inner style-two bg-gray bgs-cover text-white rel z-1" style={{ background: 'rgb(22, 30, 46)' }}>
                   <div className="row align-items-center align-items-xl-start" >
                     <div className="col-lg-6" >
                       <div className="newsletter-content p-60" >
                         <div className="section-title mb-30">
 
-                          <h1 style={{marginBottom:'120px',fontSize:'40px'}}>Subscribe to HRMS Insights & Feature Updates</h1>
+                          <h1 style={{ marginBottom: '120px', fontSize: '40px' }}>Subscribe to HRMS Insights & Feature Updates</h1>
                         </div>
                         <form className="newsletter-form" onSubmit={handleNewsletterSubmit}>
-                          <div className="newsletter-email" style={{backgroundColor:' #131b2c'}}>
+                          <div className="newsletter-email" style={{ backgroundColor: ' #131b2c' }}>
                             <input
                               type="email"
                               placeholder="Enter Email Address"
@@ -526,67 +659,67 @@ const LandingPage = () => {
                 </div>
               </div>
             </section>
-            <section className="services-section-three bg-lighter rel z-1 pt-250 pb-100 rpb-70" style={{backgroundColor:' #131b2c'}}>
+            <section className="services-section-three bg-lighter rel z-1 pt-250 pb-100 rpb-70" style={{ backgroundColor: ' #131b2c' }}>
               <div className="container">
                 <div className="row justify-content-center text-center">
                   <div className="col-xl-7 col-lg-8 col-md-10">
                     <div className="section-title mt-100 rmt-70 mb-55">
 
-                      <h2 style={{color:'white'}}>Enhancing Workforce Efficiency with Smart HRMS</h2>
+                      <h2 style={{ color: 'white' }}>Enhancing Workforce Efficiency with Smart HRMS</h2>
                     </div>
                   </div>
                 </div>
-                <div className="row" style={{color:'white'}}>
+                <div className="row" style={{ color: 'white' }}>
                   <div className="col-xl-4 col-md-6" >
-                    <div className="service-item wow fadeInUp delay-0-2s" style={{backgroundColor:'#222b40'}}>
+                    <div className="service-item wow fadeInUp delay-0-2s" style={{ backgroundColor: '#222b40' }}>
                       <i className="flaticon-file"></i>
                       <div className="content">
-                        <h3><a href="single-service.html" style={{color:'white'}}>Employee Management</a></h3>
+                        <h3><a href="single-service.html" style={{ color: 'white' }}>Employee Management</a></h3>
                         <p>Maintain employee records, track roles, and ensure seamless HR operations across all branches.</p>
                       </div>
                     </div>
                   </div>
                   <div className="col-xl-4 col-md-6">
-                    <div className="service-item wow fadeInUp delay-0-4s" style={{backgroundColor:'#222b40'}}>
+                    <div className="service-item wow fadeInUp delay-0-4s" style={{ backgroundColor: '#222b40' }}>
                       <i className="flaticon-responsive-design"></i>
                       <div className="content">
-                        <h3><a href="single-service.html" style={{color:'white'}}>Recruitment & Onboarding</a></h3>
+                        <h3><a href="single-service.html" style={{ color: 'white' }}>Recruitment & Onboarding</a></h3>
                         <p>Automate candidate tracking, streamline hiring, and facilitate smooth onboarding experiences.</p>
                       </div>
                     </div>
                   </div>
                   <div className="col-xl-4 col-md-6">
-                    <div className="service-item wow fadeInUp delay-0-6s" style={{backgroundColor:'#222b40'}}>
+                    <div className="service-item wow fadeInUp delay-0-6s" style={{ backgroundColor: '#222b40' }}>
                       <i className="flaticon-security"></i>
                       <div className="content">
-                        <h3><a href="single-service.html" style={{color:'white'}}>Role-Based Security</a></h3>
+                        <h3><a href="single-service.html" style={{ color: 'white' }}>Role-Based Security</a></h3>
                         <p>Ensure secure access controls, protecting sensitive employee and branch data at all levels.</p>
                       </div>
                     </div>
                   </div>
                   <div className="col-xl-4 col-md-6">
-                    <div className="service-item wow fadeInUp delay-0-8s" style={{backgroundColor:'#222b40'}}>
+                    <div className="service-item wow fadeInUp delay-0-8s" style={{ backgroundColor: '#222b40' }}>
                       <i className="flaticon-puzzle"></i>
                       <div className="content">
-                        <h3><a href="single-service.html" style={{color:'white'}}>Performance Tracking</a></h3>
+                        <h3><a href="single-service.html" style={{ color: 'white' }}>Performance Tracking</a></h3>
                         <p>Evaluate employee performance with real-time KPIs, attendance tracking, and scorecards.</p>
                       </div>
                     </div>
                   </div>
                   <div className="col-xl-4 col-md-6">
-                    <div className="service-item wow fadeInUp delay-1-0s" style={{backgroundColor:'#222b40'}}>
+                    <div className="service-item wow fadeInUp delay-1-0s" style={{ backgroundColor: '#222b40' }}>
                       <i className="flaticon-badge"></i>
                       <div className="content">
-                        <h3><a href="single-service.html" style={{color:'white'}}>Messaging & Communication</a></h3>
+                        <h3><a href="single-service.html" style={{ color: 'white' }}>Messaging & Communication</a></h3>
                         <p>Enable seamless communication between HR, management, and employees with in-platform messaging.</p>
                       </div>
                     </div>
                   </div>
                   <div className="col-xl-4 col-md-6">
-                    <div className="service-item wow fadeInUp delay-1-2s" style={{backgroundColor:'#222b40'}}>
+                    <div className="service-item wow fadeInUp delay-1-2s" style={{ backgroundColor: '#222b40' }}>
                       <i className="flaticon-analytics"></i>
                       <div className="content">
-                        <h3><a href="single-service.html" style={{color:'white'}}>Advanced Analytics</a></h3>
+                        <h3><a href="single-service.html" style={{ color: 'white' }}>Advanced Analytics</a></h3>
                         <p>Gain insights into workforce trends, sales performance, and HR metrics with data-driven reports.</p>
                       </div>
                     </div>
@@ -596,13 +729,13 @@ const LandingPage = () => {
             </section>
 
             {/* Dashboard Section */}
-            <section className="dashboard-section rel z-1 py-130 rpy-100" style={{backgroundColor:'#222b40'}}>
+            <section className="dashboard-section rel z-1 py-130 rpy-100" style={{ backgroundColor: '#222b40' }}>
               <div className="container">
                 <div className="row justify-content-center text-center">
                   <div className="col-xl-7 col-lg-8 col-md-10">
                     <div className="section-title mb-60">
 
-                      <h2 style={{color:'white'}}>Monitor & Manage Your Workforce with an Intuitive Dashboard</h2>
+                      <h2 style={{ color: 'white' }}>Monitor & Manage Your Workforce with an Intuitive Dashboard</h2>
                     </div>
                   </div>
                 </div>
@@ -657,242 +790,242 @@ const LandingPage = () => {
             </div> */}
             {/* Contact Section */}
             <section style={{
-  padding: '115px 0 130px',
-  position: 'relative',
-  zIndex: 1,
-  backgroundColor:'#222b40'
-}}>
-  <div style={{
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '0 15px'
-  }}>
-    <div style={{
-      textAlign: 'center',
-      marginBottom: '50px'
-    }}>
-      <h2 style={{
-        fontSize: '42px',
-        marginBottom: '20px',
-        color: 'white',
-        fontWeight: '600',
-      }}>Contact Us</h2>
-    </div>
+              padding: '115px 0 130px',
+              position: 'relative',
+              zIndex: 1,
+              backgroundColor: '#222b40'
+            }}>
+              <div style={{
+                maxWidth: '1200px',
+                margin: '0 auto',
+                padding: '0 15px'
+              }}>
+                <div style={{
+                  textAlign: 'center',
+                  marginBottom: '50px'
+                }}>
+                  <h2 style={{
+                    fontSize: '42px',
+                    marginBottom: '20px',
+                    color: 'white',
+                    fontWeight: '600',
+                  }}>Contact Us</h2>
+                </div>
 
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center'
-    }}>
-      <form
-        style={{
-          width: '100%',
-          maxWidth: '800px',
-          padding: '45px',
-          backgroundColor: 'white',
-          borderRadius: '15px',
-          background:'#131b2c',
-          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)',
-         
-        }}
-      >
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: '20px'
-        }}>
-          <div>
-            <input
-              type="text"
-              placeholder="Full Name"
-              required
-              style={{
-                width: '100%',
-                padding: '12px 20px',
-                backgroundColor: '#f7f9fc',
-                border: '1px solid #e6e9ef',
-                borderRadius: '8px',
-                color: '#333',
-                fontSize: '16px',
-                transition: 'all 0.3s ease'
-              }}
-            />
-          </div>
-          <div>
-            <input
-              type="email"
-              placeholder="Email Address"
-              required
-              style={{
-                width: '100%',
-                padding: '12px 20px',
-                backgroundColor: '#f7f9fc',
-                border: '1px solid #e6e9ef',
-                borderRadius: '8px',
-                color: '#333',
-                fontSize: '16px',
-                transition: 'all 0.3s ease'
-              }}
-            />
-          </div>
-          <div>
-            <input
-              type="text"
-              placeholder="Phone Number"
-              style={{
-                width: '100%',
-                padding: '12px 20px',
-                backgroundColor: '#f7f9fc',
-                border: '1px solid #e6e9ef',
-                borderRadius: '8px',
-                color: '#333',
-                fontSize: '16px',
-                transition: 'all 0.3s ease'
-              }}
-            />
-          </div>
-          <div>
-            <input
-              type="text"
-              placeholder="Company"
-              style={{
-                width: '100%',
-                padding: '12px 20px',
-                backgroundColor: '#f7f9fc',
-                border: '1px solid #e6e9ef',
-                borderRadius: '8px',
-                color: '#333',
-                fontSize: '16px',
-                transition: 'all 0.3s ease'
-              }}
-            />
-          </div>
-          <div>
-            <input
-              type="text"
-              placeholder="Subject"
-              style={{
-                width: '100%',
-                padding: '12px 20px',
-                backgroundColor: '#f7f9fc',
-                border: '1px solid #e6e9ef',
-                borderRadius: '8px',
-                color: '#333',
-                fontSize: '16px',
-                transition: 'all 0.3s ease'
-              }}
-            />
-          </div>
-          <div>
-            <input
-              type="url"
-              placeholder="Website"
-              style={{
-                width: '100%',
-                padding: '12px 20px',
-                backgroundColor: '#f7f9fc',
-                border: '1px solid #e6e9ef',
-                borderRadius: '8px',
-                color: '#333',
-                fontSize: '16px',
-                transition: 'all 0.3s ease'
-              }}
-            />
-          </div>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <textarea
-              placeholder="Message"
-              required
-              rows="4"
-              style={{
-                width: '100%',
-                padding: '12px 20px',
-                backgroundColor: '#f7f9fc',
-                border: '1px solid #e6e9ef',
-                borderRadius: '8px',
-                color: '#333',
-                fontSize: '16px',
-                resize: 'vertical',
-                transition: 'all 0.3s ease'
-              }}
-            ></textarea>
-          </div>
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center' }}>
-            <button
-              type="submit"
-              style={{
-                padding: '12px 40px',
-                backgroundColor: '#4254f4', // Matching the blue from login/sign up buttons
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '16px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                marginTop: '20px'
-              }}
-            >
-              Submit <i className="fas fa-arrow-right" style={{ marginLeft: '8px' }}></i>
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
-  </div>
-  
-  {/* Adding decorative element similar to the one in hero section */}
-  <div style={{
-    position: 'absolute',
-    top: '100px',
-    left: '100px',
-    width: '80px',
-    height: '80px',
-    opacity: '0.5',
-    zIndex: '-1'
-  }}>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-      <g fill="#4254f4">
-        <circle cx="10" cy="10" r="3" />
-        <circle cx="30" cy="10" r="3" />
-        <circle cx="50" cy="10" r="3" />
-        <circle cx="70" cy="10" r="3" />
-        <circle cx="90" cy="10" r="3" />
-        <circle cx="10" cy="30" r="3" />
-        <circle cx="30" cy="30" r="3" />
-        <circle cx="50" cy="30" r="3" />
-        <circle cx="70" cy="30" r="3" />
-        <circle cx="90" cy="30" r="3" />
-        <circle cx="10" cy="50" r="3" />
-        <circle cx="30" cy="50" r="3" />
-        <circle cx="50" cy="50" r="3" />
-        <circle cx="70" cy="50" r="3" />
-        <circle cx="90" cy="50" r="3" />
-        <circle cx="10" cy="70" r="3" />
-        <circle cx="30" cy="70" r="3" />
-        <circle cx="50" cy="70" r="3" />
-        <circle cx="70" cy="70" r="3" />
-        <circle cx="90" cy="70" r="3" />
-        <circle cx="10" cy="90" r="3" />
-        <circle cx="30" cy="90" r="3" />
-        <circle cx="50" cy="90" r="3" />
-        <circle cx="70" cy="90" r="3" />
-        <circle cx="90" cy="90" r="3" />
-      </g>
-    </svg>
-  </div>
-  
-  {/* Adding a decorative element like the star in the hero section */}
-  <div style={{
-    position: 'absolute',
-    right: '150px',
-    top: '250px',
-    zIndex: '-1'
-  }}>
-    <svg width="30" height="30" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
-      <path d="M15 0L18.5 11.5H30L20.5 18.5L24 30L15 23L6 30L9.5 18.5L0 11.5H11.5L15 0Z" fill="#4254f4" />
-    </svg>
-  </div>
-</section>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center'
+                }}>
+                  <form
+                    style={{
+                      width: '100%',
+                      maxWidth: '800px',
+                      padding: '45px',
+                      backgroundColor: 'white',
+                      borderRadius: '15px',
+                      background: '#131b2c',
+                      boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)',
+
+                    }}
+                  >
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, 1fr)',
+                      gap: '20px'
+                    }}>
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Full Name"
+                          required
+                          style={{
+                            width: '100%',
+                            padding: '12px 20px',
+                            backgroundColor: '#f7f9fc',
+                            border: '1px solid #e6e9ef',
+                            borderRadius: '8px',
+                            color: '#333',
+                            fontSize: '16px',
+                            transition: 'all 0.3s ease'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="email"
+                          placeholder="Email Address"
+                          required
+                          style={{
+                            width: '100%',
+                            padding: '12px 20px',
+                            backgroundColor: '#f7f9fc',
+                            border: '1px solid #e6e9ef',
+                            borderRadius: '8px',
+                            color: '#333',
+                            fontSize: '16px',
+                            transition: 'all 0.3s ease'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Phone Number"
+                          style={{
+                            width: '100%',
+                            padding: '12px 20px',
+                            backgroundColor: '#f7f9fc',
+                            border: '1px solid #e6e9ef',
+                            borderRadius: '8px',
+                            color: '#333',
+                            fontSize: '16px',
+                            transition: 'all 0.3s ease'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Company"
+                          style={{
+                            width: '100%',
+                            padding: '12px 20px',
+                            backgroundColor: '#f7f9fc',
+                            border: '1px solid #e6e9ef',
+                            borderRadius: '8px',
+                            color: '#333',
+                            fontSize: '16px',
+                            transition: 'all 0.3s ease'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Subject"
+                          style={{
+                            width: '100%',
+                            padding: '12px 20px',
+                            backgroundColor: '#f7f9fc',
+                            border: '1px solid #e6e9ef',
+                            borderRadius: '8px',
+                            color: '#333',
+                            fontSize: '16px',
+                            transition: 'all 0.3s ease'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="url"
+                          placeholder="Website"
+                          style={{
+                            width: '100%',
+                            padding: '12px 20px',
+                            backgroundColor: '#f7f9fc',
+                            border: '1px solid #e6e9ef',
+                            borderRadius: '8px',
+                            color: '#333',
+                            fontSize: '16px',
+                            transition: 'all 0.3s ease'
+                          }}
+                        />
+                      </div>
+                      <div style={{ gridColumn: '1 / -1' }}>
+                        <textarea
+                          placeholder="Message"
+                          required
+                          rows="4"
+                          style={{
+                            width: '100%',
+                            padding: '12px 20px',
+                            backgroundColor: '#f7f9fc',
+                            border: '1px solid #e6e9ef',
+                            borderRadius: '8px',
+                            color: '#333',
+                            fontSize: '16px',
+                            resize: 'vertical',
+                            transition: 'all 0.3s ease'
+                          }}
+                        ></textarea>
+                      </div>
+                      <div style={{ gridColumn: '1 / -1', textAlign: 'center' }}>
+                        <button
+                          type="submit"
+                          style={{
+                            padding: '12px 40px',
+                            backgroundColor: '#4254f4', // Matching the blue from login/sign up buttons
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontSize: '16px',
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            marginTop: '20px'
+                          }}
+                        >
+                          Submit <i className="fas fa-arrow-right" style={{ marginLeft: '8px' }}></i>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+              {/* Adding decorative element similar to the one in hero section */}
+              <div style={{
+                position: 'absolute',
+                top: '100px',
+                left: '100px',
+                width: '80px',
+                height: '80px',
+                opacity: '0.5',
+                zIndex: '-1'
+              }}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                  <g fill="#4254f4">
+                    <circle cx="10" cy="10" r="3" />
+                    <circle cx="30" cy="10" r="3" />
+                    <circle cx="50" cy="10" r="3" />
+                    <circle cx="70" cy="10" r="3" />
+                    <circle cx="90" cy="10" r="3" />
+                    <circle cx="10" cy="30" r="3" />
+                    <circle cx="30" cy="30" r="3" />
+                    <circle cx="50" cy="30" r="3" />
+                    <circle cx="70" cy="30" r="3" />
+                    <circle cx="90" cy="30" r="3" />
+                    <circle cx="10" cy="50" r="3" />
+                    <circle cx="30" cy="50" r="3" />
+                    <circle cx="50" cy="50" r="3" />
+                    <circle cx="70" cy="50" r="3" />
+                    <circle cx="90" cy="50" r="3" />
+                    <circle cx="10" cy="70" r="3" />
+                    <circle cx="30" cy="70" r="3" />
+                    <circle cx="50" cy="70" r="3" />
+                    <circle cx="70" cy="70" r="3" />
+                    <circle cx="90" cy="70" r="3" />
+                    <circle cx="10" cy="90" r="3" />
+                    <circle cx="30" cy="90" r="3" />
+                    <circle cx="50" cy="90" r="3" />
+                    <circle cx="70" cy="90" r="3" />
+                    <circle cx="90" cy="90" r="3" />
+                  </g>
+                </svg>
+              </div>
+
+              {/* Adding a decorative element like the star in the hero section */}
+              <div style={{
+                position: 'absolute',
+                right: '150px',
+                top: '250px',
+                zIndex: '-1'
+              }}>
+                <svg width="30" height="30" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 0L18.5 11.5H30L20.5 18.5L24 30L15 23L6 30L9.5 18.5L0 11.5H11.5L15 0Z" fill="#4254f4" />
+                </svg>
+              </div>
+            </section>
 
 
             {/* Footer */}

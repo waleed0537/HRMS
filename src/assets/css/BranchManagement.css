@@ -1,5 +1,5 @@
 .branch-management {
-    padding: 1.5rem;
+    padding: 2.5rem;
     max-width: 1700px;
     margin: 46px auto 0;
     margin-left: 16rem;
@@ -18,15 +18,15 @@
   
   .title {
     font-size: clamp(1.5rem, 2vw, 2rem);
-    font-weight: 600;
-    color: #333;
+    font-weight: 400;
+    color:#be95be;
   }
   
   .add-button {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    background-color: #474787;
+    background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
     color: white;
     padding: 0.75rem 1.25rem;
     border: none;
@@ -151,8 +151,8 @@
     align-items: center;
     gap: 0.5rem;
     font-size: 1.1rem;
-    font-weight: 600;
-    color: #474787;
+    font-weight: 400;
+    color:#71a3c1;
   }
   
   .branch-content {
@@ -187,7 +187,7 @@
   .role-value {
     font-size: 1rem;
     color: #333;
-    font-weight: 500;
+    font-weight: 300;
   }
   
   .role-select {
@@ -218,13 +218,14 @@
   }
   
   .button-primary {
-    background: #474787;
+    background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
     color: white;
     border: none;
   }
   
   .button-primary:hover {
-    background: #5c5c9d;
+    background: linear-gradient(-135deg, #809ad8 0%, #9b7dd3 100%);
+
     transform: translateY(-1px);
   }
   

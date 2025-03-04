@@ -549,7 +549,7 @@ const EditProfiles = () => {
             )}
 
             <div className="form-actions">
-              <button type="submit" className="submit-button" disabled={loading}>
+              <button type="submit" className="submit-button" disabled={loading} style={{background: 'linear-gradient(-135deg, #899FD4 0%, #A389D4 100%)'}}>
                 <Save size={20} />
                 {loading ? 'Saving...' : 'Save Changes'}
               </button>

@@ -103,6 +103,7 @@
   
   .cancel-button,
   .submit-button {
+    background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
     padding: 8px 16px;
     border-radius: 4px;
     cursor: pointer;
@@ -122,13 +123,13 @@
   }
   
   .submit-button {
-    background: #474787;
+    background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
     border: none;
     color: white;
   }
   
   .submit-button:hover {
-    background: #5c5c9d;
+    background: linear-gradient(-135deg, #7c98d8 0%, #9778cf 100%);
   }
   
   @media (max-width: 768px) {

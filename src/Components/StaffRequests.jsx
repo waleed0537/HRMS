@@ -114,10 +114,8 @@ const StaffRequests = () => {
   // Create a function to generate avatar colors based on email
   const getAvatarColor = (email) => {
     const colors = [
-      '#4f46e5', '#7c3aed', '#8b5cf6', '#6366f1', 
-      '#ec4899', '#d946ef', '#a855f7', '#3b82f6', 
-      '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', 
-      '#84cc16', '#eab308', '#f59e0b', '#f97316'
+      '#6dbfb8', '#71a3c1', '#be95be', '#f5945c', 
+      '#fec76f', '#b3be62', '#75ba75'
     ];
     
     // Generate a consistent index based on email

@@ -19,7 +19,7 @@
 .section-title {
   font-size: 1.75rem;
   font-weight: 600;
-  color: #1e293b;
+  color: #be95be;
   margin: 0;
 }
 
@@ -43,7 +43,7 @@
 .metric-value {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #474787;
+  color: #b3be62;
 }
 
 .metric-label {
@@ -146,7 +146,7 @@
 }
 
 .view-control-btn.active {
-  background-color: #474787;
+  background-color:#71a3c1  ;
   color: white;
 }
 
@@ -224,7 +224,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: #474787;
+  background:linear-gradient(-135deg, #899FD4 0%, #A389D4 100%) ;
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -435,7 +435,7 @@
   width: 3.5rem;
   height: 3.5rem;
   border-radius: 0.5rem;
-  background-color: #474787;
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -610,7 +610,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: #474787;
+
   color: white;
   border: none;
   border-radius: 0.375rem;
@@ -622,7 +622,8 @@
 }
 
 .view-profile-btn:hover {
-  background-color: #373769;
+  color: white;
+  background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%)
 }
 
 /* List View */
@@ -705,7 +706,7 @@
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 9999px;
-  background-color: #474787;
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -773,9 +774,9 @@
 }
 
 .list-view-btn {
-  background-color: #474787;
-  color: white;
-  border: none;
+  
+  color: rgb(0, 0, 0);
+  border: 0.1px solid black;
   border-radius: 0.375rem;
   padding: 0.4375rem 0.75rem;
   font-size: 0.75rem;
@@ -785,7 +786,8 @@
 }
 
 .list-view-btn:hover {
-  background-color: #373769;
+  color:white;
+  background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
 }
 
 /* Compact View */
@@ -824,7 +826,7 @@
   width: 5rem;
   height: 5rem;
   border-radius: 9999px;
-  background-color: #474787;
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -911,8 +913,8 @@
 
 .compact-view-btn {
   width: 100%;
-  background-color: #474787;
-  color: white;
+  border: 1px black;
+  color: rgb(0, 0, 0);
   border: none;
   border-radius: 0.375rem;
   padding: 0.5rem 0;
@@ -924,7 +926,8 @@
 }
 
 .compact-view-btn:hover {
-  background-color: #373769;
+  color:white;
+  background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
 }
 
 /* Loading and Error States */

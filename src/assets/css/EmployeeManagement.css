@@ -161,7 +161,7 @@
   width: 100%;
   max-width: 400px;
   padding: 14px;
-  background: #474787;
+  background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -177,7 +177,7 @@
 }
 
 .submit-button:hover {
-  background: #5c5c9d;
+  background: linear-gradient(-135deg, #7b94ce 0%, #9e7fd8 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 6px rgba(71, 71, 135, 0.3);
 }

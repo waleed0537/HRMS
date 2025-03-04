@@ -113,7 +113,7 @@
   width: 100%;
   padding: 0.75rem 1rem;
   margin-top: 1.5rem;
-  background-color: #474787;
+  background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
   color: white;
   border: none;
   border-radius: 0.375rem;
@@ -124,7 +124,7 @@
 }
 
 .submit-button:hover {
-  background-color: #5c5c9d;
+  background: linear-gradient(-135deg, #7c96d1 0%, #9b7dd3 100%);
   transform: translateY(-1px);
 }
 

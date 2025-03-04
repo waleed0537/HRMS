@@ -126,6 +126,7 @@
 }
 
 .employee-select {
+  height: fit-content;
   margin-bottom: 1.25rem;
 }
 

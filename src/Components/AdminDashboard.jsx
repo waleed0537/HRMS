@@ -17,8 +17,8 @@ import API_BASE_URL from '../config/api.js';
 
 // Enhanced color palette
 const COLORS = [
-  '#4361ee', '#3a0ca3', '#7209b7', '#f72585', '#4cc9f0', 
-  '#4895ef', '#560bad', '#f15bb5', '#00b4d8', '#0077b6'
+  '#6dbfb8', '#be95be', '#71a3c1', '#75ba75', '#b3be62', 
+  '#fec76f', '#f5945c', '#f15bb5', '#00b4d8', '#0077b6'
 ];
 
 // Avatar backgrounds for activities
@@ -459,6 +459,7 @@ const AdminDashboard = () => {
   };
 
   return (
+    <div className="zoom-container">
     <div className="admin-dashboard">
       {notificationMessage && (
         <div className={`notification-banner ${notificationType}`}>
@@ -474,26 +475,7 @@ const AdminDashboard = () => {
       <div className="dashboard-header">
         <div className="header-content">
           <h1>Admin Dashboard</h1>
-          <div className="time-filters">
-            <button 
-              className={`time-filter-btn ${timeRange === 'week' ? 'active' : ''}`}
-              onClick={() => setTimeRange('week')}
-            >
-              Week
-            </button>
-            <button 
-              className={`time-filter-btn ${timeRange === 'month' ? 'active' : ''}`}
-              onClick={() => setTimeRange('month')}
-            >
-              Month
-            </button>
-            <button 
-              className={`time-filter-btn ${timeRange === 'year' ? 'active' : ''}`}
-              onClick={() => setTimeRange('year')}
-            >
-              Year
-            </button>
-          </div>
+          
         </div>
         <div className="dashboard-actions">
           <button 
@@ -594,16 +576,16 @@ const AdminDashboard = () => {
               <AreaChart data={leaveStats} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorApproved" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#4cc9f0" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#4cc9f0" stopOpacity={0.1}/>
+                    <stop offset="5%" stopColor="#6dbfb8" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#6dbfb8" stopOpacity={0.1}/>
                   </linearGradient>
                   <linearGradient id="colorPending" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f72585" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#f72585" stopOpacity={0.1}/>
+                    <stop offset="5%" stopColor="#be95be" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#be95be" stopOpacity={0.1}/>
                   </linearGradient>
                   <linearGradient id="colorRejected" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#7209b7" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#7209b7" stopOpacity={0.1}/>
+                    <stop offset="5%" stopColor="#3e4d68" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#3e4d68" stopOpacity={0.1}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
@@ -635,7 +617,7 @@ const AdminDashboard = () => {
                   type="monotone" 
                   dataKey="approved" 
                   stackId="1" 
-                  stroke="#4cc9f0" 
+                  stroke="#6dbfb8" 
                   fill="url(#colorApproved)" 
                   strokeWidth={2}
                 />
@@ -643,7 +625,7 @@ const AdminDashboard = () => {
                   type="monotone" 
                   dataKey="pending" 
                   stackId="1" 
-                  stroke="#f72585" 
+                  stroke="#be95be" 
                   fill="url(#colorPending)" 
                   strokeWidth={2}
                 />
@@ -651,7 +633,7 @@ const AdminDashboard = () => {
                   type="monotone" 
                   dataKey="rejected" 
                   stackId="1" 
-                  stroke="#7209b7" 
+                  stroke="#3e4d68" 
                   fill="url(#colorRejected)" 
                   strokeWidth={2}
                 />
@@ -660,15 +642,15 @@ const AdminDashboard = () => {
           </div>
           <div className="card-footer leave-legend-footer">
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#4cc9f0' }}></span>
+              <span className="legend-color" style={{ backgroundColor: '#6dbfb8' }}></span>
               <span>Approved</span>
             </div>
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#f72585' }}></span>
+              <span className="legend-color" style={{ backgroundColor: '#be95be' }}></span>
               <span>Pending</span>
             </div>
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#7209b7' }}></span>
+              <span className="legend-color" style={{ backgroundColor: '#3e4d68' }}></span>
               <span>Rejected</span>
             </div>
           </div>
@@ -719,14 +701,14 @@ const AdminDashboard = () => {
                 <Bar 
                   dataKey="rating" 
                   name="Rating" 
-                  fill="#4361ee" 
+                  fill="#be95be" 
                   radius={[4, 4, 0, 0]}
                   animationDuration={1500}
                 />
                 <Bar 
                   dataKey="productivity" 
                   name="Productivity" 
-                  fill="#f72585" 
+                  fill="#6dbfb8" 
                   radius={[4, 4, 0, 0]}
                   animationDuration={1500}
                   animationBegin={300}
@@ -872,6 +854,7 @@ const AdminDashboard = () => {
         onClose={() => setIsAnnouncementModalOpen(false)}
         onSubmit={handleCreateAnnouncement}
       />
+    </div>
     </div>
   );
 };

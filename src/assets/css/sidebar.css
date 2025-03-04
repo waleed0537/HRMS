@@ -3,12 +3,17 @@
   top: 0;
   left: 0;
   width: 256px;
-  height: 100vh;
-  background-color: #474787;
+  height: 150vh;
+  background-color: #3e4d68; /* Dark navy background */
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   z-index: 100;
+}
+
+* {
+  font-size: 15px;
+  font-weight: 400;
 }
 
 .logo-section {
@@ -24,9 +29,10 @@
 }
 
 .logo-text {
-  font-weight: 600;
-  font-size: 1.25rem;
+  font-weight: 700; /* Bolder font weight */
+  font-size: 1.35rem;
   color: white;
+  letter-spacing: 0.5px;
 }
 
 .nav-container {
@@ -34,7 +40,7 @@
   overflow-y: auto;
   padding: 1rem;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.4) transparent;
 }
 
 .nav-container::-webkit-scrollbar {
@@ -46,7 +52,7 @@
 }
 
 .nav-container::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.4);
   border-radius: 3px;
 }
 
@@ -55,21 +61,21 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.9); /* Brighter text */
   text-decoration: none;
-  border-radius: 0.5rem;
+  border-radius: 6px; /* Slightly rounded corners */
   transition: all 0.2s;
   margin-bottom: 0.25rem;
 }
 
 .nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
+  background-color: #3e4d68;/* Darker hover state */
+  color: #71a3c1;
 }
 
 .nav-link.active {
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
+   /* Bright blue active state */
+  color: #71a3c1;
 }
 
 .nav-link svg {
@@ -82,20 +88,26 @@
   margin-top: 1.5rem;
   margin-bottom: 0.75rem;
   padding-left: 1rem;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.875rem;
-  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4); /* Subtle divider text */
+  font-size: 0.75rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
 }
 
 .mobile-menu-button {
   display: none;
   color: white;
-  background: none;
+  background: #3b82f6; /* Matching active state blue */
   border: none;
-  padding: 0.5rem;
+  padding: 0.75rem;
   cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.mobile-menu-button:hover {
+  background-color: #2563eb; /* Darker blue hover */
 }
 
 @media (max-width: 1024px) {
@@ -105,19 +117,17 @@
     top: 1rem;
     left: 1rem;
     z-index: 110;
-    /* Add any other styling you need for the button itself */
   }
 
-  /* Active state (open menu) */
   .mobile-menu-button.active {
     margin-left: 180px;
-    /* Keep the same positioning properties */
     display: block;
     position: fixed;
     top: 1rem;
     left: 1rem;
     z-index: 110;
   }
+  
   .sidebar {
     transform: translateX(-100%);
     transition: transform 0.3s ease-in-out;
@@ -135,7 +145,8 @@
     backdrop-filter: blur(4px);
   }
 }
-@media (max-width: 768px) {  /* Changed from 1024px to 768px */
+
+@media (max-width: 768px) {
   .mobile-menu-button {
     display: block;
     position: fixed;
@@ -143,10 +154,11 @@
     left: 1rem;
     z-index: 110;
   }
-  .logo-section{
+  
+  .logo-section {
     margin-left: 40px;
   }
-  /* Active state (open menu) */
+
   .mobile-menu-button.active {
     margin-left: 180px;
     position: fixed;
@@ -158,6 +170,7 @@
   .sidebar {
     transform: translateX(-100%);
     transition: transform 0.3s ease-in-out;
+    background-color: #0f172a; /* Maintain dark navy on mobile */
   }
 
   .sidebar.mobile-open {

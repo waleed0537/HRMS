@@ -145,6 +145,7 @@
 }
 
 .applicants-managements-search-input {
+  height: fit-content;
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 2.5rem;
   border: 1px solid var(--border);
@@ -207,6 +208,7 @@
 }
 
 .applicants-managements-export-btn {
+  height: 40px;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -220,6 +222,7 @@
 }
 
 .applicants-managements-export-btn.excel {
+  height: 40px;
   background-color: #107c41;
   color: white;
 }
@@ -239,6 +242,7 @@
 
 /* Customize Form Button */
 .applicants-managements-customize-btn {
+  height: 40px;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -662,6 +666,7 @@
 }
 
 .applicants-managements-status-select {
+  height: fit-content;
   width: 100%;
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);
@@ -828,6 +833,8 @@
 }
 
 .applicants-managements-list-status-badge {
+  height: fit-content;
+  width: min-content;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -865,6 +872,7 @@
 }
 
 .applicants-managements-list-status-select {
+  height: fit-content;
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -1035,6 +1043,7 @@
 }
 
 .applicants-managements-compact-select {
+  height: fit-content;
   width: 100%;
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);

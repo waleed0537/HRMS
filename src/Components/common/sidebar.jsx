@@ -29,6 +29,7 @@ const Sidebar = ({ user }) => {
 
   return (
     <>
+     <div className="zoom-container">
       <button type="button" className="mobile-menu-button" onClick={toggleMobileMenu}>
         {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
       </button>
@@ -141,6 +142,7 @@ const Sidebar = ({ user }) => {
       </div>
 
       {isMobileMenuOpen && <div className="overlay" onClick={toggleMobileMenu} />}
+      </div>
     </>
   );
 };

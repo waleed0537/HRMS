@@ -74,6 +74,7 @@
     }
 
     return (
+      <div className="zoom-container">
       <div className="flex h-screen bg-gray-50">
         <Sidebar user={user} />
         <div className="flex-1">
@@ -178,6 +179,7 @@
             </Routes>
           </main>
         </div>
+      </div>
       </div>
     );
   }

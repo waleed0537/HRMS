@@ -4,6 +4,22 @@
   padding: 2rem;
   text-align: center;
 }
+/* Set Open Sans as the default font for the entire website */
+* {
+  font-family: 'Open Sans', sans-serif;
+}
+
+.zoom-container {
+  transform: scale(0.9); /* 90% zoom (adjust as needed) */
+  transform-origin: 0 0;
+  width: 111.11%; /* Counteract scaling (1 / 0.9 ≈ 1.1111) */
+  height: 111.11%;
+  position: absolute; /* Ensure it takes up the entire viewport */
+  left: 0;
+  top: 0;
+  overflow-y: auto; /* Allow scrolling */
+  overflow-x: hidden;
+}
 /* Add to your global.css or create a new App.css */
 .app-container {
   min-height: 100vh;

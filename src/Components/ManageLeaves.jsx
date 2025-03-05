@@ -31,7 +31,7 @@ const ManageLeaves = () => {
   });
   
   // View state
-  const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', or 'compact'
+  const [viewMode, setViewMode] = useState('compact'); // 'grid', 'list', or 'compact'
   const [sortConfig, setSortConfig] = useState({
     key: 'createdAt',
     direction: 'desc'
@@ -371,67 +371,66 @@ const ManageLeaves = () => {
       default: return <Clock size={16} className="status-icon-pending" />;
     }
   };
-
   // Render Grid View
   const renderGridView = () => (
-    <div className="leave-grid-container">
+    <div className="manage-leave-grid-container">
       {filteredRequests.map(leave => (
-        <div key={leave._id} className="leave-card">
-          <div className="leave-card-header">
-            <div className="leave-card-employee">
-              <div className="employee-avatar">
+        <div key={leave._id} className="manage-leave-card">
+          <div className="manage-leave-card-header">
+            <div className="manage-leave-card-employee">
+              <div className="manage-employee-avatar">
                 {leave.employeeName.charAt(0).toUpperCase()}
               </div>
-              <div className="employee-info">
+              <div className="manage-employee-info">
                 <h3>{leave.employeeName}</h3>
-                <span className="employee-email">{leave.employeeEmail}</span>
+                <span className="manage-employee-email">{leave.employeeEmail}</span>
               </div>
             </div>
-            <div className={`leave-status ${getStatusClass(leave.status)}`}>
+            <div className={`manage-leave-status ${getStatusClass(leave.status)}`}>
               {getStatusIcon(leave.status)}
               <span>{leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}</span>
             </div>
           </div>
           
-          <div className="leave-card-body">
-            <div className="leave-details">
-              <div className={`leave-type ${getLeaveTypeClass(leave.leaveType)}`}>
+          <div className="manage-leave-card-body">
+            <div className="manage-leave-details">
+              <div className={`manage-leave-type ${getLeaveTypeClass(leave.leaveType)}`}>
                 {leave.leaveType.charAt(0).toUpperCase() + leave.leaveType.slice(1)} Leave
               </div>
-              <div className="leave-dates">
-                <CalendarIcon size={16} className="icon" />
+              <div className="manage-leave-dates">
+                <CalendarIcon size={16} className="manage-icon" />
                 <span>{formatDate(leave.startDate)} — {formatDate(leave.endDate)}</span>
               </div>
-              <div className="leave-duration">
-                <Clock size={16} className="icon" />
+              <div className="manage-leave-duration">
+                <Clock size={16} className="manage-icon" />
                 <span>{calculateDuration(leave.startDate, leave.endDate)}</span>
               </div>
             </div>
             
-            <div className="leave-reason">
+            <div className="manage-leave-reason">
               <h4>Reason:</h4>
               <p>{leave.reason}</p>
             </div>
             
             {leave.documents && leave.documents.length > 0 && (
-              <div className="leave-documents">
+              <div className="manage-leave-documents">
                 <h4>Documents:</h4>
-                <div className="documents-list">
+                <div className="manage-documents-list">
                   {leave.documents.map((doc, index) => (
-                    <div key={index} className="document-item">
-                      <FileText size={16} className="icon" />
+                    <div key={index} className="manage-document-item">
+                      <FileText size={16} className="manage-icon" />
                       <span>{doc.name}</span>
-                      <div className="document-actions">
+                      <div className="manage-document-actions">
                         <button
                           onClick={() => handleDocumentView(doc)}
-                          className="doc-action-btn view"
+                          className="manage-doc-action-btn manage-view"
                           title="View document"
                         >
                           <Eye size={14} />
                         </button>
                         <button
                           onClick={() => downloadDocument(doc)}
-                          className="doc-action-btn download"
+                          className="manage-doc-action-btn manage-download"
                           title="Download document"
                         >
                           <Download size={14} />
@@ -444,24 +443,24 @@ const ManageLeaves = () => {
             )}
           </div>
           
-          <div className="leave-card-footer">
-            <div className="leave-submitted">
-              <Calendar size={16} className="icon" />
+          <div className="manage-leave-card-footer">
+            <div className="manage-leave-submitted">
+              <Calendar size={16} className="manage-icon" />
               <span>Submitted: {formatDate(leave.createdAt)}</span>
             </div>
             
             {leave.status === 'pending' && (
-              <div className="leave-actions">
+              <div className="manage-leave-actions">
                 <button
                   onClick={() => handleStatusUpdate(leave._id, 'approved')}
-                  className="action-btn approve-btn"
+                  className="manage-action-btn manage-approve-btn"
                 >
                   <Check size={16} />
                   Approve
                 </button>
                 <button
                   onClick={() => handleStatusUpdate(leave._id, 'rejected')}
-                  className="action-btn reject-btn"
+                  className="manage-action-btn manage-reject-btn"
                 >
                   <X size={16} />
                   Reject
@@ -476,77 +475,77 @@ const ManageLeaves = () => {
 
   // Render List View
   const renderListView = () => (
-    <div className="leave-list-container">
-      <div className="leave-list-header">
-        <div className="leave-list-header-item employee" onClick={() => handleSort('employeeName')}>
+    <div className="manage-leave-list-container">
+      <div className="manage-leave-list-header">
+        <div className="manage-leave-list-header-item manage-employee" onClick={() => handleSort('employeeName')}>
           <span>Employee</span>
           {sortConfig.key === 'employeeName' && (
             sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
           )}
         </div>
-        <div className="leave-list-header-item type" onClick={() => handleSort('leaveType')}>
+        <div className="manage-leave-list-header-item manage-type" onClick={() => handleSort('leaveType')}>
           <span>Type</span>
           {sortConfig.key === 'leaveType' && (
             sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
           )}
         </div>
-        <div className="leave-list-header-item dates" onClick={() => handleSort('startDate')}>
+        <div className="manage-leave-list-header-item manage-dates" onClick={() => handleSort('startDate')}>
           <span>Dates</span>
           {sortConfig.key === 'startDate' && (
             sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
           )}
         </div>
-        <div className="leave-list-header-item status" onClick={() => handleSort('status')}>
+        <div className="manage-leave-list-header-item manage-status" onClick={() => handleSort('status')}>
           <span>Status</span>
           {sortConfig.key === 'status' && (
             sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
           )}
         </div>
-        <div className="leave-list-header-item actions">
+        <div className="manage-leave-list-header-item manage-actions">
           <span>Actions</span>
         </div>
       </div>
       
       {filteredRequests.map(leave => (
-        <div key={leave._id} className="leave-list-item">
-          <div className="leave-list-item-cell employee">
-            <div className="employee-avatar-sm">
+        <div key={leave._id} className="manage-leave-list-item">
+          <div className="manage-leave-list-item-cell manage-employee">
+            <div className="manage-employee-avatar-sm">
               {leave.employeeName.charAt(0).toUpperCase()}
             </div>
-            <div className="employee-info-sm">
-              <div className="employee-name">{leave.employeeName}</div>
-              <div className="employee-email">{leave.employeeEmail}</div>
+            <div className="manage-employee-info-sm">
+              <div className="manage-employee-name">{leave.employeeName}</div>
+              <div className="manage-employee-email">{leave.employeeEmail}</div>
             </div>
           </div>
           
-          <div className="leave-list-item-cell type">
-            <div className={`leave-type-badge ${getLeaveTypeClass(leave.leaveType)}`}>
+          <div className="manage-leave-list-item-cell manage-type">
+            <div className={`manage-leave-type-badge ${getLeaveTypeClass(leave.leaveType)}`}>
               {leave.leaveType}
             </div>
           </div>
           
-          <div className="leave-list-item-cell dates">
-            <div className="date-range">
+          <div className="manage-leave-list-item-cell manage-dates">
+            <div className="manage-date-range">
               <div>{formatDate(leave.startDate)}</div>
               <div>to</div>
               <div>{formatDate(leave.endDate)}</div>
             </div>
-            <div className="duration-badge">
+            <div className="manage-duration-badge">
               {calculateDuration(leave.startDate, leave.endDate)}
             </div>
           </div>
           
-          <div className="leave-list-item-cell status">
-            <div className={`status-badge ${getStatusClass(leave.status)}`}>
+          <div className="manage-leave-list-item-cell manage-status">
+            <div className={`manage-status-badge ${getStatusClass(leave.status)}`}>
               {getStatusIcon(leave.status)}
               <span>{leave.status}</span>
             </div>
           </div>
           
-          <div className="leave-list-item-cell actions">
+          <div className="manage-leave-list-item-cell manage-actions">
             <button
               onClick={() => setSelectedLeave(leave)}
-              className="list-action-btn view-btn"
+              className="manage-list-action-btn manage-view-btn"
               title="View details"
             >
               <Eye size={16} />
@@ -556,14 +555,14 @@ const ManageLeaves = () => {
               <>
                 <button
                   onClick={() => handleStatusUpdate(leave._id, 'approved')}
-                  className="list-action-btn approve-btn"
+                  className="manage-list-action-btn manage-approve-btn"
                   title="Approve"
                 >
                   <Check size={16} />
                 </button>
                 <button
                   onClick={() => handleStatusUpdate(leave._id, 'rejected')}
-                  className="list-action-btn reject-btn"
+                  className="manage-list-action-btn manage-reject-btn"
                   title="Reject"
                 >
                   <X size={16} />
@@ -571,7 +570,7 @@ const ManageLeaves = () => {
               </>
             )}
             
-            <button className="list-action-btn more-btn">
+            <button className="manage-list-action-btn manage-more-btn">
               <MoreVertical size={16} />
             </button>
           </div>
@@ -582,40 +581,40 @@ const ManageLeaves = () => {
 
   // Render Compact View
   const renderCompactView = () => (
-    <div className="leave-compact-container">
+    <div className="manage-leave-compact-container">
       {filteredRequests.map(leave => (
-        <div key={leave._id} className="leave-compact-item">
-          <div className="leave-compact-header">
-            <div className="employee-avatar-sm">
+        <div key={leave._id} className="manage-leave-compact-item">
+          <div className="manage-leave-compact-header">
+            <div className="manage-employee-avatar-sm">
               {leave.employeeName.charAt(0).toUpperCase()}
             </div>
-            <div className={`status-indicator ${getStatusClass(leave.status)}`}>
+            <div className={`manage-status-indicator ${getStatusClass(leave.status)}`}>
               {getStatusIcon(leave.status)}
             </div>
           </div>
           
-          <div className="leave-compact-body">
-            <h3 className="compact-employee-name">{leave.employeeName}</h3>
-            <div className={`compact-leave-type ${getLeaveTypeClass(leave.leaveType)}`}>
+          <div className="manage-leave-compact-body">
+            <h3 className="manage-compact-employee-name">{leave.employeeName}</h3>
+            <div className={`manage-compact-leave-type ${getLeaveTypeClass(leave.leaveType)}`}>
               {leave.leaveType} Leave
             </div>
-            <div className="compact-date-range">
+            <div className="manage-compact-date-range">
               {formatDate(leave.startDate)} — {formatDate(leave.endDate)}
             </div>
           </div>
           
-          <div className="leave-compact-footer">
+          <div className="manage-leave-compact-footer">
             {leave.status === 'pending' ? (
-              <div className="compact-actions">
+              <div className="manage-compact-actions">
                 <button 
                   onClick={() => handleStatusUpdate(leave._id, 'approved')}
-                  className="compact-btn approve"
+                  className="manage-compact-btn manage-approve"
                 >
                   Approve
                 </button>
                 <button 
                   onClick={() => handleStatusUpdate(leave._id, 'rejected')}
-                  className="compact-btn reject"
+                  className="manage-compact-btn manage-reject"
                 >
                   Reject
                 </button>
@@ -623,7 +622,7 @@ const ManageLeaves = () => {
             ) : (
               <button 
                 onClick={() => setSelectedLeave(leave)}
-                className="compact-btn view"
+                className="manage-compact-btn manage-view"
               >
                 View Details
               </button>
@@ -637,15 +636,15 @@ const ManageLeaves = () => {
   return (
     <div className="manage-leaves-container">
       {/* Page Header */}
-      <div className="leaves-header">
-        <div className="leaves-title">
+      <div className="manage-leaves-header">
+        <div className="manage-leaves-title">
           <h1>Manage Leave Requests</h1>
           <p>Review and manage employee leave requests</p>
         </div>
         
-        <div className="leaves-actions">
+        <div className="manage-leaves-actions">
           <button 
-            className={`refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
+            className={`manage-refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
             onClick={refreshData}
             title="Refresh data"
           >
@@ -653,7 +652,7 @@ const ManageLeaves = () => {
           </button>
           
           <button 
-            className="export-btn"
+            className="manage-export-btn"
             onClick={exportToCSV}
             title="Export to CSV"
           >
@@ -664,24 +663,24 @@ const ManageLeaves = () => {
       </div>
       
       {/* Filter and Search Bar */}
-      <div className="filters-bar">
-        <div className="view-toggle">
+      <div className="manage-filters-bar">
+        <div className="manage-view-toggle">
           <button 
-            className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+            className={`manage-view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
             onClick={() => setViewMode('grid')}
             title="Grid view"
           >
             <Grid size={18} />
           </button>
           <button 
-            className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+            className={`manage-view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
             onClick={() => setViewMode('list')}
             title="List view"
           >
             <List size={18} />
           </button>
           <button 
-            className={`view-toggle-btn ${viewMode === 'compact' ? 'active' : ''}`}
+            className={`manage-view-toggle-btn ${viewMode === 'compact' ? 'active' : ''}`}
             onClick={() => setViewMode('compact')}
             title="Compact view"
           >
@@ -689,37 +688,37 @@ const ManageLeaves = () => {
           </button>
         </div>
         
-        <div className="search-container">
-          <Search className="search-icon" size={18} />
+        <div className="manage-search-container">
+          <Search className="manage-search-icon" size={18} />
           <input
             type="text"
             placeholder="Search by name, email, or reason..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
+            className="manage-search-input"
           />
         </div>
         
         <button 
-          className={`filter-btn ${showFilters ? 'active' : ''}`}
+          className={`manage-filter-btn ${showFilters ? 'active' : ''}`}
           onClick={() => setShowFilters(!showFilters)}
           title="Toggle filters"
         >
           <Filter size={18} />
           <span>Filters</span>
-          <ChevronDown size={16} className={`filter-chevron ${showFilters ? 'active' : ''}`} />
+          <ChevronDown size={16} className={`manage-filter-chevron ${showFilters ? 'active' : ''}`} />
         </button>
       </div>
       
       {/* Expandable Filters Panel */}
       {showFilters && (
-        <div className="filters-panel">
-          <div className="filter-group">
+        <div className="manage-filters-panel">
+          <div className="manage-filter-group">
             <label>Status</label>
             <select
               value={filters.status}
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              className="filter-select"
+              className="manage-filter-select"
             >
               <option value="all">All Statuses</option>
               <option value="pending">Pending</option>
@@ -728,12 +727,12 @@ const ManageLeaves = () => {
             </select>
           </div>
           
-          <div className="filter-group">
+          <div className="manage-filter-group">
             <label>Leave Type</label>
             <select
               value={filters.leaveType}
               onChange={(e) => setFilters({ ...filters, leaveType: e.target.value })}
-              className="filter-select"
+              className="manage-filter-select"
             >
               <option value="all">All Types</option>
               {uniqueLeaveTypes.map(type => (
@@ -742,12 +741,12 @@ const ManageLeaves = () => {
             </select>
           </div>
           
-          <div className="filter-group">
+          <div className="manage-filter-group">
             <label>Date Range</label>
             <select
               value={filters.dateRange}
               onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
-              className="filter-select"
+              className="manage-filter-select"
             >
               <option value="all">All Time</option>
               <option value="today">Today</option>
@@ -756,12 +755,12 @@ const ManageLeaves = () => {
             </select>
           </div>
           
-          <div className="filter-group">
+          <div className="manage-filter-group">
             <label>Employee</label>
             <select
               value={filters.employeeName}
               onChange={(e) => setFilters({ ...filters, employeeName: e.target.value })}
-              className="filter-select"
+              className="manage-filter-select"
             >
               <option value="">All Employees</option>
               {uniqueEmployees.map(name => (
@@ -770,7 +769,7 @@ const ManageLeaves = () => {
             </select>
           </div>
           
-          <button className="reset-filters-btn" onClick={resetFilters}>
+          <button className="manage-reset-filters-btn" onClick={resetFilters}>
             Reset Filters
           </button>
         </div>
@@ -778,42 +777,42 @@ const ManageLeaves = () => {
       
       {/* Notifications */}
       {notification.visible && (
-        <div className={`notification-toast ${notification.type}`}>
+        <div className={`manage-notification-toast ${notification.type}`}>
           {notification.message}
         </div>
       )}
       
       {/* Main Content */}
-      <div className="leaves-content">
+      <div className="manage-leaves-content">
         {loading ? (
-          <div className="loading-state">
-            <div className="loading-spinner"></div>
+          <div className="manage-loading-state">
+            <div className="manage-loading-spinner"></div>
             <p>Loading leave requests...</p>
           </div>
         ) : error ? (
-          <div className="error-state">
+          <div className="manage-error-state">
             <AlertCircle size={48} />
             <h3>Error Loading Leave Requests</h3>
             <p>{error}</p>
-            <button onClick={refreshData} className="retry-btn">
+            <button onClick={refreshData} className="manage-retry-btn">
               <RefreshCw size={16} />
               Retry
             </button>
           </div>
         ) : filteredRequests.length === 0 ? (
-          <div className="empty-state">
+          <div className="manage-empty-state">
             <CalendarIcon size={48} />
             <h3>No Leave Requests Found</h3>
             <p>Try adjusting your filters or search criteria</p>
             {(filters.status !== 'all' || filters.leaveType !== 'all' || filters.dateRange !== 'all' || filters.employeeName || searchTerm) && (
-              <button onClick={resetFilters} className="clear-filters-btn">
+              <button onClick={resetFilters} className="manage-clear-filters-btn">
                 Clear All Filters
               </button>
             )}
           </div>
         ) : (
           <>
-            <div className="results-summary">
+            <div className="manage-results-summary">
               <span>Showing {filteredRequests.length} of {leaveRequests.length} leave requests</span>
             </div>
             
@@ -826,31 +825,31 @@ const ManageLeaves = () => {
       
       {/* Document Preview Modal */}
       {selectedDocument && (
-        <div className="document-modal" onClick={() => setSelectedDocument(null)}>
-          <div className="modal-overlay"></div>
-          <div className="document-modal-content">
-            <button className="close-modal" onClick={() => setSelectedDocument(null)}>
+        <div className="manage-document-modal" onClick={() => setSelectedDocument(null)}>
+          <div className="manage-modal-overlay"></div>
+          <div className="manage-document-modal-content">
+            <button className="manage-close-modal" onClick={() => setSelectedDocument(null)}>
               <X size={24} />
             </button>
             
-            <div className="document-preview">
+            <div className="manage-document-preview">
               {selectedDocument.path.match(/\.(jpg|jpeg|png|gif)$/i) ? (
                 <img
                   src={`${API_BASE_URL}/${selectedDocument.path}`}
                   alt="Document preview"
-                  className="document-image"
+                  className="manage-document-image"
                 />
               ) : (
-                <div className="document-fallback">
+                <div className="manage-document-fallback">
                   <FileText size={64} />
                   <p>Document preview not available</p>
-                  <p className="document-name">{selectedDocument.name}</p>
+                  <p className="manage-document-name">{selectedDocument.name}</p>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       downloadDocument(selectedDocument);
                     }}
-                    className="download-document-btn"
+                    className="manage-download-document-btn"
                   >
                     <Download size={18} />
                     Download Document
@@ -864,87 +863,87 @@ const ManageLeaves = () => {
       
       {/* Leave Detail Modal */}
       {selectedLeave && (
-        <div className="leave-detail-modal">
-          <div className="modal-overlay" onClick={() => setSelectedLeave(null)}></div>
-          <div className="leave-detail-content">
-            <button className="close-modal" onClick={() => setSelectedLeave(null)}>
+        <div className="manage-leave-detail-modal">
+          <div className="manage-modal-overlay" onClick={() => setSelectedLeave(null)}></div>
+          <div className="manage-leave-detail-content">
+            <button className="manage-close-modal" onClick={() => setSelectedLeave(null)}>
               <X size={24} />
             </button>
             
-            <div className="leave-detail-header">
-              <div className="detail-employee-info">
-                <div className="detail-avatar">
+            <div className="manage-leave-detail-header">
+              <div className="manage-detail-employee-info">
+                <div className="manage-detail-avatar">
                   {selectedLeave.employeeName.charAt(0).toUpperCase()}
                 </div>
                 <div>
                   <h2>{selectedLeave.employeeName}</h2>
-                  <p className="detail-email">{selectedLeave.employeeEmail}</p>
+                  <p className="manage-detail-email">{selectedLeave.employeeEmail}</p>
                 </div>
               </div>
               
-              <div className={`detail-status ${getStatusClass(selectedLeave.status)}`}>
+              <div className={`manage-detail-status ${getStatusClass(selectedLeave.status)}`}>
                 {getStatusIcon(selectedLeave.status)}
                 <span>{selectedLeave.status.charAt(0).toUpperCase() + selectedLeave.status.slice(1)}</span>
               </div>
             </div>
             
-            <div className="leave-detail-body">
-              <div className="detail-section">
+            <div className="manage-leave-detail-body">
+              <div className="manage-detail-section">
                 <h3>Leave Details</h3>
-                <div className="detail-grid">
-                  <div className="detail-item">
+                <div className="manage-detail-grid">
+                  <div className="manage-detail-item">
                     <label>Type</label>
-                    <div className={`detail-leave-type ${getLeaveTypeClass(selectedLeave.leaveType)}`}>
+                    <div className={`manage-detail-leave-type ${getLeaveTypeClass(selectedLeave.leaveType)}`}>
                       {selectedLeave.leaveType.charAt(0).toUpperCase() + selectedLeave.leaveType.slice(1)} Leave
                     </div>
                   </div>
                   
-                  <div className="detail-item">
+                  <div className="manage-detail-item">
                     <label>Duration</label>
                     <p>{calculateDuration(selectedLeave.startDate, selectedLeave.endDate)}</p>
                   </div>
                   
-                  <div className="detail-item">
+                  <div className="manage-detail-item">
                     <label>Start Date</label>
                     <p>{formatDate(selectedLeave.startDate)}</p>
                   </div>
                   
-                  <div className="detail-item">
+                  <div className="manage-detail-item">
                     <label>End Date</label>
                     <p>{formatDate(selectedLeave.endDate)}</p>
                   </div>
                   
-                  <div className="detail-item">
+                  <div className="manage-detail-item">
                     <label>Submitted On</label>
                     <p>{formatDate(selectedLeave.createdAt)}</p>
                   </div>
                 </div>
               </div>
               
-              <div className="detail-section reason-section">
+              <div className="manage-detail-section manage-reason-section">
                 <h3>Reason for Leave</h3>
-                <p className="detail-reason">{selectedLeave.reason}</p>
+                <p className="manage-detail-reason">{selectedLeave.reason}</p>
               </div>
               
               {selectedLeave.documents && selectedLeave.documents.length > 0 && (
-                <div className="detail-section">
+                <div className="manage-detail-section">
                   <h3>Supporting Documents</h3>
-                  <div className="detail-documents">
+                  <div className="manage-detail-documents">
                     {selectedLeave.documents.map((doc, index) => (
-                      <div key={index} className="detail-document-item">
-                        <FileText size={20} className="icon" />
+                      <div key={index} className="manage-detail-document-item">
+                        <FileText size={20} className="manage-icon" />
                         <span>{doc.name}</span>
-                        <div className="detail-document-actions">
+                        <div className="manage-detail-document-actions">
                           <button
                             onClick={() => handleDocumentView(doc)}
-                            className="detail-doc-btn view"
+                            className="manage-detail-doc-btn manage-view"
                           >
                             <Eye size={16} />
                             View
                           </button>
                           <button
                             onClick={() => downloadDocument(doc)}
-                            className="detail-doc-btn download"
+                            className="manage-detail-doc-btn manage-download"
                           >
                             <Download size={16} />
                             Download
@@ -957,26 +956,26 @@ const ManageLeaves = () => {
               )}
             </div>
             
-            <div className="leave-detail-footer">
+            <div className="manage-leave-detail-footer">
               {selectedLeave.status === 'pending' ? (
-                <div className="detail-actions">
+                <div className="manage-detail-actions">
                   <button
                     onClick={() => handleStatusUpdate(selectedLeave._id, 'approved')}
-                    className="detail-action-btn approve"
+                    className="manage-detail-action-btn manage-approve"
                   >
                     <Check size={18} />
                     Approve Request
                   </button>
                   <button
                     onClick={() => handleStatusUpdate(selectedLeave._id, 'rejected')}
-                    className="detail-action-btn reject"
+                    className="manage-detail-action-btn manage-reject"
                   >
                     <X size={18} />
                     Reject Request
                   </button>
                 </div>
               ) : (
-                <div className="status-timestamp">
+                <div className="manage-status-timestamp">
                   {selectedLeave.status === 'approved' ? 'Approved' : 'Rejected'} on {formatDate(selectedLeave.updatedAt || selectedLeave.createdAt)}
                 </div>
               )}

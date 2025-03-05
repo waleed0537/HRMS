@@ -344,7 +344,7 @@ const EmployeeCards = () => {
       {showCards ? (
         <>
           <div className="employee-dashboard-header">
-            <h2 className="section-title">Employee Directory</h2>
+            <h2 className="employee-section-title" style={{fontSize: '1.75rem',fontWeight:'400'}}>Employee Directory</h2>
             <div className="metrics-summary">
               <div className="metric-item">
                 <span className="metric-value">{metrics.totalEmployees}</span>

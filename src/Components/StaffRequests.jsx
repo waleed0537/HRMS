@@ -301,7 +301,7 @@ const StaffRequests = () => {
   return (
     <div className="staff-requests-container">
       <div className="staff-requests-header">
-        <h1>Pending Staff Requests</h1>
+        <h2 style={{fontSize:'1.75rem',fontWeight:'400',color:'#be95be'}}>Pending Staff Requests</h2>
         <p className="staff-requests-description">
           Review and manage new staff account requests
         </p>

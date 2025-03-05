@@ -1,4 +1,4 @@
-/* AdminDashboard.css with 90% scaling */
+/* AdminDashboard.css with 90% scaling and glossy card effect */
 
 /* Base container with 90% scaling */
 .admin-dashboard {
@@ -7,8 +7,85 @@
   padding: 20px; /* Slightly reduced padding */
   min-height: calc(100vh - 80px);
   transition: all 0.3s ease;
-  background-color: #f8f9fc;
+
   /* Font size kept as original */
+}
+
+@media (max-width: 768px) {
+  .admin-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-header {
+    padding: 14px; /* Reduced from 16px */
+  }
+
+  .dashboard-actions {
+    flex-direction: column;
+    gap: 7px; /* Reduced from 8px */
+  }
+
+  .announcement-button,
+  .report-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .time-filters {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .time-filter-btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px; /* Reduced from 8px */
+  }
+
+  .stat-item {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  
+  .legend-item {
+    padding: 4px 7px; /* Reduced from 4px 8px */
+    font-size: 10px; /* Reduced from 11px */
+  }
+  
+  .employee-stats-footer,
+  .leave-legend-footer {
+    flex-direction: column;
+    gap: 7px; /* Reduced from 8px */
+  }
+}
+
+@media (max-width: 576px) {
+  .summary-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-card-header {
+    padding: 11px 14px; /* Reduced from 12px 16px */
+  }
+
+  .card-body {
+    padding: 11px; /* Reduced from 12px */
+  }
+
+  .card-footer {
+    padding: 11px 14px; /* Reduced from 12px 16px */
+  }
+
+  .notification-banner {
+    width: calc(100% - 29px); /* Reduced from 32px */
+    right: 14px; /* Reduced from 16px */
+  }
 }
 
 /* Notification Banner with reduced size */
@@ -21,10 +98,27 @@
   align-items: center;
   padding: 14px 22px; /* Reduced from 16px 24px */
   border-radius: 10px; /* Reduced from 12px */
-  box-shadow: 0 9px 22px -5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 9px 22px -5px rgba(85, 85, 85, 0.1);
   animation: slideIn 0.3s ease-out forwards;
   max-width: 360px; /* Reduced from 400px */
   gap: 10px; /* Reduced from 12px */
+  overflow: hidden; /* Added for glossy effect */
+  position: relative; /* Added for glossy effect */
+}
+
+/* Add glossy effect to notification banner */
+.notification-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, 
+                rgba(255, 255, 255, 0.15), 
+                rgba(255, 255, 255, 0.05));
+  border-radius: 10px 10px 0 0;
+  z-index: 1;
 }
 
 .notification-banner.success {
@@ -42,6 +136,8 @@
 .notification-icon {
   flex-shrink: 0;
   transform: scale(0.9); /* Scale icon to 90% */
+  position: relative;
+  z-index: 2;
 }
 
 @keyframes slideIn {
@@ -67,28 +163,51 @@
   border-radius: 14px; /* Reduced from 16px */
   box-shadow: 0 3px 5px rgba(0, 0, 0, 0.03);
   border: 1px solid rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Add glossy effect to dashboard header */
+.dashboard-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, 
+                rgba(255, 255, 255, 0.15), 
+                rgba(255, 255, 255, 0.05));
+  border-radius: 14px 14px 0 0;
+  z-index: 1;
 }
 
 .header-content {
   display: flex;
   flex-direction: column;
   gap: 10px; /* Reduced from 12px */
+  position: relative;
+  z-index: 2;
 }
 
 .dashboard-header h1 {
   font-size: 25px; /* Reduced from 28px */
-  font-weight: 100;
+  font-weight: 400;
   color: #1e293b;
   margin: 0;
   background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  position: relative;
+  z-index: 2;
 }
 
 .time-filters {
   display: flex;
   gap: 9px; /* Reduced from 10px */
+  position: relative;
+  z-index: 2;
 }
 
 .time-filter-btn {
@@ -118,6 +237,8 @@
 .dashboard-actions {
   display: flex;
   gap: 10px; /* Reduced from 12px */
+  position: relative;
+  z-index: 2;
 }
 
 .announcement-button,
@@ -181,6 +302,21 @@
   overflow: hidden;
 }
 
+/* Glossy effect for summary cards */
+.summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, 
+                rgba(255, 255, 255, 0.15), 
+                rgba(255, 255, 255, 0.05));
+  border-radius: 14px 14px 0 0;
+  z-index: 1;
+}
+
 .summary-card::after {
   content: '';
   position: absolute;
@@ -201,6 +337,10 @@
 
 .summary-card:hover::after {
   opacity: 1;
+}
+
+.summary-card:hover::before {
+  opacity: 0.9;
 }
 
 .card-icon {
@@ -283,11 +423,31 @@
   transition: all 0.3s ease;
   border: 1px solid rgba(0, 0, 0, 0.03);
   height: 100%;
+  position: relative;
+}
+
+/* Glossy effect for chart cards */
+.chart-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 35%;
+  background: linear-gradient(to bottom, 
+                rgba(255, 255, 255, 0.12), 
+                rgba(255, 255, 255, 0.03));
+  border-radius: 14px 14px 0 0;
+  z-index: 1;
 }
 
 .chart-card:hover {
   transform: translateY(-4px); /* Reduced from -5px */
   box-shadow: 0 10px 18px rgba(0, 0, 0, 0.08);
+}
+
+.chart-card:hover::before {
+  opacity: 0.9;
 }
 
 .admin-card-header {
@@ -297,6 +457,8 @@
   justify-content: space-between;
   align-items: center;
   background-color: #fcfcfd;
+  position: relative;
+  z-index: 2;
 }
 
 .admin-card-header h2 {
@@ -327,6 +489,8 @@
   justify-content: center;
   flex-grow: 1;
   background: white;
+  position: relative;
+  z-index: 2;
 }
 
 .card-footer {
@@ -337,6 +501,23 @@
   gap: 14px; /* Reduced from 16px */
   justify-content: space-between;
   background-color: #fcfcfd;
+  position: relative;
+  z-index: 2;
+  overflow: hidden; /* Added for glossy effect */
+}
+
+/* Add glossy effect to card footer */
+.card-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, 
+                rgba(255, 255, 255, 0.15), 
+                rgba(255, 255, 255, 0.05));
+  z-index: 1;
 }
 
 /* Scale down the chart elements */
@@ -362,6 +543,23 @@
   background-color: #f8fafc;
   text-align: center;
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy effect for stat items */
+.stat-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, 
+                rgba(255, 255, 255, 0.15), 
+                rgba(255, 255, 255, 0.05));
+  border-radius: 9px 9px 0 0;
+  z-index: 1;
 }
 
 .stat-item:hover {
@@ -370,10 +568,16 @@
   box-shadow: 0 3px 5px rgba(0, 0, 0, 0.05);
 }
 
+.stat-item:hover::before {
+  opacity: 0.9;
+}
+
 .stat-label {
   font-size: 11px; /* Reduced from 12px */
   color: #64748b;
   font-weight: 500;
+  position: relative;
+  z-index: 2;
 }
 
 .stat-value {
@@ -384,6 +588,8 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  position: relative;
+  z-index: 2;
 }
 
 /* Leave Trends Updates with reduced size */
@@ -403,6 +609,23 @@
   background-color: #f8fafc;
   transition: all 0.3s ease;
   font-weight: 500;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy effect for legend items */
+.legend-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, 
+                rgba(255, 255, 255, 0.15), 
+                rgba(255, 255, 255, 0.05));
+  border-radius: 18px 18px 0 0;
+  z-index: 1;
 }
 
 .legend-item:hover {
@@ -411,11 +634,17 @@
   box-shadow: 0 3px 5px rgba(0, 0, 0, 0.05);
 }
 
+.legend-item:hover::before {
+  opacity: 0.9;
+}
+
 .legend-color {
   width: 9px; /* Reduced from 10px */
   height: 9px; /* Reduced from 10px */
   border-radius: 50%;
   display: inline-block;
+  position: relative;
+  z-index: 2;
 }
 
 /* Team Performance Updates with reduced size */
@@ -432,6 +661,23 @@
   cursor: pointer;
   transition: all 0.3s ease;
   margin-left: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy effect for details button */
+.view-details-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, 
+                rgba(255, 255, 255, 0.15), 
+                rgba(255, 255, 255, 0.05));
+  border-radius: 9px 9px 0 0;
+  z-index: 1;
 }
 
 .view-details-btn:hover {
@@ -439,6 +685,10 @@
   color: white;
   border-color: transparent;
   box-shadow: 0 3px 9px rgba(114, 9, 183, 0.2);
+}
+
+.view-details-btn:hover::before {
+  opacity: 0.9;
 }
 
 /* Progress Summary with reduced size */
@@ -449,6 +699,8 @@
   display: flex;
   align-items: center;
   gap: 7px; /* Reduced from 8px */
+  position: relative;
+  z-index: 2;
 }
 
 .highlight {
@@ -494,6 +746,23 @@
   transition: all 0.3s ease;
   border-left: 3px solid transparent;
   align-items: flex-start;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy effect for activity items */
+.activity-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, 
+                rgba(255, 255, 255, 0.1), 
+                rgba(255, 255, 255, 0.02));
+  border-radius: 11px 11px 0 0;
+  z-index: 1;
 }
 
 .activity-item:hover {
@@ -501,6 +770,10 @@
   border-left-color: #4361ee;
   transform: translateX(2px);
   box-shadow: 0 3px 5px rgba(0, 0, 0, 0.05);
+}
+
+.activity-item:hover::before {
+  opacity: 0.9;
 }
 
 .activity-avatar {
@@ -515,10 +788,14 @@
   font-weight: 600;
   font-size: 13px; /* Reduced from 14px */
   box-shadow: 0 3px 7px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 2;
 }
 
 .activity-content {
   flex: 1;
+  position: relative;
+  z-index: 2;
 }
 
 .activity-header {
@@ -555,6 +832,8 @@
   display: flex;
   align-items: flex-start;
   padding-top: 2px;
+  position: relative;
+  z-index: 2;
 }
 
 .status-icon {
@@ -593,6 +872,23 @@
   cursor: pointer;
   transition: all 0.3s ease;
   margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy effect for view all button */
+.view-all-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, 
+                rgba(255, 255, 255, 0.15), 
+                rgba(255, 255, 255, 0.05));
+  border-radius: 9px 9px 0 0;
+  z-index: 1;
 }
 
 .view-all-btn:hover {
@@ -601,6 +897,10 @@
   border-color: transparent;
   box-shadow: 0 3px 9px rgba(114, 9, 183, 0.2);
   transform: translateY(-2px);
+}
+
+.view-all-btn:hover::before {
+  opacity: 0.9;
 }
 
 /* Announcements with reduced size */
@@ -618,11 +918,32 @@
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 3px 5px rgba(114, 9, 183, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy effect for create button */
+.create-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, 
+                rgba(255, 255, 255, 0.15), 
+                rgba(255, 255, 255, 0.05));
+  border-radius: 9px 9px 0 0;
+  z-index: 1;
 }
 
 .create-btn:hover {
   box-shadow: 0 5px 9px rgba(114, 9, 183, 0.3);
   transform: translateY(-2px);
+}
+
+.create-btn:hover::before {
+  opacity: 0.9;
 }
 
 .empty-state {
@@ -634,11 +955,29 @@
   gap: 14px; /* Reduced from 16px */
   color: #94a3b8;
   height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Add glossy effect to empty state */
+.empty-state::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, 
+                rgba(255, 255, 255, 0.1), 
+                rgba(255, 255, 255, 0.02));
+  z-index: 1;
 }
 
 .empty-state p {
   margin: 0;
   font-size: 13px; /* Reduced from 14px */
+  position: relative;
+  z-index: 2;
 }
 
 .create-announcement-btn {
@@ -652,11 +991,32 @@
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 3px 5px rgba(114, 9, 183, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy effect for create announcement button */
+.create-announcement-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, 
+                rgba(255, 255, 255, 0.15), 
+                rgba(255, 255, 255, 0.05));
+  border-radius: 9px 9px 0 0;
+  z-index: 1;
 }
 
 .create-announcement-btn:hover {
   box-shadow: 0 7px 13px rgba(114, 9, 183, 0.3);
   transform: translateY(-3px);
+}
+
+.create-announcement-btn:hover::before {
+  opacity: 0.9;
 }
 
 .announcements-wrapper {
@@ -700,82 +1060,5 @@
   .dashboard-actions {
     width: 100%;
     justify-content: space-between;
-  }
-}
-
-@media (max-width: 768px) {
-  .admin-dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .dashboard-header {
-    padding: 14px; /* Reduced from 16px */
-  }
-
-  .dashboard-actions {
-    flex-direction: column;
-    gap: 7px; /* Reduced from 8px */
-  }
-
-  .announcement-button,
-  .report-button {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .time-filters {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .time-filter-btn {
-    flex: 1;
-    text-align: center;
-  }
-
-  .card-footer {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 7px; /* Reduced from 8px */
-  }
-
-  .stat-item {
-    width: 100%;
-    flex-direction: row;
-    justify-content: space-between;
-  }
-  
-  .legend-item {
-    padding: 4px 7px; /* Reduced from 4px 8px */
-    font-size: 10px; /* Reduced from 11px */
-  }
-  
-  .employee-stats-footer,
-  .leave-legend-footer {
-    flex-direction: column;
-    gap: 7px; /* Reduced from 8px */
-  }
-}
-
-@media (max-width: 576px) {
-  .summary-cards {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-card-header {
-    padding: 11px 14px; /* Reduced from 12px 16px */
-  }
-
-  .card-body {
-    padding: 11px; /* Reduced from 12px */
-  }
-
-  .card-footer {
-    padding: 11px 14px; /* Reduced from 12px 16px */
-  }
-
-  .notification-banner {
-    width: calc(100% - 29px); /* Reduced from 32px */
-    right: 14px; /* Reduced from 16px */
   }
 }

@@ -51,8 +51,8 @@
 
 .applicants-managements-header h1 {
   font-size: 1.75rem;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: 400;
+  color: #be95be;
   margin: 0 0 1rem 0;
 }
 
@@ -107,8 +107,6 @@
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   border: none;
-  background: transparent;
-  color: var(--text-secondary);
   cursor: pointer;
   transition: var(--transition);
 }
@@ -119,7 +117,7 @@
 }
 
 .applicants-managements-view-btn.active {
-  background-color: var(--primary);
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
   color: white;
 }
 
@@ -223,7 +221,7 @@
 
 .applicants-managements-export-btn.excel {
   height: 40px;
-  background-color: #107c41;
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
   color: white;
 }
 
@@ -232,7 +230,7 @@
 }
 
 .applicants-managements-export-btn.pdf {
-  background-color: #e53e3e;
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
   color: white;
 }
 
@@ -249,7 +247,7 @@
   padding: 0.75rem 1rem;
   border: none;
   border-radius: var(--radius);
-  background-color: var(--primary);
+  background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
   color: white;
   font-size: 0.875rem;
   font-weight: 500;
@@ -525,7 +523,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--primary);
+  background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
   color: white;
   font-weight: 600;
   font-size: 1.25rem;
@@ -722,13 +720,10 @@
 }
 
 .applicants-managements-view-btn {
-  background-color: var(--primary);
-  color: white;
+  
+  color: #64748b;
 }
 
-.applicants-managements-view-btn:hover {
-  background-color: var(--primary-dark);
-}
 
 .applicants-managements-download-btn {
   background-color: var(--secondary);
@@ -777,7 +772,7 @@
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
-  background-color: var(--primary);
+  background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -921,12 +916,12 @@
 }
 
 .applicants-managements-list-view-btn {
-  background-color: var(--primary);
+  background-color: #b3be62;
   color: white;
 }
 
 .applicants-managements-list-view-btn:hover {
-  background-color: var(--primary-dark);
+  background-color: #adbb46;
 }
 
 .applicants-managements-list-download-btn {

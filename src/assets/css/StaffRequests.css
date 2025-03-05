@@ -40,12 +40,12 @@
   margin-bottom: 1.5rem;
 }
 
-.staff-requests-header h1 {
+/* .staff-requests-header h2 {
   font-size: 1.75rem;
-  font-weight: 600;
+  font-weight: 400;
   color:#be95be;
   margin: 0 0 0.5rem;
-}
+} */
 
 .staff-requests-description {
   color: var(--text-secondary);
@@ -155,7 +155,7 @@
 }
 
 .staff-requests-view-btn.active {
-  background-color: #71a3c1;
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
   color: white;
 }
 
@@ -337,7 +337,7 @@
 
 .staff-request-email {
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 350;
   color: var(--text-primary);
   margin: 0 0 1rem;
   word-break: break-all;

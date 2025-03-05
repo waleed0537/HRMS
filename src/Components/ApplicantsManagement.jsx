@@ -513,10 +513,10 @@ const ApplicantsManagement = () => {
                             
                             <button
                                 onClick={() => handleViewDetails(applicant)}
-                                className="applicants-managements-list-view-btn"
+                                className="applicants-managements-list-view-btn" style={{width:'fit-content',height:'fit-conten'}}
                             >
                                 <Eye size={16} />
-                                View
+                                
                             </button>
                             
                             {applicant.resume && (

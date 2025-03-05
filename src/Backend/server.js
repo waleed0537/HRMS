@@ -882,32 +882,32 @@ app.get('/api/leaves', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/leaves/employee/:userId', authenticateToken, async (req, res) => {
-  try {
-    const { userId } = req.params;
+// app.get('/api/leaves/employee/:userId', authenticateToken, async (req, res) => {
+//   try {
+//     const { userId } = req.params;
     
-    // Check if user has permission to view these leaves
-    if (!req.user.isAdmin && req.user.id !== userId) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
+//     // Check if user has permission to view these leaves
+//     if (!req.user.isAdmin && req.user.id !== userId) {
+//       return res.status(403).json({ message: 'Access denied' });
+//     }
 
-    // Find leaves for this user
-    const employee = await Employee.findOne({ userId: userId });
-    if (!employee) {
-      return res.status(404).json({ message: 'Employee not found' });
-    }
-    const leaves = await Leave.find({ employeeId: employee._id })
-      .sort({ createdAt: -1 });
+//     // Find leaves for this user
+//     const employee = await Employee.findOne({ userId: userId });
+//     if (!employee) {
+//       return res.status(404).json({ message: 'Employee not found' });
+//     }
+//     const leaves = await Leave.find({ employeeId: employee._id })
+//       .sort({ createdAt: -1 });
 
-    res.json(leaves);
-  } catch (error) {
-    console.error('Error fetching leaves:', error);
-    res.status(500).json({ 
-      message: 'Error fetching leaves', 
-      error: error.message 
-    });
-  }
-});
+//     res.json(leaves);
+//   } catch (error) {
+//     console.error('Error fetching leaves:', error);
+//     res.status(500).json({ 
+//       message: 'Error fetching leaves', 
+//       error: error.message 
+//     });
+//   }
+// });
 // Add these routes to server.js
 
 // Create branch
@@ -1249,7 +1249,7 @@ app.get('/api/leaves/employee/:employeeId', authenticateToken, async (req, res) 
     }
 
     // If authorized, fetch the leaves
-    const leaves = await Leave.find({ employeeId })
+    const leaves = await Leave.find({ employeeId: employee.userId })
       .sort({ createdAt: -1 });
 
     console.log(`Found ${leaves.length} leaves for employee ${employeeId}`);

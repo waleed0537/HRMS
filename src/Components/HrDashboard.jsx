@@ -10,15 +10,17 @@ import {
   ChevronRight, AlertTriangle, FilePlus, Eye, Clock, Archive,
   Award, Code, MessageCircle, Layers, GitPullRequest, Building
 } from 'lucide-react';
-import AnnouncementModal from './AnnouncementModal';
-import AnnouncementsList from './AnnouncementsList';
+import AnnouncementModal from './AnnouncementModal.jsx';
+import AnnouncementsList from './AnnouncementsList.jsx';
 import API_BASE_URL from '../config/api.js';
 import '../assets/css/HrDashboard.css';
 // Enhanced color palette
 const COLORS = [
   '#6dbfb8', '#be95be', '#71a3c1', '#75ba75', '#b3be62', 
   '#fec76f', '#f5945c', '#f15bb5', '#00b4d8', '#0077b6'
-];
+]; 
+
+
 
 // Avatar backgrounds for activities
 const AVATAR_COLORS = [

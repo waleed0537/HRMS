@@ -1,8 +1,8 @@
 /* EmployeeDashboard.css */
 .dashboard-container {
-  padding: 24px;
-  margin: 64px 0 0 16rem;
-  background-color: #f8fafc;
+  padding: 22px;
+  margin: 35px 0 0 16rem;
+  background-color: #f5f5f5;
   min-height: calc(100vh - 64px);
 }
 
@@ -289,7 +289,7 @@
 .member-avatar {
   width: 40px;
   height: 40px;
-  background-color: #474787;
+  background-color:#fec76f;
   color: white;
   display: flex;
   align-items: center;
@@ -396,7 +396,7 @@
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  background-color: #474787;
+  background-color: #75ba75;
   color: white;
   border: none;
   border-radius: 6px;
@@ -648,7 +648,7 @@
 
 
 .view-profile-btn:hover {
-  background-color: #f1f5f9;
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
 }
 
 /* Leave Quotas Card */
@@ -751,7 +751,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: #474787;
+  background: #b3be62;
   color: white;
   border-radius: 50%;
   flex-shrink: 0;

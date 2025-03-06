@@ -9,6 +9,8 @@ const Header = ({ user, onLogout }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -65,6 +67,65 @@ const Header = ({ user, onLogout }) => {
     if (showProfile) setShowProfile(false);
   };
 
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    // Perform search if query is not empty
+    if (query.trim()) {
+      performSearch(query);
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  const performSearch = async (query) => {
+    try {
+      // Replace with your actual search API endpoint
+      const response = await fetch(`http://localhost:5000/api/search?q=${encodeURIComponent(query)}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Search failed');
+      }
+
+      const results = await response.json();
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+    }
+  };
+
+  const handleSearchResultClick = (result) => {
+    // Navigate based on result type
+    switch(result.type) {
+      case 'employee':
+        navigate(`/employees/${result.id}`);
+        break;
+      case 'leave':
+        navigate(`/leave-request/${result.id}`);
+        break;
+      case 'project':
+        navigate(`/projects/${result.id}`);
+        break;
+      case 'ticket':
+        navigate(`/tickets/${result.id}`);
+        break;
+      default:
+        // Generic fallback or do nothing
+        console.log('Unhandled result type:', result);
+    }
+    
+    // Close search and clear results
+    setShowSearch(false);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
   return (
     <header className="app-header">
       <div className="app-header__container">
@@ -75,15 +136,34 @@ const Header = ({ user, onLogout }) => {
 
         {/* Search Container - Hidden on mobile until toggled */}
         <div className={`app-header__search ${showSearch ? 'app-header__search--active' : ''}`}>
-          <input
-            type="search"
-            placeholder="Search..."
-            className="app-header__search-input"
-          />
-          <span className="app-header__search-icon">🔍</span>
+        
+          
           <button className="app-header__search-close" onClick={() => setShowSearch(false)}>
             <X size={18} color="#666" />
           </button>
+
+          {/* Search Results Dropdown */}
+          {searchResults.length > 0 && (
+            <div className="app-header__search-results">
+              {searchResults.map((result, index) => (
+                <div 
+                  key={result.id} 
+                  className="app-header__search-result-item"
+                  onClick={() => handleSearchResultClick(result)}
+                >
+                  <span className="app-header__search-result-icon">
+                    {result.type === 'employee' && '👤'}
+                    {result.type === 'leave' && '📅'}
+                    {result.type === 'project' && '📊'}
+                    {result.type === 'ticket' && '🎫'}
+                  </span>
+                  <span className="app-header__search-result-text">
+                    {result.name || result.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="app-header__actions">
@@ -147,9 +227,7 @@ const Header = ({ user, onLogout }) => {
           </div>
         </div>
       </div>
-      
-      {/* Mobile Search Overlay */}
-      {showSearch && <div className="app-header__search-overlay" onClick={() => setShowSearch(false)}></div>}
+
     </header>
   );
 };

@@ -1,7 +1,7 @@
 .leave-request-container {
   padding: 2rem;
   margin-left: 16rem;
-  margin-top: 64px;
+  margin-top: 45px;
   background-color: #f5f5f5;
   min-height: calc(100vh - 64px);
 }
@@ -11,9 +11,10 @@
 }
 
 .leave-request-header h1 {
-  font-size: 1.875rem;
-  font-weight: 600;
-  color: #1e293b;
+ 
+  font-size: 1.75rem;
+  font-weight: 400;
+  color: #be95be;
   margin-bottom: 0.5rem;
 }
 

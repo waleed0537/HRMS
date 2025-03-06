@@ -248,7 +248,7 @@ const EmployeeDashboard = () => {
           <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
         </div>
       </div>
-      
+
       <div className="employee-dashboard-grid">
         {/* Profile Summary Card */}
         <div className="profile-card">
@@ -304,8 +304,8 @@ const EmployeeDashboard = () => {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="total" name="Total" stackId="a" fill="#8884d8" />
-                <Bar dataKey="used" name="Used" stackId="a" fill="#82ca9d" />
+                <Bar dataKey="total" name="Total" stackId="a" fill="#b3be62" />
+                <Bar dataKey="used" name="Used" stackId="a" fill="#75ba75" />
               </BarChart>
             </ResponsiveContainer>
           </div>

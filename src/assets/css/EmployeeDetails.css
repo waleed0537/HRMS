@@ -1,6 +1,6 @@
 /* EmployeeDetails.css */
 .employee-detail-container {
-  background-color: #f9fafb;
+  background-color: #f5f5f5;
   border-radius: 12px;
   overflow: hidden;
   margin-left: 1rem;
@@ -139,9 +139,9 @@
 }
 
 .tab-button.active {
-  background-color: #474787;
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
   color: white;
-  border-color: #474787;
+
 }
 
 .tab-content {

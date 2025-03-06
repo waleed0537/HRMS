@@ -27,12 +27,13 @@
 
 /* Main container */
 .staff-requests-container {
-  margin-left: 18rem;
+  margin-left: 17rem;
   margin-top: 46px;
   padding: 1.5rem;
   max-width: 100%;
   min-height: calc(100vh - 46px);
-  background-color: var(--secondary);
+  background-color: #f5f5f5;
+
 }
 
 /* Header */
@@ -289,7 +290,7 @@
 /* Grid view */
 .staff-requests-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.25rem;
   padding: 0.7rem;
 }
@@ -381,8 +382,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 0;
+  gap: 0.7rem;
+  padding: 0.5rem 0;
   border-radius: var(--radius);
   font-size: 0.9rem;
   font-weight: 500;

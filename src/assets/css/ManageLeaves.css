@@ -30,9 +30,10 @@
 /* Main Container */
 .manage-leaves-container {
   padding: 1.5rem;
-  margin: 45px 0 0 16rem;
+  margin: 48px 0 0 17rem;
   min-height: calc(100vh - 64px);
-  background-color: var(--secondary);
+  background-color: #f5f5f5;
+
   position: relative;
   z-index: 1;
 }
@@ -612,10 +613,10 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.25rem 0.75rem;
+  padding: 0.3rem 0.2rem;
   border-radius: 2rem;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.3rem;
+  font-weight: 300;
 }
 
 .manage-leave-card-body {
@@ -633,6 +634,7 @@
 }
 
 .manage-leave-type {
+  width: fit-content;
   display: inline-flex;
   padding: 0.25rem 0.75rem;
   border-radius: 2rem;
@@ -880,7 +882,7 @@
 
 .manage-leave-type-badge {
   display: inline-flex;
-  padding: 0.25rem 0.5rem;
+  padding: 0.15rem 0.3rem;
   border-radius: 2rem;
   font-size: 0.75rem;
   font-weight: 500;

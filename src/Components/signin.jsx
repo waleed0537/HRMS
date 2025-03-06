@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Lock, Mail, User, Phone, MapPin, Building, Briefcase, UserSquare } from 'lucide-react';
 import '../assets/css/signin.css';
 import API_BASE_URL from '../config/api.js';
 
 const SignIn = ({ onLogin }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Check if navigation is coming from a specific route
   const [isLogin, setIsLogin] = useState(true);
   const [showApplyInfo, setShowApplyInfo] = useState(false);
   const [formData, setFormData] = useState({
@@ -25,9 +28,19 @@ const SignIn = ({ onLogin }) => {
     password: '',
     confirmPassword: '',
   });
+  
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Check route to determine initial form state
+  useEffect(() => {
+    // If the route explicitly shows signup, switch to signup form
+    if (location.pathname === '/signup') {
+      setIsLogin(false);
+    }
+  }, [location]);
+
+  // Rest of the component remains the same as in the original code...
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({

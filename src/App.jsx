@@ -21,6 +21,7 @@ import Holiday from './Components/Holiday';
 import ApplicantForm from './Components/ApplicantForm';
 import ApplicantsManagement from './Components/ApplicantsManagement';
 import HrDashboard from './Components/HRDashboard';
+
 import '../src/assets/css/global.css';
 import { ToastProvider } from './Components/common/ToastContent';
 

@@ -1,10 +1,12 @@
 // components/AnnouncementModal.jsx
 import React, { useState, useEffect } from 'react';
 import { X, AlertCircle, Check, Calendar, Bell, Flag, Clock, Building } from 'lucide-react';
+import { useToast } from './common/ToastContent.jsx';
 import '../assets/css/AnnouncementModal.css';
 import API_BASE_URL from '../config/api.js';
 
 const AnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
+  const { success, error } = useToast(); // Use the toast hook
   const [branches, setBranches] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
@@ -14,7 +16,6 @@ const AnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
     expiresAt: ''
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
@@ -40,9 +41,9 @@ const AnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
       });
       const data = await response.json();
       setBranches(data);
-    } catch (error) {
-      console.error('Error fetching branches:', error);
-      setError('Unable to load branches. Please try again.');
+    } catch (err) {
+      console.error('Error fetching branches:', err);
+      error('Unable to load branches. Please try again.'); // Use toast for error
     } finally {
       setLoading(false);
     }
@@ -66,6 +67,7 @@ const AnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
     setLoading(true);
     onSubmit(formData)
       .then(() => {
+        success('Announcement created successfully!'); // Use toast for success
         setFormData({
           title: '',
           content: '',
@@ -73,9 +75,10 @@ const AnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
           priority: 'medium',
           expiresAt: ''
         });
+        onClose();
       })
       .catch(err => {
-        setError(err.message || 'Failed to create announcement');
+        error(err.message || 'Failed to create announcement'); // Use toast for error
       })
       .finally(() => {
         setLoading(false);
@@ -105,13 +108,6 @@ const AnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
             <X size={22} />
           </button>
         </div>
-        
-        {error && (
-          <div className="announcement-modal-error">
-            <AlertCircle size={18} />
-            <span>{error}</span>
-          </div>
-        )}
         
         <form onSubmit={handleSubmit} className="announcement-modal-form">
           <div className="announcement-modal-form-grid">

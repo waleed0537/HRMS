@@ -17,18 +17,20 @@ import {
 } from 'lucide-react';
 import API_BASE_URL from '../config/api.js';
 import '../assets/css/StaffRequests.css';
+import { useToast } from './common/ToastContent.jsx';
 
 const StaffRequests = () => {
   const [requests, setRequests] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [successMessage, setSuccessMessage] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', or 'compact'
   const [searchTerm, setSearchTerm] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [filteredRequests, setFilteredRequests] = useState([]);
+  const [processingId, setProcessingId] = useState(null);
+  const toast = useToast();
 
-  const fetchRequests = async () => {
+  const fetchRequests = async (showToast = false) => {
     try {
       setIsRefreshing(true);
       const token = localStorage.getItem('token');
@@ -51,8 +53,16 @@ const StaffRequests = () => {
       setRequests(data);
       setFilteredRequests(data);
       setError('');
+      
+      // Only show toast when explicitly refreshing
+      if (showToast) {
+        toast.success('Successfully refreshed requests');
+      }
     } catch (err) {
       setError(err.message);
+      if (showToast) {
+        toast.error('Error fetching staff requests: ' + err.message);
+      }
     } finally {
       setLoading(false);
       // Add a small delay to make the refresh animation visible
@@ -61,7 +71,8 @@ const StaffRequests = () => {
   };
 
   useEffect(() => {
-    fetchRequests();
+    // Initial fetch without toast
+    fetchRequests(false);
   }, []);
 
   useEffect(() => {
@@ -80,6 +91,7 @@ const StaffRequests = () => {
 
   const handleStatusUpdate = async (userId, status) => {
     try {
+      setProcessingId(userId);
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('No authentication token found');
@@ -99,16 +111,39 @@ const StaffRequests = () => {
         throw new Error(data.message || 'Failed to update status');
       }
 
-      // Show success message and remove after 3 seconds
-      setSuccessMessage(`Successfully ${status} the request`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+      // Get the request that's being processed to show the name in toast
+      const requestBeingProcessed = requests.find(req => req._id === userId);
+      const requestName = requestBeingProcessed ? 
+        (requestBeingProcessed.name || requestBeingProcessed.email.split('@')[0]) : 
+        'Staff member';
       
-      // Refresh the requests list
-      fetchRequests();
+      // Update the requests list without refetching
+      setRequests(prevRequests => 
+        prevRequests.filter(request => request._id !== userId)
+      );
+
+      setFilteredRequests(prevRequests => 
+        prevRequests.filter(request => request._id !== userId)
+      );
+      
+      // Show toast notification with the person's name
+      if (status === 'approved') {
+        toast.success(`${requestName}'s request approved successfully`);
+      } else {
+        toast.error(`${requestName}'s request rejected`);
+      }
+      
     } catch (err) {
+      toast.error(`Failed to ${status} request: ${err.message}`);
       setError(err.message);
-      setTimeout(() => setError(''), 3000);
+    } finally {
+      setProcessingId(null);
     }
+  };
+
+  // Handle manual refresh button click with toast
+  const handleRefreshClick = () => {
+    fetchRequests(true);
   };
 
   // Create a function to generate avatar colors based on email
@@ -130,12 +165,20 @@ const StaffRequests = () => {
     return colors[index];
   };
 
-  // Function to generate user's initials from email
-  const getInitials = (email) => {
-    if (!email) return '?';
+  // Function to generate user's initials from email or name
+  const getInitials = (request) => {
+    if (request.name) {
+      return request.name.split(' ')
+        .map(part => part[0]?.toUpperCase() || '')
+        .join('')
+        .slice(0, 2);
+    }
+
+    // Fallback to email if name isn't available
+    if (!request.email) return '?';
     
     // Get username part before @ symbol
-    const username = email.split('@')[0];
+    const username = request.email.split('@')[0];
     
     // Generate initials from username (handle common formats like first.last or first_last)
     if (username.includes('.') || username.includes('_')) {
@@ -145,6 +188,27 @@ const StaffRequests = () => {
     
     // If no separator, use first two characters or just the first if only one char
     return username.length > 1 ? username.slice(0, 2).toUpperCase() : username.toUpperCase();
+  };
+
+  // Get display name (prefer actual name over email)
+  const getDisplayName = (request) => {
+    if (request.name) {
+      return request.name;
+    }
+    
+    // If no name, format the email as a name
+    const username = request.email.split('@')[0];
+    
+    // Convert username like "john.doe" or "john_doe" to "John Doe"
+    if (username.includes('.') || username.includes('_')) {
+      return username
+        .split(/[._]/)
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+    }
+    
+    // Just capitalize the first letter of the username
+    return username.charAt(0).toUpperCase() + username.slice(1);
   };
 
   // Format role name for display
@@ -171,11 +235,14 @@ const StaffRequests = () => {
       {filteredRequests.map((request) => (
         <div key={request._id} className="staff-request-card">
           <div className="staff-request-avatar" style={{ backgroundColor: getAvatarColor(request.email) }}>
-            {getInitials(request.email)}
+            {getInitials(request)}
           </div>
           
           <div className="staff-request-content">
-            <h3 className="staff-request-email">{request.email}</h3>
+            <h3 className="staff-request-email">{getDisplayName(request)}</h3>
+            <div className="staff-request-email" style={{fontSize: '12px', marginTop: '-8px', marginBottom: '8px', color: '#64748b'}}>
+              {request.email}
+            </div>
             
             <div className="staff-request-details">
               <div className="staff-request-detail">
@@ -200,6 +267,7 @@ const StaffRequests = () => {
               onClick={() => handleStatusUpdate(request._id, 'approved')}
               className="staff-request-approve-btn"
               aria-label="Approve request"
+              disabled={processingId === request._id}
             >
               <UserCheck size={18} />
               <span>Approve</span>
@@ -208,6 +276,7 @@ const StaffRequests = () => {
               onClick={() => handleStatusUpdate(request._id, 'rejected')}
               className="staff-request-reject-btn"
               aria-label="Reject request"
+              disabled={processingId === request._id}
             >
               <UserX size={18} />
               <span>Reject</span>
@@ -224,12 +293,14 @@ const StaffRequests = () => {
         <div key={request._id} className="staff-request-list-item">
           <div className="staff-request-list-left">
             <div className="staff-request-list-avatar" style={{ backgroundColor: getAvatarColor(request.email) }}>
-              {getInitials(request.email)}
+              {getInitials(request)}
             </div>
             
             <div className="staff-request-list-info">
-              <h3 className="staff-request-list-email">{request.email}</h3>
+              <h3 className="staff-request-list-email">{getDisplayName(request)}</h3>
               <div className="staff-request-list-meta">
+                <span className="staff-request-list-email">{request.email}</span>
+                <span className="staff-request-divider">•</span>
                 <span className="staff-request-list-role">{formatRole(request.role)}</span>
                 <span className="staff-request-divider">•</span>
                 <span className="staff-request-list-branch">{request.branchName}</span>
@@ -244,6 +315,7 @@ const StaffRequests = () => {
               onClick={() => handleStatusUpdate(request._id, 'approved')}
               className="staff-request-list-approve-btn"
               aria-label="Approve request"
+              disabled={processingId === request._id}
             >
               <UserCheck size={18} />
               <span>Approve</span>
@@ -252,6 +324,7 @@ const StaffRequests = () => {
               onClick={() => handleStatusUpdate(request._id, 'rejected')}
               className="staff-request-list-reject-btn"
               aria-label="Reject request"
+              disabled={processingId === request._id}
             >
               <UserX size={18} />
               <span>Reject</span>
@@ -267,11 +340,12 @@ const StaffRequests = () => {
       {filteredRequests.map((request) => (
         <div key={request._id} className="staff-request-compact-item">
           <div className="staff-request-compact-avatar" style={{ backgroundColor: getAvatarColor(request.email) }}>
-            {getInitials(request.email)}
+            {getInitials(request)}
           </div>
           
           <div className="staff-request-compact-content">
-            <h3 className="staff-request-compact-email">{request.email}</h3>
+            <h3 className="staff-request-compact-email">{getDisplayName(request)}</h3>
+            <p className="staff-request-compact-email" style={{fontSize: '11px', margin: '0 0 4px'}}>{request.email}</p>
             <p className="staff-request-compact-role">{formatRole(request.role)}</p>
           </div>
           
@@ -281,6 +355,7 @@ const StaffRequests = () => {
               className="staff-request-compact-approve-btn"
               aria-label="Approve request"
               title="Approve"
+              disabled={processingId === request._id}
             >
               <CheckCircle size={20} />
             </button>
@@ -289,6 +364,7 @@ const StaffRequests = () => {
               className="staff-request-compact-reject-btn"
               aria-label="Reject request"
               title="Reject"
+              disabled={processingId === request._id}
             >
               <XCircle size={20} />
             </button>
@@ -322,7 +398,7 @@ const StaffRequests = () => {
         <div className="staff-requests-actions">
           <button 
             className={`staff-requests-refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
-            onClick={fetchRequests}
+            onClick={handleRefreshClick}
             disabled={isRefreshing}
             aria-label="Refresh requests"
           >
@@ -359,14 +435,6 @@ const StaffRequests = () => {
         </div>
       </div>
       
-      {/* Success/Error Message Bar */}
-      {(successMessage || error) && (
-        <div className={`staff-requests-message ${error ? 'error' : 'success'}`}>
-          {error ? <AlertCircle size={18} /> : <CheckCircle size={18} />}
-          <span>{error || successMessage}</span>
-        </div>
-      )}
-      
       {/* Content Area */}
       <div className="staff-requests-content">
         {loading ? (
@@ -374,12 +442,12 @@ const StaffRequests = () => {
             <div className="staff-requests-spinner"></div>
             <p>Loading requests...</p>
           </div>
-        ) : error && !successMessage ? (
+        ) : error && filteredRequests.length === 0 ? (
           <div className="staff-requests-error">
             <AlertCircle size={40} />
             <h3>Something went wrong</h3>
             <p>{error}</p>
-            <button className="staff-requests-retry-btn" onClick={fetchRequests}>
+            <button className="staff-requests-retry-btn" onClick={handleRefreshClick}>
               <RefreshCw size={16} />
               Retry
             </button>

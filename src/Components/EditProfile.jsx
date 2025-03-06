@@ -1,564 +1,654 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { 
-  Upload, X, Save, Building, Calendar, User, 
-  Briefcase, FileText, Check, AlertCircle, ChevronDown
+  User, Mail, Phone, MapPin, Building, Briefcase, 
+  Save, Upload, X, FileText, Clock, ChevronDown, ChevronUp 
 } from 'lucide-react';
+import { useToast } from './common/ToastContent.jsx';
 import '../assets/css/EditProfile.css';
 import API_BASE_URL from '../config/api.js';
 
-const EditProfiles = () => {
+const EditProfile = () => {
+  const { success, error, info } = useToast();
   const [employees, setEmployees] = useState([]);
-  const [branches, setBranches] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const [activeSection, setActiveSection] = useState('personal');
+  const [loading, setLoading] = useState(false);
   const [documents, setDocuments] = useState([]);
-  const [milestone, setMilestone] = useState({
-    date: '',
-    title: '',
-    description: '',
-    impact: ''
-  });
-  const [activeSection, setActiveSection] = useState('professional');
-
-  useEffect(() => {
-    fetchEmployees();
-    fetchBranches();
-  }, []);
-
-  const fetchBranches = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/branches`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch branches');
-      }
-      
-      const data = await response.json();
-      setBranches(data);
-    } catch (err) {
-      setError('Failed to fetch branches');
+  const [uploadedDocuments, setUploadedDocuments] = useState([]);
+  // Removed expandedSections state as we're using activeSection to control visibility
+  const [formData, setFormData] = useState({
+    personalDetails: {
+      name: '',
+      contact: '',
+      email: '',
+      address: ''
+    },
+    professionalDetails: {
+      role: '',
+      branch: '',
+      department: '',
+      status: 'active'
     }
-  };
+  });
+
+  // Fetch employees on component mount
+  useEffect(() => {
+    const loadEmployees = async () => {
+      try {
+        await fetchEmployees();
+        console.log("Employees loaded in useEffect");
+      } catch (err) {
+        console.error("Error in useEffect loading employees:", err);
+      }
+    };
+    
+    loadEmployees();
+  }, []);
 
   const fetchEmployees = async () => {
     try {
-      const user = JSON.parse(localStorage.getItem('user'));
-      const endpoint = user.role === 'hr_manager' ? '/api/hr/edit-profiles' : '/api/employees';
-  
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      setLoading(true);
+      const response = await fetch(`${API_BASE_URL}/api/employees`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-  
+
       if (!response.ok) {
         throw new Error('Failed to fetch employees');
       }
-  
+
       const data = await response.json();
-      setEmployees(data);
+      console.log("Fetched employees:", data);
+      
+      if (Array.isArray(data)) {
+        setEmployees(data);
+      } else {
+        console.error("Employees data is not an array:", data);
+        error('Received invalid employee data format');
+      }
+      
       setLoading(false);
     } catch (err) {
-      console.error('Error fetching employees:', err);
-      setError(err.message);
+      console.error("Error fetching employees:", err);
+      error('Failed to load employees: ' + (err.message || 'Unknown error'));
       setLoading(false);
     }
   };
 
   const handleEmployeeSelect = async (employeeId) => {
+    if (!employeeId) {
+      setSelectedEmployee(null);
+      setDocuments([]);
+      return;
+    }
+    
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/employees/${employeeId}`, {
+      console.log("Selected employee ID:", employeeId);
+      console.log("Available employees:", employees);
+      
+      const employee = employees.find(emp => emp._id === employeeId);
+      console.log("Found employee:", employee);
+      
+      if (employee) {
+        setSelectedEmployee(employee);
+        
+        try {
+          // Fetch employee documents
+          const docsResponse = await fetch(`${API_BASE_URL}/api/employees/${employeeId}/documents`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          
+          if (!docsResponse.ok) {
+            throw new Error('Failed to fetch employee documents');
+          }
+          
+          const docsData = await docsResponse.json();
+          console.log("Fetched documents:", docsData);
+          setDocuments(Array.isArray(docsData) ? docsData : []);
+        } catch (docError) {
+          console.error("Error fetching documents:", docError);
+          // Continue with empty documents array if there's an error
+          setDocuments([]);
+        }
+        
+        // Update form data with employee details, ensuring we have valid objects
+        setFormData({
+          personalDetails: { 
+            name: employee?.personalDetails?.name || '',
+            contact: employee?.personalDetails?.contact || '',
+            email: employee?.personalDetails?.email || '',
+            address: employee?.personalDetails?.address || ''
+          },
+          professionalDetails: { 
+            role: employee?.professionalDetails?.role || '',
+            branch: employee?.professionalDetails?.branch || '',
+            department: employee?.professionalDetails?.department || '',
+            status: employee?.professionalDetails?.status || 'active'
+          }
+        });
+        
+        info(`Loaded profile for ${employee?.personalDetails?.name || 'employee'}`);
+      } else {
+        error("Employee not found in the list");
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      console.error("Error in handleEmployeeSelect:", err);
+      error('Error loading employee details: ' + (err.message || 'Unknown error'));
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (section, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value
+      }
+    }));
+  };
+
+  const handleFileUpload = (e) => {
+    const files = Array.from(e.target.files);
+    
+    // Check file size (5MB limit)
+    const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
+      error(`Some files exceed the 5MB limit: ${oversizedFiles.map(f => f.name).join(', ')}`);
+      return;
+    }
+    
+    setUploadedDocuments(prev => [...prev, ...files]);
+    info(`Added ${files.length} document${files.length !== 1 ? 's' : ''} for upload`);
+  };
+
+  const removeUploadedDocument = (index) => {
+    setUploadedDocuments(prev => prev.filter((_, i) => i !== index));
+    info('Document removed from upload queue');
+  };
+
+  const removeExistingDocument = async (documentId) => {
+    if (!selectedEmployee) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/employees/${selectedEmployee._id}/documents/${documentId}`, {
+        method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (!response.ok) {
-        throw new Error('Failed to fetch employee details');
+        throw new Error('Failed to delete document');
       }
-      
-      const data = await response.json();
-      setSelectedEmployee(data);
-      setLoading(false);
-      setActiveSection('professional');
+
+      setDocuments(prev => prev.filter(doc => doc._id !== documentId));
+      success('Document deleted successfully');
     } catch (err) {
-      setError(err.message);
-      setLoading(false);
+      error('Error deleting document: ' + err.message);
     }
   };
 
-  const handleDocumentUpload = (e) => {
-    const files = Array.from(e.target.files);
-    setDocuments(prev => [...prev, ...files]);
-  };
+  // Removed handleSectionToggle as we're directly controlling visibility with activeSection tabs
 
-  const removeDocument = (index) => {
-    setDocuments(prev => prev.filter((_, i) => i !== index));
+  const handleNavClick = (section) => {
+    setActiveSection(section);
+    // No need to use expandedSections anymore as we're directly controlling visibility with activeSection
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedEmployee) return;
     
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    const formData = new FormData();
-    
-    const updateData = {
-      professionalDetails: selectedEmployee.professionalDetails
-    };
-    
-    if (milestone.date && milestone.title) {
-      updateData.milestones = [milestone];
+    if (!selectedEmployee || !selectedEmployee._id) {
+      error('No employee selected');
+      return;
     }
-
-    formData.append('employeeData', JSON.stringify(updateData));
     
-    documents.forEach(doc => {
-      formData.append('documents', doc);
-    });
-
     try {
-      const user = JSON.parse(localStorage.getItem('user'));
-      const endpoint = user.role === 'hr_manager' 
-        ? `/api/hr/edit-profiles/${selectedEmployee._id}`
-        : `/api/employees/${selectedEmployee._id}`;
-
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update employee');
-      }
-
-      setMilestone({
-        date: '',
-        title: '',
-        description: '',
-        impact: ''
-      });
-      setDocuments([]);
-      setSuccess('Employee profile updated successfully');
-      fetchEmployees();
+      setLoading(true);
+      console.log("Submitting update for employee:", selectedEmployee._id);
       
-      // Automatically hide success message after 5 seconds
-      setTimeout(() => {
-        setSuccess(null);
-      }, 5000);
+      const formPayload = new FormData();
+      
+      // Make sure formData is properly structured before stringifying
+      const sanitizedFormData = {
+        personalDetails: {
+          name: formData.personalDetails?.name || '',
+          contact: formData.personalDetails?.contact || '',
+          email: formData.personalDetails?.email || '',
+          address: formData.personalDetails?.address || ''
+        },
+        professionalDetails: {
+          role: formData.professionalDetails?.role || '',
+          branch: formData.professionalDetails?.branch || '',
+          department: formData.professionalDetails?.department || '',
+          status: formData.professionalDetails?.status || 'active'
+        }
+      };
+      
+      console.log("Submitting data:", sanitizedFormData);
+      formPayload.append('employeeData', JSON.stringify(sanitizedFormData));
+      
+      // Add uploaded documents if any
+      if (uploadedDocuments && uploadedDocuments.length > 0) {
+        uploadedDocuments.forEach(doc => {
+          if (doc) {
+            formPayload.append('documents', doc);
+          }
+        });
+        console.log("Added", uploadedDocuments.length, "documents to form data");
+      }
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/employees/${selectedEmployee._id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: formPayload
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Server error response:", errorText);
+          throw new Error(`Failed to update employee details: ${response.status} ${response.statusText}`);
+        }
+
+        // Reset uploaded documents
+        setUploadedDocuments([]);
+        
+        // Get response data for debug
+        let responseData;
+        try {
+          responseData = await response.json();
+          console.log("Update response:", responseData);
+        } catch (jsonError) {
+          console.log("Response was not JSON:", jsonError);
+        }
+        
+        // Refresh employee data
+        await fetchEmployees(); // Refresh the whole list
+        await handleEmployeeSelect(selectedEmployee._id);
+        
+        success('Employee profile updated successfully');
+      } catch (fetchError) {
+        console.error("Fetch error:", fetchError);
+        throw fetchError;
+      }
     } catch (err) {
-      console.error('Update error:', err);
-      setError(`Failed to update: ${err.message}`);
+      console.error("Submit error:", err);
+      error('Error updating profile: ' + (err.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
   };
 
-  const getInitials = (name) => {
-    if (!name) return '';
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase();
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   };
 
-  if (loading && !selectedEmployee) return (
-    <div className="edit-profiles-container">
-      <div className="loading-indicator">
-        <div className="spinner"></div>
-        <p>Loading employee data...</p>
-      </div>
-    </div>
-  );
+  // Get the initials for the avatar
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map(part => part && part[0] || '')
+      .join('')
+      .toUpperCase() || 'U';
+  };
 
-  if (error && !selectedEmployee) return (
-    <div className="edit-profiles-container">
-      <div className="error-message">
-        <AlertCircle size={24} />
-        <p>{error}</p>
-        <button onClick={fetchEmployees} className="retry-button">Try Again</button>
+  if (loading && !selectedEmployee) {
+    return (
+      <div className="edit-profiles-container">
+        <div className="loading-indicator">
+          <div className="spinner"></div>
+          <p>Loading employee data...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  const renderStatusBadge = () => {
+    if (!selectedEmployee || !selectedEmployee.professionalDetails) return null;
+    
+    const status = selectedEmployee.professionalDetails?.status || 'active';
+    return (
+      <span className={`profile-status status-${status}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
+  };
 
   return (
     <div className="edit-profiles-container">
       <div className="edit-profiles-header">
         <div className="header-content">
-          <h2 className="page-title">Edit Employee Profiles</h2>
-          <p className="page-description">Update employee information, add milestones, and manage documents</p>
+          <h1 className="page-title">Edit Employee Profiles</h1>
+          <p className="page-description">Update employee information, status, and documents</p>
         </div>
         
         <div className="employee-selector">
-          <label htmlFor="employee-select">Select Employee</label>
+          <label>Select Employee</label>
           <select 
-            id="employee-select"
             className="employee-select"
-            onChange={(e) => handleEmployeeSelect(e.target.value)}
             value={selectedEmployee?._id || ''}
+            onChange={(e) => handleEmployeeSelect(e.target.value)}
           >
-            <option value="">Choose an employee</option>
-            {employees.map(emp => (
+            <option value="">Select an employee</option>
+            {employees && employees.map(emp => (
               <option key={emp._id} value={emp._id}>
-                {emp.personalDetails.name}
+                {emp.personalDetails?.name || 'Unknown'} - {emp.professionalDetails?.role || 'Employee'}
               </option>
             ))}
           </select>
         </div>
       </div>
 
-      {success && (
-        <div className="success-message">
-          <Check size={20} />
-          <span>{success}</span>
-        </div>
-      )}
-
-      {error && selectedEmployee && (
-        <div className="error-message">
-          <AlertCircle size={20} />
-          <span>{error}</span>
-        </div>
-      )}
-
       {selectedEmployee && (
         <div className="edit-profile-content">
           <div className="profile-sidebar">
             <div className="profile-info">
               <div className="profile-avatar">
-                {getInitials(selectedEmployee.personalDetails.name)}
+                {getInitials(selectedEmployee?.personalDetails?.name || '')}
               </div>
-              <h3 className="profile-name">{selectedEmployee.personalDetails.name}</h3>
-              <p className="profile-role">{selectedEmployee.professionalDetails.role.replace(/_/g, ' ').toUpperCase()}</p>
-              <span className={`profile-status status-${selectedEmployee.professionalDetails.status}`}>
-                {selectedEmployee.professionalDetails.status}
-              </span>
+              <h3 className="profile-name">{selectedEmployee?.personalDetails?.name || 'Unknown'}</h3>
+              <p className="profile-role">{selectedEmployee?.professionalDetails?.role || 'Employee'}</p>
+              {renderStatusBadge()}
             </div>
             
             <div className="profile-nav">
               <button 
+                className={`nav-item ${activeSection === 'personal' ? 'active' : ''}`}
+                onClick={() => handleNavClick('personal')}
+              >
+                <User size={18} />
+                Personal Details
+              </button>
+              <button 
                 className={`nav-item ${activeSection === 'professional' ? 'active' : ''}`}
-                onClick={() => setActiveSection('professional')}
+                onClick={() => handleNavClick('professional')}
               >
                 <Briefcase size={18} />
-                <span>Professional Details</span>
+                Professional Details
               </button>
               <button 
                 className={`nav-item ${activeSection === 'documents' ? 'active' : ''}`}
-                onClick={() => setActiveSection('documents')}
+                onClick={() => handleNavClick('documents')}
               >
                 <FileText size={18} />
-                <span>Documents</span>
-              </button>
-              <button 
-                className={`nav-item ${activeSection === 'milestones' ? 'active' : ''}`}
-                onClick={() => setActiveSection('milestones')}
-              >
-                <Calendar size={18} />
-                <span>Milestones</span>
+                Documents
               </button>
             </div>
           </div>
           
-          <form onSubmit={handleSubmit} className="edit-form">
+          <div className="edit-form">
             {loading && (
               <div className="form-loading-overlay">
                 <div className="spinner"></div>
               </div>
             )}
             
-            {activeSection === 'professional' && (
-              <div className="form-section">
-                <div className="section-header">
-                  <h3>
-                    <Briefcase size={20} />
-                    Professional Details
-                  </h3>
-                </div>
-                <div className="form-grid">
-                  <div className="form-field">
-                    <label>Role</label>
-                    <select
-                      value={selectedEmployee.professionalDetails.role}
-                      onChange={(e) => setSelectedEmployee({
-                        ...selectedEmployee,
-                        professionalDetails: {
-                          ...selectedEmployee.professionalDetails,
-                          role: e.target.value
-                        }
-                      })}
-                      className="form-select"
-                    >
-                      <option value="agent">Agent</option>
-                      <option value="hr_manager">HR Manager</option>
-                      <option value="t1_member">T1 Member</option>
-                      <option value="operational_manager">Operational Manager</option>
-                    </select>
-                  </div>
-
-                  <div className="form-field">
-                    <label>Branch</label>
-                    <select
-                      value={selectedEmployee.professionalDetails.branch}
-                      onChange={(e) => setSelectedEmployee({
-                        ...selectedEmployee,
-                        professionalDetails: {
-                          ...selectedEmployee.professionalDetails,
-                          branch: e.target.value
-                        }
-                      })}
-                      className="form-select"
-                    >
-                      <option value="">Select Branch</option>
-                      {branches.map(branch => (
-                        <option key={branch._id} value={branch.name}>
-                          {branch.name}
-                        </option>
-                      ))}
-                    </select>
+            <form onSubmit={handleSubmit}>
+              {/* Only show the section that matches the active tab */}
+              {activeSection === 'personal' && (
+                <div className="form-section">
+                  <div className="section-header">
+                    <h3>
+                      <User size={18} />
+                      Personal Details
+                    </h3>
                   </div>
                   
-                  <div className="form-field">
-                    <label>Department</label>
-                    <input
-                      type="text"
-                      value={selectedEmployee.professionalDetails.department || ''}
-                      onChange={(e) => setSelectedEmployee({
-                        ...selectedEmployee,
-                        professionalDetails: {
-                          ...selectedEmployee.professionalDetails,
-                          department: e.target.value
-                        }
-                      })}
-                      className="form-input"
-                      placeholder="Department"
-                    />
+                  <div className="form-grid">
+                    <div className="form-field">
+                      <label>Full Name</label>
+                      <div className="input-icon-wrapper">
+                        <User size={18} className="field-icon" />
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.personalDetails.name}
+                          onChange={(e) => handleInputChange('personalDetails', 'name', e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="form-field">
+                      <label>Email</label>
+                      <div className="input-icon-wrapper">
+                        <Mail size={18} className="field-icon" />
+                        <input
+                          type="email"
+                          className="form-input"
+                          value={formData.personalDetails.email}
+                          onChange={(e) => handleInputChange('personalDetails', 'email', e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="form-field">
+                      <label>Contact Number</label>
+                      <div className="input-icon-wrapper">
+                        <Phone size={18} className="field-icon" />
+                        <input
+                          type="tel"
+                          className="form-input"
+                          value={formData.personalDetails.contact}
+                          onChange={(e) => handleInputChange('personalDetails', 'contact', e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="form-field full-width">
+                      <label>Address</label>
+                      <div className="input-icon-wrapper">
+                        <MapPin size={18} className="field-icon" />
+                        <textarea
+                          className="form-textarea"
+                          value={formData.personalDetails.address}
+                          onChange={(e) => handleInputChange('personalDetails', 'address', e.target.value)}
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Professional Details Section */}
+              {activeSection === 'professional' && (
+                <div className="form-section">
+                  <div className="section-header">
+                    <h3>
+                      <Briefcase size={18} />
+                      Professional Details
+                    </h3>
                   </div>
                   
-                  <div className="form-field">
-                    <label>Status</label>
-                    <select
-                      value={selectedEmployee.professionalDetails.status}
-                      onChange={(e) => setSelectedEmployee({
-                        ...selectedEmployee,
-                        professionalDetails: {
-                          ...selectedEmployee.professionalDetails,
-                          status: e.target.value
-                        }
-                      })}
-                      className="form-select"
-                    >
-                      <option value="active">Active</option>
-                      <option value="on_leave">On Leave</option>
-                      <option value="resigned">Resigned</option>
-                      <option value="terminated">Terminated</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === 'documents' && (
-              <div className="form-section">
-                <div className="section-header">
-                  <h3>
-                    <FileText size={20} />
-                    Documents
-                  </h3>
-                </div>
-                
-                <div className="document-upload">
-                  <input
-                    type="file"
-                    multiple
-                    onChange={handleDocumentUpload}
-                    className="hidden"
-                    id="document-upload"
-                  />
-                  <label htmlFor="document-upload" className="upload-label">
-                    <div className="upload-icon">
-                      <Upload size={32} />
-                    </div>
-                    <div className="upload-text">
-                      <span className="upload-title">Upload Documents</span>
-                      <span className="upload-hint">ID Copies, Contracts, Certifications</span>
-                    </div>
-                  </label>
-                </div>
-
-                {documents.length > 0 && (
-                  <div className="document-list">
-                    <div className="document-list-header">
-                      <h4>New Documents to Upload</h4>
-                    </div>
-                    {documents.map((doc, index) => (
-                      <div key={index} className="document-item">
-                        <div className="document-icon">
-                          <FileText size={20} />
-                        </div>
-                        <div className="document-info">
-                          <span className="document-name">{doc.name}</span>
-                          <span className="document-size">{(doc.size / 1024).toFixed(2)} KB</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeDocument(index)}
-                          className="remove-document"
-                          title="Remove document"
+                  <div className="form-grid">
+                    <div className="form-field">
+                      <label>Role</label>
+                      <div className="input-icon-wrapper">
+                        <Briefcase size={18} className="field-icon" />
+                        <select
+                          className="form-select"
+                          value={formData.professionalDetails.role}
+                          onChange={(e) => handleInputChange('professionalDetails', 'role', e.target.value)}
+                          required
                         >
-                          <X size={16} />
-                        </button>
+                          <option value="">Select Role</option>
+                          <option value="employee">Employee</option>
+                          <option value="agent">Agent</option>
+                          <option value="hr_manager">HR Manager</option>
+                          <option value="t1_member">T1 Member</option>
+                          <option value="operational_manager">Operational Manager</option>
+                        </select>
                       </div>
-                    ))}
-                  </div>
-                )}
-                
-                {selectedEmployee.documents && selectedEmployee.documents.length > 0 && (
-                  <div className="existing-documents">
-                    <div className="document-list-header">
-                      <h4>Existing Documents</h4>
                     </div>
-                    {selectedEmployee.documents.map((doc, index) => (
-                      <div key={index} className="document-item">
-                        <div className="document-icon">
-                          <FileText size={20} />
-                        </div>
-                        <div className="document-info">
-                          <span className="document-name">{doc.name}</span>
-                          <span className="document-date">
-                            {new Date(doc.uploadedAt).toLocaleDateString()}
-                          </span>
-                        </div>
+                    
+                    <div className="form-field">
+                      <label>Branch</label>
+                      <div className="input-icon-wrapper">
+                        <Building size={18} className="field-icon" />
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.professionalDetails.branch}
+                          onChange={(e) => handleInputChange('professionalDetails', 'branch', e.target.value)}
+                          required
+                        />
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {activeSection === 'milestones' && (
-              <div className="form-section">
-                <div className="section-header">
-                  <h3>
-                    <Calendar size={20} />
-                    Add Employment Milestone
-                  </h3>
-                </div>
-                
-                <div className="form-grid">
-                  <div className="form-field">
-                    <label>Date</label>
-                    <input
-                      type="date"
-                      value={milestone.date}
-                      onChange={(e) => setMilestone({
-                        ...milestone,
-                        date: e.target.value
-                      })}
-                      className="form-input"
-                    />
-                  </div>
-
-                  <div className="form-field">
-                    <label>Title</label>
-                    <input
-                      type="text"
-                      value={milestone.title}
-                      onChange={(e) => setMilestone({
-                        ...milestone,
-                        title: e.target.value
-                      })}
-                      placeholder="e.g., Promotion, Transfer, Award"
-                      className="form-input"
-                    />
-                  </div>
-
-                  <div className="form-field full-width">
-                    <label>Description</label>
-                    <textarea
-                      value={milestone.description}
-                      onChange={(e) => setMilestone({
-                        ...milestone,
-                        description: e.target.value
-                      })}
-                      placeholder="Describe the milestone..."
-                      className="form-textarea"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="form-field full-width">
-                    <label>Impact</label>
-                    <textarea
-                      value={milestone.impact}
-                      onChange={(e) => setMilestone({
-                        ...milestone,
-                        impact: e.target.value
-                      })}
-                      placeholder="Describe the impact on the employee's career or the organization..."
-                      className="form-textarea"
-                      rows={3}
-                    />
+                    </div>
+                    
+                    <div className="form-field">
+                      <label>Department</label>
+                      <div className="input-icon-wrapper">
+                        <MapPin size={18} className="field-icon" />
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.professionalDetails.department}
+                          onChange={(e) => handleInputChange('professionalDetails', 'department', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="form-field">
+                      <label>Status</label>
+                      <div className="input-icon-wrapper">
+                        <Clock size={18} className="field-icon" />
+                        <select
+                          className="form-select"
+                          value={formData.professionalDetails.status}
+                          onChange={(e) => handleInputChange('professionalDetails', 'status', e.target.value)}
+                          required
+                        >
+                          <option value="active">Active</option>
+                          <option value="on_leave">On Leave</option>
+                          <option value="resigned">Resigned</option>
+                          <option value="terminated">Terminated</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                
-                {selectedEmployee.milestones && selectedEmployee.milestones.length > 0 && (
-                  <div className="existing-milestones">
-                    <div className="milestones-header">
-                      <h4>Existing Milestones</h4>
-                    </div>
-                    <div className="milestones-list">
-                      {selectedEmployee.milestones.map((ms, index) => (
-                        <div key={index} className="milestone-item">
-                          <div className="milestone-date">
-                            <Calendar size={16} />
-                            <span>{new Date(ms.date).toLocaleDateString()}</span>
+              )}
+              
+              {/* Documents Section */}
+              {activeSection === 'documents' && (
+                <div className="form-section">
+                  <div className="section-header">
+                    <h3>
+                      <FileText size={18} />
+                      Documents
+                    </h3>
+                  </div>
+                  
+                  <div className="document-upload">
+                    <input
+                      type="file"
+                      id="document-upload"
+                      className="hidden"
+                      multiple
+                      onChange={handleFileUpload}
+                    />
+                    <label htmlFor="document-upload" className="upload-label">
+                      <div className="upload-icon">
+                        <Upload size={24} />
+                      </div>
+                      <div className="upload-text">
+                        <span className="upload-title">Upload Documents</span>
+                        <span className="upload-hint">Click to browse or drag and drop files here (Max: 5MB)</span>
+                      </div>
+                    </label>
+                  </div>
+                  
+                  {uploadedDocuments.length > 0 && (
+                    <div className="document-list">
+                      <div className="document-list-header">
+                        <h4>New Documents</h4>
+                      </div>
+                      {uploadedDocuments.map((doc, index) => (
+                        <div className="document-item" key={index}>
+                          <div className="document-icon">
+                            <FileText size={20} />
                           </div>
-                          <div className="milestone-content">
-                            <h5>{ms.title}</h5>
-                            <p>{ms.description}</p>
-                            {ms.impact && (
-                              <div className="milestone-impact">
-                                <strong>Impact:</strong> {ms.impact}
-                              </div>
-                            )}
+                          <div className="document-info">
+                            <div className="document-name">{doc.name}</div>
+                            <div className="document-size">{(doc.size / 1024).toFixed(2)} KB</div>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => removeUploadedDocument(index)}
+                            className="remove-document"
+                            title="Remove document"
+                          >
+                            <X size={16} />
+                          </button>
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  )}
+                  
+                  {documents.length > 0 && (
+                    <div className="existing-documents">
+                      <div className="document-list-header">
+                        <h4>Existing Documents</h4>
+                      </div>
+                      {documents.map(doc => (
+                        <div className="document-item" key={doc._id}>
+                          <div className="document-icon">
+                            <FileText size={20} />
+                          </div>
+                          <div className="document-info">
+                            <div className="document-name">{doc.name}</div>
+                            <div className="document-date">Uploaded: {formatDate(doc.uploadedAt)}</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeExistingDocument(doc._id)}
+                            className="remove-document"
+                            title="Delete document"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <div className="form-actions">
+                <button 
+                  type="submit" 
+                  className="submit-button"
+                  disabled={loading}
+                >
+                  <Save size={18} />
+                  {loading ? 'Saving Changes...' : 'Save Changes'}
+                </button>
               </div>
-            )}
-
-            <div className="form-actions">
-              <button type="submit" className="submit-button" disabled={loading} style={{background: 'linear-gradient(-135deg, #899FD4 0%, #A389D4 100%)'}}>
-                <Save size={20} />
-                {loading ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-export default EditProfiles;
+export default EditProfile;

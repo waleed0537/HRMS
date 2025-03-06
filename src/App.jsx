@@ -20,7 +20,7 @@ import EmployeeDashboard from './Components/EmployeeDashboard';
 import Holiday from './Components/Holiday';
 import ApplicantForm from './Components/ApplicantForm';
 import ApplicantsManagement from './Components/ApplicantsManagement';
-import HrDashboard from './Components/HRDashboard';
+import HrDashboard from './Components/HumanResourceDashboard';
 
 import '../src/assets/css/global.css';
 import { ToastProvider } from './Components/common/ToastContent';

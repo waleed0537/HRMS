@@ -30,6 +30,11 @@ const UserSchema = new mongoose.Schema({
   isAdmin: {
     type: Boolean,
     default: false
+  },
+  // New field for profile picture
+  profilePic: {
+    type: Number,
+    default: () => Math.floor(Math.random() * 10) + 1 // Random number between 1-11
   }
 }, { timestamps: true });
 

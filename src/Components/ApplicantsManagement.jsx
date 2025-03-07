@@ -12,8 +12,12 @@ import 'jspdf-autotable';
 import API_BASE_URL from '../config/api';
 import FormFieldManager from './FormFieldManager';
 import '../assets/css/ApplicantsManagement.css';
+import { useToast } from './common/ToastContent';
 
 const ApplicantsManagement = () => {
+    // Get toast functionality
+    const toast = useToast();
+    
     // Core state
     const [showFieldManager, setShowFieldManager] = useState(false);
     const [applicants, setApplicants] = useState([]);
@@ -22,7 +26,6 @@ const ApplicantsManagement = () => {
     const [error, setError] = useState(null);
     const [selectedApplicant, setSelectedApplicant] = useState(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [notification, setNotification] = useState({ message: '', type: '', visible: false });
     
     // Search & filter state
     const [searchTerm, setSearchTerm] = useState('');
@@ -42,12 +45,60 @@ const ApplicantsManagement = () => {
         direction: 'desc'
     });
 
-    // Show temporary notification
-    const setTempNotification = (message, type = 'info') => {
-        setNotification({ message, type, visible: true });
-        setTimeout(() => {
-            setNotification(prev => ({ ...prev, visible: false }));
-        }, 3000);
+    // Get a consistent profile pic number based on email
+    const getProfilePicNumber = (email) => {
+        if (!email) return Math.floor(Math.random() * 11) + 1;
+        
+        // Generate a number based on the email's first character code
+        const charCode = email.charCodeAt(0);
+        return (charCode % 11) + 1; // Returns a number between 1-11
+    };
+
+    // Render avatar with image and fallback to initials
+    const renderAvatar = (applicant, size = 'medium') => {
+        // Get applicant name and initial for fallback
+        const name = applicant.personalDetails?.name || 'Unknown';
+        const initial = name.charAt(0).toUpperCase();
+        
+        // Get profile pic number based on email
+        const email = applicant.personalDetails?.email || '';
+        const profilePicNum = getProfilePicNumber(email);
+        
+        // Determine appropriate CSS class based on size
+        const sizeClass = {
+            small: 'applicants-managements-avatar-sm',
+            medium: 'applicants-managements-avatar',
+            large: 'applicants-managements-modal-avatar'
+        }[size] || 'applicants-managements-avatar';
+        
+        // Determine border radius based on the existing component style
+        const borderRadius = size === 'large' ? '12px' : '50%';
+        
+        return (
+            <div className={sizeClass}>
+                <img 
+                    src={`/src/avatars/avatar-${profilePicNum}.jpg`}
+                    alt={name}
+                    style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        borderRadius,
+                        objectFit: 'cover' 
+                    }}
+                    onError={(e) => {
+                        // If image fails to load, replace with initial
+                        e.target.style.display = 'none';
+                        e.target.parentNode.style.display = 'flex';
+                        e.target.parentNode.style.alignItems = 'center';
+                        e.target.parentNode.style.justifyContent = 'center';
+                        e.target.parentNode.style.backgroundColor = '#474787';
+                        e.target.parentNode.style.color = 'white';
+                        e.target.parentNode.style.fontWeight = 'bold';
+                        e.target.parentNode.innerText = initial;
+                    }}
+                />
+            </div>
+        );
     };
 
     // Refresh data with visual indicator
@@ -87,10 +138,10 @@ const ApplicantsManagement = () => {
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
-            setTempNotification('Resume downloaded successfully', 'success');
+            toast.success('Resume downloaded successfully');
         } catch (error) {
             console.error('Error downloading resume:', error);
-            setTempNotification('Failed to download resume', 'error');
+            toast.error('Failed to download resume');
         }
     };
     
@@ -163,6 +214,7 @@ const ApplicantsManagement = () => {
             setSelectedApplicant(processedData);
         } catch (error) {
             console.error('Error fetching applicant details:', error);
+            toast.error('Could not load complete applicant details');
             // Still show the modal with available data as fallback
             setSelectedApplicant(applicant);
         }
@@ -240,7 +292,7 @@ const ApplicantsManagement = () => {
         try {
             const user = JSON.parse(localStorage.getItem('user'));
             if (!(user.isAdmin || user.role === 'hr_manager')) {
-                setTempNotification('Only administrators and HR managers can update application status', 'error');
+                toast.error('Only administrators and HR managers can update application status');
                 return;
             }
 
@@ -271,10 +323,10 @@ const ApplicantsManagement = () => {
             }
 
             // Show success message
-            setTempNotification(`Application status updated to ${newStatus}`, 'success');
+            toast.success(`Application status updated to ${newStatus}`);
         } catch (error) {
             console.error('Error updating status:', error);
-            setTempNotification('Failed to update status. Please try again.', 'error');
+            toast.error('Failed to update status. Please try again.');
         }
     };
 
@@ -307,10 +359,10 @@ const ApplicantsManagement = () => {
             ws['!cols'] = colWidths.map(width => ({ wch: width }));
 
             XLSX.writeFile(wb, `applicants_${new Date().toISOString().split('T')[0]}.xlsx`);
-            setTempNotification('Excel export completed successfully', 'success');
+            toast.success('Excel export completed successfully');
         } catch (error) {
             console.error('Error exporting to Excel:', error);
-            setTempNotification('Failed to export to Excel', 'error');
+            toast.error('Failed to export to Excel');
         }
     };
 
@@ -363,10 +415,10 @@ const ApplicantsManagement = () => {
             });
 
             doc.save(`applicants_${new Date().toISOString().split('T')[0]}.pdf`);
-            setTempNotification('PDF export completed successfully', 'success');
+            toast.success('PDF export completed successfully');
         } catch (error) {
             console.error('Error exporting to PDF:', error);
-            setTempNotification('Failed to export to PDF', 'error');
+            toast.error('Failed to export to PDF');
         }
     };
 
@@ -376,9 +428,7 @@ const ApplicantsManagement = () => {
             {filteredApplicants.map(applicant => (
                 <div className="applicants-managements-card" key={applicant._id}>
                     <div className="applicants-managements-card-header">
-                        <div className="applicants-managements-avatar">
-                            {applicant.personalDetails?.name?.[0]?.toUpperCase() || '?'}
-                        </div>
+                        {renderAvatar(applicant, 'medium')}
                         <div className="applicants-managements-details">
                             <h3>{applicant.personalDetails?.name || 'Not provided'}</h3>
                             <p className="applicants-managements-position">
@@ -467,9 +517,7 @@ const ApplicantsManagement = () => {
             {filteredApplicants.map(applicant => (
                 <div className="applicants-managements-list-item" key={applicant._id}>
                     <div className="applicants-managements-list-left">
-                        <div className="applicants-managements-list-avatar">
-                            {applicant.personalDetails?.name?.[0]?.toUpperCase() || '?'}
-                        </div>
+                        {renderAvatar(applicant, 'small')}
                         <div className="applicants-managements-list-details">
                             <h3>{applicant.personalDetails?.name || 'Not provided'}</h3>
                             <div className="applicants-managements-list-meta">
@@ -540,9 +588,7 @@ const ApplicantsManagement = () => {
             {filteredApplicants.map(applicant => (
                 <div className="applicants-managements-compact-item" key={applicant._id}>
                     <div className="applicants-managements-compact-header">
-                        <div className="applicants-managements-compact-avatar">
-                            {applicant.personalDetails?.name?.[0]?.toUpperCase() || '?'}
-                        </div>
+                        {renderAvatar(applicant, 'small')}
                         <div className={`applicants-managements-compact-status ${applicant.status || 'pending'}`}>
                             {getStatusIcon(applicant.status)}
                         </div>
@@ -713,18 +759,15 @@ const ApplicantsManagement = () => {
                     
                     <div className="applicants-managements-filter-actions">
                         <button 
-                            onClick={() => setFilters({ status: '', position: '', branch: '' })}
+                            onClick={() => {
+                                setFilters({ status: '', position: '', branch: '' });
+                                toast.info('Filters have been reset');
+                            }}
                             className="applicants-managements-clear-filters-btn"
                         >
                             Reset Filters
                         </button>
                     </div>
-                </div>
-            )}
-            
-            {notification.visible && (
-                <div className={`applicants-managements-notification-toast ${notification.type}`}>
-                    {notification.message}
                 </div>
             )}
             
@@ -754,6 +797,7 @@ const ApplicantsManagement = () => {
                                 onClick={() => {
                                     setFilters({ status: '', position: '', branch: '' });
                                     setSearchTerm('');
+                                    toast.info('Search and filters have been cleared');
                                 }} 
                                 className="applicants-managements-clear-btn"
                             >
@@ -773,7 +817,10 @@ const ApplicantsManagement = () => {
             {showFieldManager && (
                 <FormFieldManager
                     isOpen={showFieldManager}
-                    onClose={() => setShowFieldManager(false)}
+                    onClose={() => {
+                        setShowFieldManager(false);
+                        toast.info('Form field manager closed');
+                    }}
                 />
             )}
             
@@ -786,9 +833,7 @@ const ApplicantsManagement = () => {
                         </button>
                         
                         <div className="applicants-managements-modal-header">
-                            <div className="applicants-managements-modal-avatar">
-                                {selectedApplicant.personalDetails?.name?.[0]?.toUpperCase() || '?'}
-                            </div>
+                            {renderAvatar(selectedApplicant, 'large')}
                             <div className="applicants-managements-modal-title">
                                 <h2>{selectedApplicant.personalDetails?.name || 'Applicant Details'}</h2>
                                 <p className="applicants-managements-modal-subtitle">

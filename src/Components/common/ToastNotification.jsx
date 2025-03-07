@@ -1,49 +1,92 @@
 // ToastNotification.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
-import '../../assets/css/ToastNotification.css';
 
-const ToastNotification = ({ 
+function ToastNotification({ 
+  id,
   message, 
   type = 'success', 
   onClose, 
-  duration = 5000,
-  position = 'bottom-right'
-}) => {
-  useEffect(() => {
-    if (duration) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, duration);
-      return () => clearTimeout(timer);
+  duration = 5000
+}) {
+  const timerRef = useRef(null);
+  const toastRef = useRef(null);
+  
+  // Setup close function
+  const close = () => {
+    // Add exit class for animation
+    if (toastRef.current) {
+      toastRef.current.classList.add('toast-exit');
+      
+      // Wait for animation to complete before actually removing
+      setTimeout(() => {
+        if (onClose) {
+          onClose();
+        }
+      }, 300); // Match this with CSS animation duration
     }
-  }, [duration, onClose]);
-
+  };
+  
+  // Set up auto-close timer when component mounts
+  useEffect(() => {
+    // Set timer to close after duration
+    if (duration) {
+      timerRef.current = setTimeout(() => {
+        close();
+      }, duration);
+    }
+    
+    // Cleanup function
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+  
+  // Get icon based on toast type
   const getIcon = () => {
     switch (type) {
       case 'success':
-        return <CheckCircle className="toast-icon" />;
+        return <CheckCircle className="toast-icon" size={20} />;
       case 'error':
-        return <AlertCircle className="toast-icon" />;
-      case 'info':
-        return <Info className="toast-icon" />;
+        return <AlertCircle className="toast-icon" size={20} />;
       default:
-        return <Info className="toast-icon" />;
+        return <Info className="toast-icon" size={20} />;
     }
   };
-
+  
   return (
-    <div className={`toast-notification ${type} ${position} toast-show`}>
+    <div 
+      ref={toastRef}
+      className={`toast-notification ${type}`}
+      onClick={(e) => e.stopPropagation()}
+      data-id={id}
+    >
       <div className="toast-content">
         {getIcon()}
         <p className="toast-message">{message}</p>
       </div>
-      <button className="toast-close" onClick={onClose}>
+      <button 
+        className="toast-close" 
+        onClick={(e) => {
+          e.stopPropagation();
+          close();
+        }}
+        aria-label="Close notification"
+      >
         <X size={16} />
       </button>
-      <div className="toast-progress"></div>
+      {/* Progress bar that triggers close when animation ends */}
+      <div className="toast-progress-bg">
+        <div 
+          className="toast-progress" 
+          style={{ animationDuration: `${duration}ms` }}
+          onAnimationEnd={close}
+        />
+      </div>
     </div>
   );
-};
+}
 
 export default ToastNotification;

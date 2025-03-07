@@ -9,12 +9,16 @@ const EmployeeDetails = ({ employee, onClose }) => {
   const [employeeHistory, setEmployeeHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [avatarError, setAvatarError] = useState(false);
 
   useEffect(() => {
     if (employee?._id || employee?.personalDetails?._id) {
       const employeeId = employee._id || employee.personalDetails._id;
       fetchEmployeeHistory(employeeId);
     }
+    
+    // Reset avatar error state when employee changes
+    setAvatarError(false);
   }, [employee]);
 
   const fetchEmployeeHistory = async (employeeId) => {
@@ -51,7 +55,12 @@ const EmployeeDetails = ({ employee, onClose }) => {
     return null;
   }
 
-  // Get the initials for the avatar
+  // Get the employee name
+  const employeeName = employee.firstName 
+    ? `${employee.firstName} ${employee.lastName || ''}`
+    : employee.personalDetails?.name || 'Unknown';
+
+  // Get initials for avatar fallback
   const getInitials = (name) => {
     if (!name) return 'U';
     return name
@@ -61,9 +70,23 @@ const EmployeeDetails = ({ employee, onClose }) => {
       .toUpperCase();
   };
 
-  const employeeName = employee.firstName 
-    ? `${employee.firstName} ${employee.lastName || ''}`
-    : employee.personalDetails?.name || 'Unknown';
+  // Get profile pic number from various possible sources
+  const getProfilePicNumber = () => {
+    if (employee.profilePic) return employee.profilePic;
+    
+    // Try to get a consistent number based on email
+    const email = employee.email || employee.personalDetails?.email;
+    if (email) {
+      return (email.charCodeAt(0) % 11) + 1;
+    }
+    
+    // Fallback to a random number
+    return Math.floor(Math.random() * 11) + 1;
+  };
+
+  const handleAvatarError = () => {
+    setAvatarError(true);
+  };
 
   return (
     <div className="employee-detail-container">
@@ -77,13 +100,24 @@ const EmployeeDetails = ({ employee, onClose }) => {
       <div className="employee-detail-content">
         <div className="employee-profile-card">
           <div className="employee-avatar">
-            {getInitials(employeeName)}
+            {!avatarError ? (
+              <img 
+                src={`/src/avatars/avatar-${getProfilePicNumber()}.jpg`}
+                alt={employeeName}
+                style={{ width: '100%', height: '100%', borderRadius: '12px', objectFit: 'cover' }}
+                onError={handleAvatarError}
+              />
+            ) : (
+              <span>{getInitials(employeeName)}</span>
+            )}
           </div>
           <div className="employee-profile-info">
             <h2>{employeeName}</h2>
-            <p className="employee-role">{employee.role || employee.professionalDetails?.role || 'Employee'}</p>
+            <p className="employee-role">
+              {employee.role || employee.professionalDetails?.role || 'Employee'}
+            </p>
             <div className="employee-status-container">
-              <span className={`employee-status ${(employee.status || 'active').toLowerCase()}`}>
+              <span className={`employee-status ${(employee.status || employee.professionalDetails?.status || 'active').toLowerCase()}`}>
                 {employee.status || employee.professionalDetails?.status || 'Active'}
               </span>
             </div>

@@ -146,23 +146,13 @@ const StaffRequests = () => {
     fetchRequests(true);
   };
 
-  // Create a function to generate avatar colors based on email
-  const getAvatarColor = (email) => {
-    const colors = [
-      '#6dbfb8', '#71a3c1', '#be95be', '#f5945c', 
-      '#fec76f', '#b3be62', '#75ba75'
-    ];
+  // Function to get profile picture number based on email
+  const getProfilePicNumber = (email) => {
+    // Generate a consistent number (1-11) based on email
+    if (!email) return 1; // Default avatar
     
-    // Generate a consistent index based on email
-    let hash = 0;
-    for (let i = 0; i < email.length; i++) {
-      hash = ((hash << 5) - hash) + email.charCodeAt(i);
-      hash |= 0; // Convert to 32bit integer
-    }
-    
-    // Get positive value and use modulo to get index within array bounds
-    const index = Math.abs(hash) % colors.length;
-    return colors[index];
+    // Use the first character of the email to determine avatar index (1-11)
+    return (email.charCodeAt(0) % 11) + 1;
   };
 
   // Function to generate user's initials from email or name
@@ -188,6 +178,72 @@ const StaffRequests = () => {
     
     // If no separator, use first two characters or just the first if only one char
     return username.length > 1 ? username.slice(0, 2).toUpperCase() : username.toUpperCase();
+  };
+
+  // Updated render avatar function to match Header.jsx implementation
+  const renderAvatar = (request) => {
+    const initial = getInitials(request);
+    const profilePicNum = getProfilePicNumber(request.email);
+    
+    return (
+      <div className="staff-request-avatar">
+        <img 
+          src={`/src/avatars/avatar-${profilePicNum}.jpg`}
+          alt={getDisplayName(request)}
+          style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }}
+          onError={(e) => {
+            // If image fails to load, replace with initial
+            e.target.style.display = 'none';
+            e.target.parentNode.classList.add('initial-avatar');
+            e.target.parentNode.innerText = initial;
+          }}
+        />
+      </div>
+    );
+  };
+
+  // Render compact avatar
+  const renderCompactAvatar = (request) => {
+    const initial = getInitials(request);
+    const profilePicNum = getProfilePicNumber(request.email);
+    
+    return (
+      <div className="staff-request-compact-avatar">
+        <img 
+          src={`/src/avatars/avatar-${profilePicNum}.jpg`}
+          alt={getDisplayName(request)}
+          style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+          onError={(e) => {
+            // If image fails to load, replace with initial
+            e.target.style.display = 'none';
+            e.target.parentNode.classList.add('initial-avatar');
+            e.target.parentNode.innerText = initial;
+          }}
+        />
+      </div>
+    );
+  };
+
+  // Render list avatar
+  const renderListAvatar = (request) => {
+    const initial = getInitials(request);
+    const profilePicNum = getProfilePicNumber(request.email);
+    
+    return (
+      <div className="staff-request-list-avatar">
+        <img 
+          src={`/src/avatars/avatar-${profilePicNum}.jpg`}
+          alt={getDisplayName(request)}
+          style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+          onError={(e) => {
+            // If image fails to load, replace with initial
+            e.target.style.display = 'none';
+            e.target.parentNode.classList.add('initial-avatar');
+            e.target.parentNode.innerText = initial;
+          }}
+        />
+      </div>
+    );
   };
 
   // Get display name (prefer actual name over email)
@@ -234,9 +290,7 @@ const StaffRequests = () => {
     <div className="staff-requests-grid">
       {filteredRequests.map((request) => (
         <div key={request._id} className="staff-request-card">
-          <div className="staff-request-avatar" style={{ backgroundColor: getAvatarColor(request.email) }}>
-            {getInitials(request)}
-          </div>
+          {renderAvatar(request)}
           
           <div className="staff-request-content">
             <h3 className="staff-request-email">{getDisplayName(request)}</h3>
@@ -292,9 +346,7 @@ const StaffRequests = () => {
       {filteredRequests.map((request) => (
         <div key={request._id} className="staff-request-list-item">
           <div className="staff-request-list-left">
-            <div className="staff-request-list-avatar" style={{ backgroundColor: getAvatarColor(request.email) }}>
-              {getInitials(request)}
-            </div>
+            {renderListAvatar(request)}
             
             <div className="staff-request-list-info">
               <h3 className="staff-request-list-email">{getDisplayName(request)}</h3>
@@ -339,9 +391,7 @@ const StaffRequests = () => {
     <div className="staff-requests-compact">
       {filteredRequests.map((request) => (
         <div key={request._id} className="staff-request-compact-item">
-          <div className="staff-request-compact-avatar" style={{ backgroundColor: getAvatarColor(request.email) }}>
-            {getInitials(request)}
-          </div>
+          {renderCompactAvatar(request)}
           
           <div className="staff-request-compact-content">
             <h3 className="staff-request-compact-email">{getDisplayName(request)}</h3>

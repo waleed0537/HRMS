@@ -279,10 +279,11 @@ app.post('/api/signup', async (req, res) => {
     // Create user account with pending status
     const user = await User.create({
       email: personalDetails.email,
-      password: hashedPassword, // Use hashed password
+      password: hashedPassword,
       role: professionalDetails.role,
       branchName: professionalDetails.branch,
-      status: 'pending'
+      status: 'pending',
+      profilePic: Math.floor(Math.random() * 11) + 1
     });
 
     // Generate unique employee ID (you can create a more sophisticated method)
@@ -357,6 +358,7 @@ app.post('/api/signin', async (req, res) => {
         email: user.email,
         role: user.role,
         isAdmin: user.isAdmin,
+        profilePic: user.profilePic || Math.floor(Math.random() * 10) + 1
       },
     });
   } catch (error) {

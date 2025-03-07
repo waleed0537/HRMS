@@ -1,169 +1,110 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Bell, Menu, X, Search } from 'lucide-react';
-import NotificationDropdown from '../NotificationDropdown';
+import React, { useState } from 'react';
+import { Search, Bell, ChevronDown, LogOut, Settings, User } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import '../../assets/css/header.css';
+import NotificationDropdown from '../NotificationDropdown';
 
 const Header = ({ user, onLogout }) => {
-  const [showProfile, setShowProfile] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const navigate = useNavigate();
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const location = useLocation();
 
-  useEffect(() => {
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000); // Check every 30 seconds
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchUnreadCount = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/notifications', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const notifications = await response.json();
-      const unread = notifications.filter(n => !n.read).length;
-      setUnreadCount(unread);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    }
+  // Get page title from current route
+  const getPageTitle = () => {
+    const path = location.pathname;
+    
+    if (path === '/') return 'Dashboard';
+    
+    // Convert route to title case
+    return path.substring(1).split('-').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
   };
 
-  const handleLogout = () => {
-    if (onLogout) {
-      onLogout();
-    }
-    setShowProfile(false);
-  };
-
-  const getInitials = (email) => {
-    return email
-      .split('@')[0]
-      .split('.')
-      .map(part => part[0].toUpperCase())
-      .join('');
+  const toggleProfileDropdown = () => {
+    setShowProfileDropdown(!showProfileDropdown);
+    if (showNotifications) setShowNotifications(false);
   };
 
   const toggleNotifications = () => {
     setShowNotifications(!showNotifications);
-    if (showProfile) setShowProfile(false);
-    if (showSearch) setShowSearch(false);
+    if (showProfileDropdown) setShowProfileDropdown(false);
   };
 
-  const toggleProfile = () => {
-    setShowProfile(!showProfile);
-    if (showNotifications) setShowNotifications(false);
-    if (showSearch) setShowSearch(false);
+  const toggleMobileSearch = () => {
+    setShowMobileSearch(!showMobileSearch);
   };
 
-  const toggleSearch = () => {
-    setShowSearch(!showSearch);
-    if (showNotifications) setShowNotifications(false);
-    if (showProfile) setShowProfile(false);
-  };
-
-  const handleSearchChange = (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-
-    // Perform search if query is not empty
-    if (query.trim()) {
-      performSearch(query);
-    } else {
-      setSearchResults([]);
-    }
-  };
-
-  const performSearch = async (query) => {
-    try {
-      // Replace with your actual search API endpoint
-      const response = await fetch(`http://localhost:5000/api/search?q=${encodeURIComponent(query)}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Search failed');
-      }
-
-      const results = await response.json();
-      setSearchResults(results);
-    } catch (error) {
-      console.error('Search error:', error);
-      setSearchResults([]);
-    }
-  };
-
-  const handleSearchResultClick = (result) => {
-    // Navigate based on result type
-    switch(result.type) {
-      case 'employee':
-        navigate(`/employees/${result.id}`);
-        break;
-      case 'leave':
-        navigate(`/leave-request/${result.id}`);
-        break;
-      case 'project':
-        navigate(`/projects/${result.id}`);
-        break;
-      case 'ticket':
-        navigate(`/tickets/${result.id}`);
-        break;
-      default:
-        // Generic fallback or do nothing
-        console.log('Unhandled result type:', result);
+  // Function to render either an avatar image or a text-based avatar with user's initial
+  const renderAvatar = () => {
+    // Extract user name from email (before the @) for display
+    const userName = user?.email ? user.email.split('@')[0] : 'User';
+    
+    // Get first initial for fallback
+    const initial = userName.charAt(0).toUpperCase();
+    
+    // If user has a profilePic number, try to use the avatar image
+    if (user?.profilePic) {
+      return (
+        <div className="app-header__profile-avatar">
+          <img 
+            src={`/src/avatars/avatar-${user.profilePic}.jpg`} 
+            alt="Profile Avatar" 
+            style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }}
+            onError={(e) => {
+              // If image fails to load, replace with initial
+              e.target.style.display = 'none';
+              e.target.parentNode.classList.add('initial-avatar');
+              e.target.parentNode.innerText = initial;
+            }}
+          />
+        </div>
+      );
     }
     
-    // Close search and clear results
-    setShowSearch(false);
-    setSearchQuery('');
-    setSearchResults([]);
+    // Fallback to initial-based avatar
+    return (
+      <div 
+        className="app-header__profile-avatar initial-avatar"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#474787',
+          color: 'white',
+          fontWeight: 'bold',
+          fontSize: '16px'
+        }}
+      >
+        {initial}
+      </div>
+    );
   };
 
   return (
     <header className="app-header">
       <div className="app-header__container">
-        {/* Mobile Search Toggle */}
-        <button className="app-header__search-toggle" onClick={toggleSearch}>
+        <button 
+          className="app-header__search-toggle" 
+          onClick={toggleMobileSearch}
+        >
           <Search size={20} color="white" />
         </button>
 
-        {/* Search Container - Hidden on mobile until toggled */}
-        <div className={`app-header__search ${showSearch ? 'app-header__search--active' : ''}`}>
-        
-          
-          <button className="app-header__search-close" onClick={() => setShowSearch(false)}>
-            <X size={18} color="#666" />
+        <div className={`app-header__search ${showMobileSearch ? 'app-header__search--active' : ''}`}>
+          <Search className="app-header__search-icon" size={20} />
+          <input 
+            type="text" 
+            placeholder="Search..." 
+            className="app-header__search-input" 
+          />
+          <button 
+            className="app-header__search-close" 
+            onClick={toggleMobileSearch}
+          >
+            <Search size={20} />
           </button>
-
-          {/* Search Results Dropdown */}
-          {searchResults.length > 0 && (
-            <div className="app-header__search-results">
-              {searchResults.map((result, index) => (
-                <div 
-                  key={result.id} 
-                  className="app-header__search-result-item"
-                  onClick={() => handleSearchResultClick(result)}
-                >
-                  <span className="app-header__search-result-icon">
-                    {result.type === 'employee' && '👤'}
-                    {result.type === 'leave' && '📅'}
-                    {result.type === 'project' && '📊'}
-                    {result.type === 'ticket' && '🎫'}
-                  </span>
-                  <span className="app-header__search-result-text">
-                    {result.name || result.title}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         <div className="app-header__actions">
@@ -173,61 +114,71 @@ const Header = ({ user, onLogout }) => {
               onClick={toggleNotifications}
             >
               <Bell size={20} color="white" />
-              {unreadCount > 0 && (
-                <span className="app-header__notification-badge">{unreadCount}</span>
-              )}
+              <span className="app-header__notification-badge">3</span>
             </button>
+            
             {showNotifications && (
               <>
-                <NotificationDropdown 
-                  onClose={() => setShowNotifications(false)}
-                />
                 <div 
                   className="app-header__dropdown-overlay"
                   onClick={() => setShowNotifications(false)}
                 ></div>
+                <NotificationDropdown />
               </>
             )}
           </div>
-
+          
           <div className="app-header__profile">
-            <button
+            <button 
               className="app-header__profile-btn"
-              onClick={toggleProfile}
+              onClick={toggleProfileDropdown}
             >
-              <div className="app-header__profile-avatar">
-                <span>{user ? getInitials(user.email) : 'U'}</span>
-              </div>
               <div className="app-header__profile-info">
-                <p className="app-header__profile-name">{user?.email || 'User'}</p>
-                <p className="app-header__profile-role">{user?.role || 'Role'}</p>
+                <p className="app-header__profile-name">
+                  {user.email ? user.email.split('@')[0] : 'User'}
+                </p>
+                <p className="app-header__profile-role">{user.role}</p>
               </div>
+              
+              {renderAvatar()}
             </button>
-
-            {showProfile && (
+            
+            {showProfileDropdown && (
               <>
-                <div className="app-header__profile-dropdown">
-                  <button className="app-header__dropdown-item" onClick={() => navigate('/profile')}>
-                    👤 Profile
-                  </button>
-                  <button className="app-header__dropdown-item" onClick={() => navigate('/settings')}>
-                    ⚙️ Settings
-                  </button>
-                  <div className="app-header__dropdown-divider"></div>
-                  <button className="app-header__dropdown-item app-header__dropdown-item--logout" onClick={handleLogout}>
-                    🚪 Logout
-                  </button>
-                </div>
                 <div 
                   className="app-header__dropdown-overlay"
-                  onClick={() => setShowProfile(false)}
+                  onClick={() => setShowProfileDropdown(false)}
                 ></div>
+                <div className="app-header__profile-dropdown">
+                  <button className="app-header__dropdown-item">
+                    <User size={18} />
+                    My Profile
+                  </button>
+                  <button className="app-header__dropdown-item">
+                    <Settings size={18} />
+                    Settings
+                  </button>
+                  <div className="app-header__dropdown-divider"></div>
+                  <button 
+                    className="app-header__dropdown-item app-header__dropdown-item--logout"
+                    onClick={onLogout}
+                  >
+                    <LogOut size={18} />
+                    Sign Out
+                  </button>
+                </div>
               </>
             )}
           </div>
         </div>
       </div>
-
+      
+      {showMobileSearch && (
+        <div 
+          className="app-header__search-overlay"
+          onClick={() => setShowMobileSearch(false)}
+        ></div>
+      )}
     </header>
   );
 };

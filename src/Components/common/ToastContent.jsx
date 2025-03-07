@@ -1,42 +1,54 @@
-// ToastContext.jsx
-import React, { createContext, useContext, useState } from 'react';
+// ToastContent.jsx
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import ToastNotification from './ToastNotification';
+import '../../assets/css/ToastNotification.css';
 
+// Create context
 const ToastContext = createContext(null);
 
-export const useToast = () => {
+// Hook to use the toast context
+function useToast() {
   const context = useContext(ToastContext);
   if (!context) {
     throw new Error('useToast must be used within a ToastProvider');
   }
   return context;
-};
+}
 
-export const ToastProvider = ({ children }) => {
+// Provider component
+function ToastProvider({ children, position = 'top-right' }) {
   const [toasts, setToasts] = useState([]);
-
-  const addToast = (message, type = 'success', duration = 5000) => {
-    const id = Date.now().toString();
+  
+  // Add a toast
+  const addToast = useCallback((message, type = 'success', duration = 5000) => {
+    const id = 'toast-' + Date.now();
     setToasts(prevToasts => [...prevToasts, { id, message, type, duration }]);
     return id;
-  };
-
-  const removeToast = (id) => {
+  }, []);
+  
+  // Remove a toast by its ID
+  const removeToast = useCallback((id) => {
     setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
-  };
-
-  // Helper functions for common toast types
-  const success = (message, duration) => addToast(message, 'success', duration);
-  const error = (message, duration) => addToast(message, 'error', duration);
-  const info = (message, duration) => addToast(message, 'info', duration);
+  }, []);
+  
+  // Helper functions
+  const success = useCallback((message, duration) => 
+    addToast(message, 'success', duration), [addToast]);
+    
+  const error = useCallback((message, duration) => 
+    addToast(message, 'error', duration), [addToast]);
+    
+  const info = useCallback((message, duration) => 
+    addToast(message, 'info', duration), [addToast]);
 
   return (
     <ToastContext.Provider value={{ addToast, removeToast, success, error, info }}>
       {children}
-      <div className="toast-container">
+      <div className={`toast-container ${position}`}>
         {toasts.map(toast => (
           <ToastNotification
             key={toast.id}
+            id={toast.id}
             message={toast.message}
             type={toast.type}
             duration={toast.duration}
@@ -46,6 +58,8 @@ export const ToastProvider = ({ children }) => {
       </div>
     </ToastContext.Provider>
   );
-};
+}
 
-export default ToastContext;
+// Export the components and hooks
+export { useToast, ToastContext };
+export default ToastProvider;

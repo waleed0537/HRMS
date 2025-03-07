@@ -23,8 +23,8 @@ import ApplicantsManagement from './Components/ApplicantsManagement';
 import HrDashboard from './Components/HumanResourceDashboard';
 
 import '../src/assets/css/global.css';
-import { ToastProvider } from './Components/common/ToastContent';
-
+// Import the default export for the provider
+import ToastProvider from './Components/common/ToastContent';
 
 function App() {
   const navigate = useNavigate();
@@ -47,7 +47,6 @@ function App() {
     setUser(userData);
     setIsAuthenticated(true);
     
-    // Updated login redirect logic
     if (userData.isAdmin) {
       navigate('/admin-dashboard');
     } else if (userData.role === 'hr_manager') {
@@ -71,10 +70,10 @@ function App() {
 
   if (!isAuthenticated) {
     return (
-      <ToastProvider>
+      <ToastProvider position="top-right">
         <Routes>
           <Route path="/signin" element={<SignIn onLogin={handleLogin} />} />
-          <Route path="/signup" element={<SignIn onLogin={handleLogin} />} /> {/* Added signup route */}
+          <Route path="/signup" element={<SignIn onLogin={handleLogin} />} />
           <Route path="/apply" element={<ApplicantForm />} />
           <Route path="/" element={<HRMSLandingPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -84,7 +83,7 @@ function App() {
   }
 
   return (
-    <ToastProvider>
+    <ToastProvider position="top-right">
       <div className="zoom-container">
         <div className="flex h-screen bg-gray-50">
           <Sidebar user={user} />

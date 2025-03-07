@@ -35,6 +35,74 @@
   background-color: #f5f5f5;
 
 }
+/* Add these CSS rules to your StaffRequests.css file */
+
+/* Avatar styles to match Header.jsx implementation */
+.staff-request-avatar,
+.staff-request-list-avatar,
+.staff-request-compact-avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.staff-request-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  background-color: #474787;
+  color: white;
+  font-size: 1.125rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.staff-request-list-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #474787;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.staff-request-compact-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #474787;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Initial avatar style when image fails to load */
+.initial-avatar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: #474787 !important;
+  color: white !important;
+  font-weight: bold !important;
+}
+
+/* Fix any avatar hover effects for consistency */
+.staff-request-avatar img,
+.staff-request-list-avatar img,
+.staff-request-compact-avatar img {
+  transition: all 0.2s ease-in-out;
+}
+
+.staff-request-card:hover .staff-request-avatar img,
+.staff-request-list-item:hover .staff-request-list-avatar img,
+.staff-request-compact-item:hover .staff-request-compact-avatar img {
+  transform: scale(1.05);
+}
 
 /* Header */
 .staff-requests-header {

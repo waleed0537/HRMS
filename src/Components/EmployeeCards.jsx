@@ -3,7 +3,7 @@ import {
   Mail, Phone, Download, FilterIcon, Grid, List, LayoutGrid, 
   Search, User, Building, Tag, Calendar, MoreHorizontal, ChevronDown,
   ExternalLink, Star, AlertTriangle, Briefcase, ShieldCheck, UserX,
-  Clock, ArrowUpDown, ChevronUp
+  Clock, ArrowUpDown, ChevronUp, X
 } from 'lucide-react';
 import '../assets/css/EmployeeCards.css';
 import EmployeeDetails from './EmployeeDetails';
@@ -22,6 +22,7 @@ const EmployeeCards = () => {
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
+  const [avatarErrors, setAvatarErrors] = useState({});
   
   // Advanced filters
   const [statusFilter, setStatusFilter] = useState('');
@@ -125,6 +126,7 @@ const EmployeeCards = () => {
     setShowCards(true);
   };
 
+  // Get the initials for the avatar
   const getInitials = (name) => {
     if (!name) return '';
     return name
@@ -132,6 +134,70 @@ const EmployeeCards = () => {
       .map(part => part[0])
       .join('')
       .toUpperCase();
+  };
+
+  // Handle avatar image error
+  const handleAvatarError = (employeeId) => {
+    setAvatarErrors(prev => ({
+      ...prev,
+      [employeeId]: true
+    }));
+  };
+
+  // Get profile picture number based on employee data
+  const getProfilePicNumber = (employee) => {
+    // If employee has a userId with profilePic property
+    if (employee.userId && employee.userId.profilePic) {
+      return employee.userId.profilePic;
+    }
+    
+    // Try to get a consistent number based on email
+    const email = employee.personalDetails?.email;
+    if (email) {
+      return (email.charCodeAt(0) % 11) + 1;
+    }
+    
+    // Fallback to a random number
+    return Math.floor(Math.random() * 11) + 1;
+  };
+
+  // Render employee avatar with image or fallback to initials
+  const renderAvatar = (employee, size = 'standard') => {
+    const employeeId = employee._id;
+    const hasAvatarError = avatarErrors[employeeId];
+    const profilePicNum = getProfilePicNumber(employee);
+    const initials = getInitials(employee.personalDetails.name);
+    
+    let className;
+    let borderRadius = '50%';
+    
+    if (size === 'small') {
+      className = 'list-avatar';
+    } else if (size === 'compact') {
+      className = 'compact-avatar';
+    } else {
+      className = 'employee-avatar';
+      borderRadius = size === 'grid' ? '2rem' : '50%';
+    }
+    
+    if (hasAvatarError) {
+      return (
+        <div className={className}>
+          {initials}
+        </div>
+      );
+    }
+    
+    return (
+      <div className={className}>
+        <img 
+          src={`/src/avatars/avatar-${profilePicNum}.jpg`}
+          alt={employee.personalDetails.name}
+          style={{ width: '100%', height: '100%', borderRadius, objectFit: 'cover' }}
+          onError={() => handleAvatarError(employeeId)}
+        />
+      </div>
+    );
   };
 
   const generateReport = () => {
@@ -556,9 +622,7 @@ const EmployeeCards = () => {
                   {filteredEmployees.map((emp) => (
                     <div className="employee-card" key={emp._id}>
                       <div className="employee-card-header">
-                        <div className="employee-avatar">
-                          {getInitials(emp.personalDetails.name)}
-                        </div>
+                        {renderAvatar(emp, 'grid')}
                         <div className="employee-header-info">
                           <h3 className="employee-name">{emp.personalDetails.name}</h3>
                           <div className="employee-role-badge">
@@ -658,7 +722,7 @@ const EmployeeCards = () => {
                   {filteredEmployees.map((emp) => (
                     <div className="employee-list-item" key={emp._id}>
                       <div className="list-cell flex-small employee-name-cell">
-                        <div className="list-avatar">{getInitials(emp.personalDetails.name)}</div>
+                        {renderAvatar(emp, 'small')}
                         <div className="list-name-info">
                           <span className="list-name">{emp.personalDetails.name}</span>
                           <span className="list-department">{emp.professionalDetails.department || 'General'}</span>
@@ -699,6 +763,7 @@ const EmployeeCards = () => {
                         <button 
                           className="view-btn list-view-btn"
                           onClick={() => handleProfileClick(emp)}
+                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem' }}
                         >
                           View
                         </button>
@@ -713,9 +778,7 @@ const EmployeeCards = () => {
                   {filteredEmployees.map((emp) => (
                     <div className="employee-compact-item" key={emp._id}>
                       <div className="compact-employee-header">
-                        <div className="compact-avatar">
-                          {getInitials(emp.personalDetails.name)}
-                        </div>
+                        {renderAvatar(emp, 'compact')}
                         <div className={`compact-status-indicator status-${emp.professionalDetails.status}`}>
                           {getStatusIcon(emp.professionalDetails.status)}
                         </div>
@@ -735,6 +798,7 @@ const EmployeeCards = () => {
                       <button
                         className="compact-view-btn"
                         onClick={() => handleProfileClick(emp)}
+                        style={{ fontSize: '0.7rem', padding: '0.4rem 0' }}
                       >
                         View Profile
                       </button>

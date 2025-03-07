@@ -8,14 +8,17 @@ import {
 import { format } from 'date-fns';
 import API_BASE_URL from '../config/api.js';
 import '../assets/css/ManageLeaves.css';
+import { useToast } from '../Components/common/ToastContent';
 
 const ManageLeaves = () => {
+  // Toast notification
+  const toast = useToast();
+  
   // State management
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [notification, setNotification] = useState({ message: '', type: '', visible: false });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [selectedLeave, setSelectedLeave] = useState(null);
@@ -50,14 +53,6 @@ const ManageLeaves = () => {
   useEffect(() => {
     applyFiltersAndSort();
   }, [leaveRequests, filters, searchTerm, sortConfig]);
-
-  // Show temporary notification
-  const setTempNotification = (message, type = 'info') => {
-    setNotification({ message, type, visible: true });
-    setTimeout(() => {
-      setNotification(prev => ({ ...prev, visible: false }));
-    }, 3000);
-  };
 
   // Refresh data with visual indicator
   const refreshData = async () => {
@@ -226,8 +221,8 @@ const ManageLeaves = () => {
         )
       );
 
-      // Show notification
-      setTempNotification(`Leave request ${status}`, 'success');
+      // Show toast notification
+      toast.success(`Leave request ${status}`, 3000);
 
       // Close detail view if open
       if (selectedLeave && selectedLeave._id === id) {
@@ -235,7 +230,7 @@ const ManageLeaves = () => {
       }
     } catch (error) {
       console.error('Error updating leave request:', error);
-      setTempNotification(`Failed to update status: ${error.message}`, 'error');
+      toast.error(`Failed to update status: ${error.message}`, 5000);
     }
   };
 
@@ -266,10 +261,10 @@ const ManageLeaves = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
-      setTempNotification('Document downloaded successfully', 'success');
+      toast.success('Document downloaded successfully', 3000);
     } catch (error) {
       console.error('Error downloading document:', error);
-      setTempNotification('Failed to download document', 'error');
+      toast.error('Failed to download document', 3000);
     }
   };
 
@@ -333,10 +328,10 @@ const ManageLeaves = () => {
       link.click();
       document.body.removeChild(link);
       
-      setTempNotification('CSV exported successfully', 'success');
+      toast.success('CSV exported successfully', 3000);
     } catch (error) {
       console.error('Error exporting CSV:', error);
-      setTempNotification('Failed to export CSV', 'error');
+      toast.error('Failed to export CSV', 3000);
     }
   };
 
@@ -371,6 +366,39 @@ const ManageLeaves = () => {
       default: return <Clock size={16} className="status-icon-pending" />;
     }
   };
+  
+  // Generate avatar with profile pic or fallback to initials
+  const renderAvatar = (name, email) => {
+    // Get initials for fallback
+    const initial = name ? name.charAt(0).toUpperCase() : 'U';
+    
+    // Generate a consistent profile pic number based on email
+    const profilePicNum = email ? 
+      (email.charCodeAt(0) % 11) + 1 : 
+      Math.floor(Math.random() * 11) + 1;
+    
+    return (
+      <div className="manage-employee-avatar">
+        <img 
+          src={`/src/avatars/avatar-${profilePicNum}.jpg`}
+          alt={name || "Employee"}
+          style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+          onError={(e) => {
+            // If image fails to load, replace with initial
+            e.target.style.display = 'none';
+            e.target.parentNode.style.display = 'flex';
+            e.target.parentNode.style.alignItems = 'center';
+            e.target.parentNode.style.justifyContent = 'center';
+            e.target.parentNode.style.backgroundColor = '#474787';
+            e.target.parentNode.style.color = 'white';
+            e.target.parentNode.style.fontWeight = 'bold';
+            e.target.parentNode.innerText = initial;
+          }}
+        />
+      </div>
+    );
+  };
+
   // Render Grid View
   const renderGridView = () => (
     <div className="manage-leave-grid-container">
@@ -378,9 +406,7 @@ const ManageLeaves = () => {
         <div key={leave._id} className="manage-leave-card">
           <div className="manage-leave-card-header">
             <div className="manage-leave-card-employee">
-              <div className="manage-employee-avatar">
-                {leave.employeeName.charAt(0).toUpperCase()}
-              </div>
+              {renderAvatar(leave.employeeName, leave.employeeEmail)}
               <div className="manage-employee-info">
                 <h3>{leave.employeeName}</h3>
                 <span className="manage-employee-email">{leave.employeeEmail}</span>
@@ -510,7 +536,7 @@ const ManageLeaves = () => {
         <div key={leave._id} className="manage-leave-list-item">
           <div className="manage-leave-list-item-cell manage-employee">
             <div className="manage-employee-avatar-sm">
-              {leave.employeeName.charAt(0).toUpperCase()}
+              {renderAvatar(leave.employeeName, leave.employeeEmail)}
             </div>
             <div className="manage-employee-info-sm">
               <div className="manage-employee-name">{leave.employeeName}</div>
@@ -586,7 +612,7 @@ const ManageLeaves = () => {
         <div key={leave._id} className="manage-leave-compact-item">
           <div className="manage-leave-compact-header">
             <div className="manage-employee-avatar-sm">
-              {leave.employeeName.charAt(0).toUpperCase()}
+              {renderAvatar(leave.employeeName, leave.employeeEmail)}
             </div>
             <div className={`manage-status-indicator ${getStatusClass(leave.status)}`}>
               {getStatusIcon(leave.status)}
@@ -775,13 +801,6 @@ const ManageLeaves = () => {
         </div>
       )}
       
-      {/* Notifications */}
-      {notification.visible && (
-        <div className={`manage-notification-toast ${notification.type}`}>
-          {notification.message}
-        </div>
-      )}
-      
       {/* Main Content */}
       <div className="manage-leaves-content">
         {loading ? (
@@ -873,7 +892,7 @@ const ManageLeaves = () => {
             <div className="manage-leave-detail-header">
               <div className="manage-detail-employee-info">
                 <div className="manage-detail-avatar">
-                  {selectedLeave.employeeName.charAt(0).toUpperCase()}
+                  {renderAvatar(selectedLeave.employeeName, selectedLeave.employeeEmail)}
                 </div>
                 <div>
                   <h2>{selectedLeave.employeeName}</h2>

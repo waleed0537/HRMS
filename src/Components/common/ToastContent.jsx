@@ -16,15 +16,24 @@ function useToast() {
 }
 
 // Provider component
-function ToastProvider({ children, position = 'top-right' }) {
+function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
   
-  // Add a toast
-  const addToast = useCallback((message, type = 'success', duration = 5000) => {
+  // Add a toast - return toast id
+  const addToast = useCallback((message, type = 'success', duration = 3000) => {
     const id = 'toast-' + Date.now();
-    setToasts(prevToasts => [...prevToasts, { id, message, type, duration }]);
+    
+    // Check if there's already a similar toast to prevent duplicates
+    const existingSimilarToast = toasts.find(toast => 
+      toast.message === message && toast.type === type
+    );
+    
+    if (!existingSimilarToast) {
+      setToasts(prevToasts => [...prevToasts, { id, message, type, duration }]);
+    }
+    
     return id;
-  }, []);
+  }, [toasts]);
   
   // Remove a toast by its ID
   const removeToast = useCallback((id) => {
@@ -44,7 +53,7 @@ function ToastProvider({ children, position = 'top-right' }) {
   return (
     <ToastContext.Provider value={{ addToast, removeToast, success, error, info }}>
       {children}
-      <div className={`toast-container ${position}`}>
+      <div className="toast-container">
         {toasts.map(toast => (
           <ToastNotification
             key={toast.id}
@@ -52,7 +61,7 @@ function ToastProvider({ children, position = 'top-right' }) {
             message={toast.message}
             type={toast.type}
             duration={toast.duration}
-            onClose={() => removeToast(toast.id)}
+            onClose={removeToast}
           />
         ))}
       </div>

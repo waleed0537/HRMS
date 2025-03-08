@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Lock, Mail, Building } from 'lucide-react';
+import { User, Lock, Mail, Building, Phone, MapPin } from 'lucide-react';
 import '../assets/css/signin.css';
 import API_BASE_URL from '../config/api.js';
 import { useToast } from './common/ToastContent.jsx';
@@ -9,8 +9,12 @@ const SignIn = ({ onLogin }) => {
   const [isSignIn, setIsSignIn] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [contact, setContact] = useState('');
+  const [address, setAddress] = useState('');
   const [role, setRole] = useState('employee');
   const [branch, setBranch] = useState('');
+  const [department, setDepartment] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -60,18 +64,21 @@ const SignIn = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
+      // Use name from input or fallback to email username
+      const userName = name || email.split('@')[0];
+      
       // Create user data object with required structure
       const userData = {
         personalDetails: {
-          name: email.split('@')[0], // Use part of email as name
+          name: userName,
           email,
-          contact: '',
-          address: ''
+          contact,
+          address
         },
         professionalDetails: {
           role,
           branch,
-          department: '',
+          department: department || 'General',
           status: 'active'
         },
         password
@@ -147,6 +154,48 @@ const SignIn = ({ onLogin }) => {
                 <div className="form-field">
                   <div className="input-with-icon">
                     <User className="field-icon" />
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Full Name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-field">
+                  <div className="input-with-icon">
+                    <Phone className="field-icon" />
+                    <input
+                      type="tel"
+                      className="form-input"
+                      placeholder="Contact Number"
+                      value={contact}
+                      onChange={(e) => setContact(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-field">
+                  <div className="input-with-icon">
+                    <MapPin className="field-icon" />
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Address"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-field">
+                  <div className="input-with-icon">
+                    <User className="field-icon" />
                     <select
                       className="form-input"
                       value={role}
@@ -172,6 +221,19 @@ const SignIn = ({ onLogin }) => {
                       value={branch}
                       onChange={(e) => setBranch(e.target.value)}
                       required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-field">
+                  <div className="input-with-icon">
+                    <Building className="field-icon" />
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Department (Optional)"
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value)}
                     />
                   </div>
                 </div>

@@ -12,7 +12,7 @@ const fs = require('fs');
 const Leave = require('../Backend/models/Leave');
 const Branch = require('../Backend/models/branch');
 const Announcement = require('../Backend/models/Announcement'); // Make sure to import the model
-const Notification =  require('../Backend/models/Notification');
+const Notification = require('../Backend/models/Notification');
 const Holiday = require('../Backend/models/Holiday');
 const Applicant = require('../Backend/models/Applicant');
 const Attendance = require('../Backend/models/Attendance');
@@ -29,10 +29,10 @@ if (!fs.existsSync('./uploads/resumes')) {
 
 // Configure multer for resume uploads
 const resumeStorage = multer.diskStorage({
-  destination: function(req, file, cb) {
+  destination: function (req, file, cb) {
     cb(null, './uploads/resumes/');
   },
-  filename: function(req, file, cb) {
+  filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, 'resume-' + uniqueSuffix + path.extname(file.originalname));
   }
@@ -65,11 +65,11 @@ const sendEmail = async (to, subject, content) => {
 
 const resumeUpload = multer({
   storage: resumeStorage,
-  fileFilter: function(req, file, cb) {
+  fileFilter: function (req, file, cb) {
     // Accept only pdf and doc/docx files
-    if (file.mimetype === 'application/pdf' || 
-        file.mimetype === 'application/msword' || 
-        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+    if (file.mimetype === 'application/pdf' ||
+      file.mimetype === 'application/msword' ||
+      file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       cb(null, true);
     } else {
       cb(new Error('Only PDF and Word documents are allowed!'), false);
@@ -94,7 +94,7 @@ if (!fs.existsSync('./uploads/documents')) {
 // Multer Configuration
 const storage = multer.diskStorage({
   destination: './uploads/documents/',
-  filename: function(req, file, cb) {
+  filename: function (req, file, cb) {
     cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
   }
 });
@@ -102,7 +102,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   limits: { fileSize: 10000000 }, // 10MB limit
-  fileFilter: function(req, file, cb) {
+  fileFilter: function (req, file, cb) {
     checkFileType(file, cb);
   }
 });
@@ -130,7 +130,7 @@ async function createTestLeaveRequest() {
   try {
     // Find an existing employee
     const employee = await Employee.findOne();
-    
+
     if (!employee) {
       console.log('No employees found to create test leave request');
       return;
@@ -200,8 +200,8 @@ mongoose.connect('mongodb+srv://hrmsmongo:YWCuBGMkletJv65z@cluster0.hrtxh.mongod
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('MongoDB connection error:', err));
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 // Create admin user if not exists
 async function createAdminUser() {
@@ -234,7 +234,18 @@ const isAdmin = async (req, res, next) => {
     res.status(500).json({ message: 'Error checking admin status' });
   }
 };
-
+const checkFormFieldsAccess = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (user && (user.isAdmin || user.role === 'hr_manager')) {
+      next();
+    } else {
+      res.status(403).json({ message: 'Admin or HR Manager access required' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Error checking permissions' });
+  }
+};
 createAdminUser();
 
 // Routes
@@ -242,7 +253,7 @@ createAdminUser();
 app.post('/api/signup', async (req, res) => {
   try {
     const { personalDetails, professionalDetails, password } = req.body;
-    
+
     // Validate input
     if (!personalDetails || !professionalDetails || !password) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -251,19 +262,19 @@ app.post('/api/signup', async (req, res) => {
     // Check if all required fields are present
     const requiredPersonalFields = ['name', 'email', 'contact', 'address'];
     const requiredProfessionalFields = ['role', 'branch', 'department', 'status'];
-    
+
     const missingPersonalFields = requiredPersonalFields.filter(field => !personalDetails[field]);
     const missingProfessionalFields = requiredProfessionalFields.filter(field => !professionalDetails[field]);
-    
+
     if (missingPersonalFields.length > 0) {
-      return res.status(400).json({ 
-        message: `Missing personal fields: ${missingPersonalFields.join(', ')}` 
+      return res.status(400).json({
+        message: `Missing personal fields: ${missingPersonalFields.join(', ')}`
       });
     }
 
     if (missingProfessionalFields.length > 0) {
-      return res.status(400).json({ 
-        message: `Missing professional fields: ${missingProfessionalFields.join(', ')}` 
+      return res.status(400).json({
+        message: `Missing professional fields: ${missingProfessionalFields.join(', ')}`
       });
     }
 
@@ -309,14 +320,14 @@ app.post('/api/signup', async (req, res) => {
       userId: user._id // Link employee to user account
     });
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'Signup request submitted for approval',
-      userId: user._id 
+      userId: user._id
     });
   } catch (error) {
     console.error('Signup error:', error);
-    res.status(500).json({ 
-      message: 'Error creating user account', 
+    res.status(500).json({
+      message: 'Error creating user account',
       error: error.toString() // Use toString to ensure error is serializable
     });
   }
@@ -326,7 +337,7 @@ app.post('/api/signup', async (req, res) => {
 app.post('/api/signin', async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'User not found' });
@@ -401,9 +412,9 @@ app.get('/api/employees', authenticateToken, async (req, res) => {
     res.json(employees);
   } catch (error) {
     console.error('Error fetching employees:', error);
-    res.status(500).json({ 
-      message: 'Error fetching employees', 
-      error: error.message 
+    res.status(500).json({
+      message: 'Error fetching employees',
+      error: error.message
     });
   }
 });
@@ -435,9 +446,20 @@ app.get('/api/employees/:id', authenticateToken, async (req, res) => {
 });
 
 // Update employee
+// Improved version of the history tracking on the server side
+// Add or update this code in your server.js file
+
+// Update this in your server.js file
+// Add this to your server.js file
 app.put('/api/employees/:id', authenticateToken, upload.array('documents', 5), async (req, res) => {
   try {
     const updateData = JSON.parse(req.body.employeeData);
+    console.log('Employee update received:', {
+      id: req.params.id,
+      hasMilestones: !!updateData.milestones,
+      milestoneCount: updateData.milestones ? updateData.milestones.length : 0
+    });
+    
     const documents = req.files ? req.files.map(file => ({
       name: file.originalname,
       path: file.path,
@@ -450,35 +472,154 @@ app.put('/api/employees/:id', authenticateToken, upload.array('documents', 5), a
       return res.status(404).json({ message: 'Employee not found' });
     }
 
-    // First update User collection
-    const userUpdate = await User.findByIdAndUpdate(
-      employee.userId,
-      {
-        role: updateData.professionalDetails.role,
-        branchName: updateData.professionalDetails.branch,
-        updatedAt: new Date()
-      },
-      { new: true }
-    );
+    // Store original values for change detection
+    const originalRole = employee.professionalDetails?.role;
+    const originalBranch = employee.professionalDetails?.branch;
+    const originalStatus = employee.professionalDetails?.status;
 
-    if (!userUpdate) {
-      throw new Error('Failed to update user data');
+    // First update User collection if userId exists
+    if (employee.userId) {
+      const userUpdate = await User.findByIdAndUpdate(
+        employee.userId,
+        {
+          role: updateData.professionalDetails.role,
+          branchName: updateData.professionalDetails.branch,
+          updatedAt: new Date()
+        },
+        { new: true }
+      );
+
+      if (!userUpdate) {
+        console.warn('Failed to update user data');
+      }
     }
 
-    // Then update Employee collection
+    // Prepare update for Employee collection
     const updates = {
+      personalDetails: {
+        // Preserve the employee ID and only update the other fields
+        ...employee.personalDetails,
+        name: updateData.personalDetails?.name,
+        contact: updateData.personalDetails?.contact,
+        email: updateData.personalDetails?.email,
+        address: updateData.personalDetails?.address
+      },
       professionalDetails: updateData.professionalDetails,
       updatedAt: new Date()
     };
 
-    if (documents.length > 0) {
-      updates.$push = { documents: { $each: documents } };
+    // Handle documents and milestones with $push operator
+    const pushOperations = {};
+
+    // Check for existing milestone types to avoid duplicates
+    const existingMilestoneTypes = new Set();
+    
+    // First collect existing milestone types from the database
+    if (employee.milestones && Array.isArray(employee.milestones)) {
+      for (const milestone of employee.milestones) {
+        if (milestone.type) {
+          existingMilestoneTypes.add(milestone.type);
+        }
+      }
+    }
+    
+    // Then check incoming milestones from the update
+    if (updateData.milestones && Array.isArray(updateData.milestones)) {
+      for (const milestone of updateData.milestones) {
+        if (milestone.type) {
+          existingMilestoneTypes.add(milestone.type);
+        }
+      }
     }
 
-    if (updateData.milestones && updateData.milestones.length > 0) {
-      if (!updates.$push) updates.$push = {};
-      updates.$push.milestones = { $each: updateData.milestones };
+    // Add uploaded documents
+    if (documents.length > 0) {
+      pushOperations.documents = { $each: documents };
+
+      // Initialize milestones array if it doesn't exist
+      if (!updateData.milestones) {
+        updateData.milestones = [];
+      }
+
+      // Add milestone for each document upload
+      for (const doc of documents) {
+        updateData.milestones.push({
+          title: 'Document Uploaded',
+          description: `New document uploaded: ${doc.name}`,
+          date: new Date().toISOString().split('T')[0],
+          branch: updateData.professionalDetails.branch,
+          type: 'document_upload'
+        });
+      }
     }
+
+    // Initialize milestones array if it doesn't exist
+    if (!updateData.milestones) {
+      updateData.milestones = [];
+    }
+
+    // Add role change milestone if needed and not already present
+    if (!existingMilestoneTypes.has('role_change') && originalRole !== updateData.professionalDetails.role) {
+      updateData.milestones.push({
+        title: `Role changed to ${formatRole(updateData.professionalDetails.role)}`,
+        description: `Role updated from ${formatRole(originalRole || 'None')} to ${formatRole(updateData.professionalDetails.role)}`,
+        date: new Date().toISOString().split('T')[0],
+        branch: updateData.professionalDetails.branch,
+        impact: 'Employee role has been updated with new responsibilities and permissions',
+        type: 'role_change'
+      });
+    }
+
+    // Add branch transfer milestone if needed and not already present
+    if (!existingMilestoneTypes.has('branch_transfer') && originalBranch !== updateData.professionalDetails.branch) {
+      updateData.milestones.push({
+        title: `Transferred to ${updateData.professionalDetails.branch} branch`,
+        description: `Branch transfer from ${originalBranch || 'None'} to ${updateData.professionalDetails.branch}`,
+        date: new Date().toISOString().split('T')[0],
+        branch: updateData.professionalDetails.branch,
+        impact: 'Employee moved to a new branch location',
+        type: 'branch_transfer'
+      });
+    }
+
+    // Add status change milestone if needed and not already present
+    if (!existingMilestoneTypes.has('status_change') && originalStatus !== updateData.professionalDetails.status) {
+      const statusText = updateData.professionalDetails.status.replace('_', ' ');
+      updateData.milestones.push({
+        title: `Status changed to ${statusText}`,
+        description: `Employee status updated from ${(originalStatus || 'active').replace('_', ' ')} to ${statusText}`,
+        date: new Date().toISOString().split('T')[0],
+        branch: updateData.professionalDetails.branch,
+        impact: `Employee is now ${statusText}`,
+        type: 'status_change'
+      });
+    }
+
+    // Process all milestones if any exist
+    if (updateData.milestones && updateData.milestones.length > 0) {
+      console.log(`Processing ${updateData.milestones.length} milestones`);
+
+      // Ensure each milestone has a date and type
+      const processedMilestones = updateData.milestones.map(milestone => ({
+        ...milestone,
+        date: milestone.date || new Date().toISOString().split('T')[0],
+        type: milestone.type || 'milestone'
+      }));
+
+      // Add to push operations
+      pushOperations.milestones = { $each: processedMilestones };
+    }
+
+    // Apply push operations if any
+    if (Object.keys(pushOperations).length > 0) {
+      updates.$push = pushOperations;
+    }
+
+    console.log('Applying updates with the following operations:', {
+      basicUpdates: Object.keys(updates).filter(k => k !== '$push'),
+      pushOperations: updates.$push ? Object.keys(updates.$push) : 'none',
+      milestoneCount: updates.$push?.milestones?.$each.length || 0
+    });
 
     const updatedEmployee = await Employee.findByIdAndUpdate(
       req.params.id,
@@ -486,14 +627,150 @@ app.put('/api/employees/:id', authenticateToken, upload.array('documents', 5), a
       { new: true }
     );
 
-    res.json(updatedEmployee);
+    res.json({
+      success: true,
+      message: 'Employee updated successfully',
+      employee: updatedEmployee,
+      historyUpdated: !!updates.$push?.milestones,
+      milestonesAdded: updates.$push?.milestones?.$each.length || 0
+    });
 
   } catch (error) {
     console.error('Update error:', error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 });
 
+// Helper function to format role names
+function formatRole(role) {
+  if (!role) return 'Unknown';
+  return role
+    .replace(/_/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+// Helper function to format role names
+function formatRoleName(role) {
+  if (!role) return 'Unknown';
+  return role
+    .replace(/_/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+// Enhanced history endpoint with more detailed information
+// Update this in your server.js file
+// Add this to your server.js file
+app.get('/api/employees/:id/history', authenticateToken, async (req, res) => {
+  try {
+    const employee = await Employee.findById(req.params.id).lean();
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+
+    console.log(`Fetching history for employee: ${employee.personalDetails?.name || 'Unknown'}`);
+
+    const history = [];
+
+    // Add milestones with improved type handling
+    if (employee.milestones && Array.isArray(employee.milestones)) {
+      console.log(`Processing ${employee.milestones.length} milestones for history`);
+
+      employee.milestones.forEach(milestone => {
+        // Default type is 'milestone' if not specified
+        let type = milestone.type || 'milestone';
+
+        // Create history item
+        const historyItem = {
+          date: milestone.date || new Date(),
+          change: milestone.title,
+          details: milestone.description,
+          branch: milestone.branch || employee.professionalDetails.branch,
+          impact: milestone.impact,
+          type: type
+        };
+
+        history.push(historyItem);
+      });
+    } else {
+      console.log('No milestones found for employee');
+    }
+
+    // Add document uploads if not already covered by milestones
+    if (employee.documents && Array.isArray(employee.documents)) {
+      console.log(`Processing ${employee.documents.length} documents for history`);
+
+      // Check if we already have document upload milestones
+      const existingDocUploads = new Set();
+      history.forEach(item => {
+        if (item.type === 'document_upload' && item.details) {
+          const docName = item.details.replace('New document uploaded: ', '');
+          existingDocUploads.add(docName);
+        }
+      });
+
+      // Add missing document uploads
+      employee.documents.forEach(doc => {
+        // Skip if this document is already in a milestone
+        if (doc.name && existingDocUploads.has(doc.name)) {
+          return;
+        }
+
+        history.push({
+          date: doc.uploadedAt || new Date(),
+          change: 'Document Upload',
+          details: `New document uploaded: ${doc.name}`,
+          type: 'document_upload'
+        });
+      });
+    }
+
+    // Deduplicate history entries by signature
+    const uniqueHistory = [];
+    const historySignatures = new Set();
+    
+    for (const item of history) {
+      // Create a unique signature for each history item based on type, title and date
+      // Convert date to string format for consistency
+      const dateStr = typeof item.date === 'string' ? item.date : item.date.toISOString().split('T')[0];
+      const signature = `${item.type}-${item.change}-${dateStr}`;
+      
+      // Only add the item if we haven't seen this signature before
+      if (!historySignatures.has(signature)) {
+        historySignatures.add(signature);
+        uniqueHistory.push(item);
+      } else {
+        console.log(`Filtered duplicate history item: ${signature}`);
+      }
+    }
+
+    // Sort by date descending (newest first)
+    uniqueHistory.sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateB - dateA;
+    });
+
+    console.log(`Returning ${uniqueHistory.length} unique history items out of ${history.length} total`);
+
+    res.json(uniqueHistory);
+  } catch (error) {
+    console.error('Error fetching employee history:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
 app.get('/api/employees/:id/documents', authenticateToken, async (req, res) => {
   try {
     const employee = await Employee.findById(req.params.id);
@@ -612,7 +889,7 @@ app.put('/api/requests/:userId/status', authenticateToken, async (req, res) => {
     if (status === 'approved') {
       // Check if employee record already exists
       let employee = await Employee.findOne({ userId: user._id });
-      
+
       if (!employee) {
         // Create new employee record
         employee = new Employee({
@@ -645,9 +922,9 @@ app.put('/api/requests/:userId/status', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating request status:', error);
-    res.status(500).json({ 
-      message: 'Error updating request', 
-      error: error.message 
+    res.status(500).json({
+      message: 'Error updating request',
+      error: error.message
     });
   }
 });
@@ -657,24 +934,24 @@ app.put('/api/requests/:userId/status', authenticateToken, async (req, res) => {
 app.get('/api/leaves/filter/:employeeId', authenticateToken, async (req, res) => {
   try {
     const { employeeId } = req.params;
-    
+
     // Find leave requests for this employee
     const employee = await Employee.findById(employeeId);
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
     }
-    
+
     const leaveRequests = await Leave.find({
       employeeId: employeeId
     }).sort({ createdAt: -1 });
-    
+
     res.json(leaveRequests);
-    
+
   } catch (error) {
     console.error('Error fetching leaves:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Error fetching leave requests',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -708,7 +985,7 @@ app.post('/api/leaves', authenticateToken, upload.array('documents', 5), async (
 app.get('/api/leaves', authenticateToken, async (req, res) => {
   try {
     const { employeeEmail } = req.query;
-    
+
     // Build query based on email and user role
     const query = {};
     if (employeeEmail) {
@@ -734,10 +1011,10 @@ app.get('/api/leaves/debug/:email', authenticateToken, async (req, res) => {
     }
 
     const { email } = req.params;
-    
+
     const leaves = await Leave.find({ employeeEmail: email }).lean();
     const employee = await Employee.findOne({ 'personalDetails.email': email }).lean();
-    
+
     res.json({
       leaves,
       employee,
@@ -768,25 +1045,27 @@ app.get('/api/leaves/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Updated route for handling leave status updates in server.js
+
 app.put('/api/leaves/:id/status', authenticateToken, checkPermission, async (req, res) => {
   try {
     if (req.userRole !== 'admin' && req.userRole !== 'hr_manager') {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    const { status } = req.body;
+    const { status, email, employeeName, leaveType, startDate, endDate } = req.body;
     if (!['pending', 'approved', 'rejected'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
     const leaveRequest = await Leave.findByIdAndUpdate(
       req.params.id,
-      { 
+      {
         status,
         updatedAt: Date.now()
       },
       { new: true }
-    ).populate('employeeId');
+    );
 
     if (!leaveRequest) {
       return res.status(404).json({ message: 'Leave request not found' });
@@ -801,14 +1080,72 @@ app.put('/api/leaves/:id/status', authenticateToken, checkPermission, async (req
     });
     await notification.save();
 
-    // Socket notification could be added here if implementing real-time updates
+    // Send email notification
+    if (email) {
+      // Format dates for email
+      const formattedStartDate = new Date(startDate || leaveRequest.startDate).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      const formattedEndDate = new Date(endDate || leaveRequest.endDate).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
 
-    res.json(leaveRequest);
+      // Create email subject and content based on status
+      const subject = `Leave Request ${status.charAt(0).toUpperCase() + status.slice(1)}`;
+      
+      // Email template
+      const emailContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #474787;">Leave Request ${status.charAt(0).toUpperCase() + status.slice(1)}</h2>
+          <p>Hello ${employeeName || 'Employee'},</p>
+          
+          <p>Your ${leaveType || leaveRequest.leaveType} leave request for the period <strong>${formattedStartDate}</strong> to <strong>${formattedEndDate}</strong> has been <strong>${status}</strong>.</p>
+          
+          ${status === 'approved' ? 
+            `<p style="background-color: #d1fae5; padding: 15px; border-radius: 5px; color: #047857;">
+              Your leave has been approved. Please ensure you've completed any handover procedures before your leave starts.
+            </p>` 
+            : 
+            `<p style="background-color: #fee2e2; padding: 15px; border-radius: 5px; color: #b91c1c;">
+              Your leave request has been declined. Please contact HR for more information if needed.
+            </p>`
+          }
+          
+          <p>If you have any questions, please contact the HR department.</p>
+          
+          <p>Thank you,<br>
+          HR Management Team</p>
+          
+          <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px;">
+            <p>This is an automated email notification. Please do not reply to this email.</p>
+          </div>
+        </div>
+      `;
+
+      try {
+        await sendEmail(email, subject, emailContent);
+        console.log(`Email notification sent to ${email} for leave status: ${status}`);
+      } catch (emailError) {
+        console.error('Error sending email notification:', emailError);
+        // Don't fail the request if email fails, just log the error
+      }
+    }
+
+    res.json({
+      message: `Leave request ${status} successfully`,
+      leaveRequest,
+      emailSent: !!email
+    });
   } catch (error) {
     console.error('Error updating leave status:', error);
-    res.status(500).json({ 
-      message: 'Error updating leave request', 
-      error: error.message 
+    res.status(500).json({
+      message: 'Error updating leave request',
+      error: error.message
     });
   }
 });
@@ -838,7 +1175,7 @@ app.get('/api/leaves/stats', authenticateToken, checkPermission, async (req, res
 app.delete('/api/leaves/:id', authenticateToken, async (req, res) => {
   try {
     const leaveRequest = await Leave.findById(req.params.id);
-    
+
     if (!leaveRequest) {
       return res.status(404).json({ message: 'Leave request not found' });
     }
@@ -869,7 +1206,7 @@ app.get('/api/leaves', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     let leaveRequests;
-    
+
     if (user.isAdmin) {
       // Admins can see all requests
       leaveRequests = await Leave.find().sort({ createdAt: -1 });
@@ -877,7 +1214,7 @@ app.get('/api/leaves', authenticateToken, async (req, res) => {
       // Regular users can only see their own requests
       leaveRequests = await Leave.find({ employeeId: req.user.id }).sort({ createdAt: -1 });
     }
-    
+
     res.json(leaveRequests);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -887,7 +1224,7 @@ app.get('/api/leaves', authenticateToken, async (req, res) => {
 // app.get('/api/leaves/employee/:userId', authenticateToken, async (req, res) => {
 //   try {
 //     const { userId } = req.params;
-    
+
 //     // Check if user has permission to view these leaves
 //     if (!req.user.isAdmin && req.user.id !== userId) {
 //       return res.status(403).json({ message: 'Access denied' });
@@ -916,7 +1253,7 @@ app.get('/api/leaves', authenticateToken, async (req, res) => {
 app.post('/api/branches', authenticateToken, isAdmin, async (req, res) => {
   try {
     const { name, hrManager, t1Member, operationalManager } = req.body;
-    
+
     // Update employee roles
     await Employee.findByIdAndUpdate(hrManager, {
       'professionalDetails.role': 'hr_manager'
@@ -946,14 +1283,14 @@ app.get('/api/branches', authenticateToken, async (req, res) => {
   try {
     const branches = await Branch.find().lean();
     console.log('Raw branches:', branches);
-    
+
     const employeeIds = branches.reduce((ids, branch) => {
       ids.push(branch.hrManager, branch.t1Member, branch.operationalManager);
       return ids;
     }, []);
-    
+
     console.log('Employee IDs to fetch:', employeeIds);
-    
+
     const employees = await Employee.find({
       _id: { $in: employeeIds }
     }).lean();
@@ -1021,7 +1358,7 @@ app.put('/api/branches/:id', authenticateToken, isAdmin, async (req, res) => {
 
     const updatedBranch = await Branch.findByIdAndUpdate(
       req.params.id,
-      { 
+      {
         ...req.body,
         updatedAt: Date.now()
       },
@@ -1038,7 +1375,7 @@ app.put('/api/branches/:id/role', authenticateToken, async (req, res) => {
   try {
     const { role, employeeId } = req.body;
     const branch = await Branch.findById(req.params.id);
-    
+
     if (!branch) {
       return res.status(404).json({ message: 'Branch not found' });
     }
@@ -1057,10 +1394,10 @@ app.put('/api/branches/:id/role', authenticateToken, async (req, res) => {
 app.post('/api/announcements', authenticateToken, async (req, res) => {
   try {
     const { title, content, branchId, priority, expiresAt } = req.body;
-    
+
     if (!title || !content || !branchId || !expiresAt) {
-      return res.status(400).json({ 
-        message: 'Missing required fields' 
+      return res.status(400).json({
+        message: 'Missing required fields'
       });
     }
 
@@ -1075,16 +1412,16 @@ app.post('/api/announcements', authenticateToken, async (req, res) => {
 
     await announcement.save();
     console.log('Created announcement:', announcement);
-    
+
     res.status(201).json({
       message: 'Announcement created successfully',
       announcement
     });
   } catch (error) {
     console.error('Error creating announcement:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to create announcement',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -1094,7 +1431,7 @@ app.get('/api/announcements/:branchId', authenticateToken, async (req, res) => {
   try {
     const branchId = req.params.branchId;
     console.log('Received announcement request for branchId:', branchId);
-    
+
     // First check if the branch exists
     const branch = await Branch.findById(branchId);
     console.log('Found branch:', branch);
@@ -1112,8 +1449,8 @@ app.get('/api/announcements/:branchId', authenticateToken, async (req, res) => {
       branchId: branchId,
       expiresAt: { $gt: now }
     })
-    .populate('createdBy', 'email')
-    .sort({ createdAt: -1 });
+      .populate('createdBy', 'email')
+      .sort({ createdAt: -1 });
 
     console.log('Active announcements after expiry filter:', activeAnnouncements);
 
@@ -1133,7 +1470,7 @@ app.get('/api/announcements/:branchId', authenticateToken, async (req, res) => {
     res.json(activeAnnouncements);
   } catch (error) {
     console.error('Error fetching announcements:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Error fetching announcements',
       error: error.message
     });
@@ -1147,7 +1484,7 @@ app.get('/api/announcements', authenticateToken, async (req, res) => {
       .populate('createdBy', 'email')
       .populate('branchId', 'name')
       .sort('-createdAt');
-    
+
     res.json(announcements);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -1172,23 +1509,23 @@ app.get('/api/employees/byemail/:email', authenticateToken, async (req, res) => 
   try {
     const email = req.params.email;
     console.log('Looking up employee by email:', email);
-    
+
     const employee = await Employee.findOne({
       'personalDetails.email': email
     });
-    
+
     if (!employee) {
       console.log('No employee found for email:', email);
       return res.status(404).json({ message: 'Employee not found' });
     }
-    
+
     console.log('Found employee:', employee);
     res.json(employee);
   } catch (error) {
     console.error('Error finding employee by email:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Error fetching employee data',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -1203,7 +1540,7 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
 
     // Get the user data as well
     const user = await User.findById(req.user.id).select('-password');
-    
+
     // Combine employee and user data
     const profile = {
       ...employee.toObject(),
@@ -1215,9 +1552,9 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
     res.json(profile);
   } catch (error) {
     console.error('Error fetching profile:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Error fetching profile data',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -1227,7 +1564,7 @@ app.get('/api/leaves/employee/:employeeId', authenticateToken, async (req, res) 
   try {
     const employeeId = req.params.employeeId;
     console.log('Requesting leaves for employee:', employeeId);
-    
+
     // Get the employee to verify permission
     const employee = await Employee.findById(employeeId);
     if (!employee) {
@@ -1241,9 +1578,9 @@ app.get('/api/leaves/employee/:employeeId', authenticateToken, async (req, res) 
     }
 
     // Check if the requesting user has permission
-    const hasPermission = 
-      requestingUser.isAdmin || 
-      requestingUser.role === 'hr_manager' || 
+    const hasPermission =
+      requestingUser.isAdmin ||
+      requestingUser.role === 'hr_manager' ||
       employee.userId.toString() === requestingUser._id.toString();
 
     if (!hasPermission) {
@@ -1259,57 +1596,15 @@ app.get('/api/leaves/employee/:employeeId', authenticateToken, async (req, res) 
 
   } catch (error) {
     console.error('Error fetching employee leaves:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Error fetching leave history',
-      error: error.message 
+      error: error.message
     });
   }
 });
 
 
-app.get('/api/employees/:id/history', authenticateToken, async (req, res) => {
-  try {
-    const employee = await Employee.findById(req.params.id).lean();
-    if (!employee) {
-      return res.status(404).json({ message: 'Employee not found' });
-    }
 
-    const history = [];
-
-    // Add milestones
-    if (employee.milestones) {
-      employee.milestones.forEach(milestone => {
-        history.push({
-          date: milestone.date,
-          change: milestone.title,
-          details: milestone.description,
-          branch: milestone.branch || employee.professionalDetails.branch,
-          impact: milestone.impact,
-          type: 'milestone'
-        });
-      });
-    }
-
-    // Add document uploads
-    if (employee.documents) {
-      employee.documents.forEach(doc => {
-        history.push({
-          date: doc.uploadedAt,
-          change: 'Document Upload',
-          details: `New document uploaded: ${doc.name}`,
-          type: 'document'
-        });
-      });
-    }
-
-    // Sort by date descending
-    history.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    res.json(history);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
 
 // Add to server.js - Notification Routes
 app.post('/api/notifications', authenticateToken, async (req, res) => {
@@ -1329,19 +1624,19 @@ app.post('/api/notifications', authenticateToken, async (req, res) => {
 
 app.get('/api/notifications', authenticateToken, async (req, res) => {
   try {
-    const notifications = await Notification.find({ 
-      userId: req.user.id 
+    const notifications = await Notification.find({
+      userId: req.user.id
     })
-    .sort({ createdAt: -1 })
-    .limit(20);
+      .sort({ createdAt: -1 })
+      .limit(20);
 
     console.log('Found notifications:', notifications); // Debug log
     res.json(notifications);
   } catch (error) {
     console.error('Notification fetch error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to fetch notifications',
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -1353,17 +1648,17 @@ app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
       { read: true },
       { new: true }
     );
-    
+
     if (!notification) {
       return res.status(404).json({ error: 'Notification not found' });
     }
-    
+
     res.json(notification);
   } catch (error) {
     console.error('Error marking notification as read:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to update notification',
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -1374,9 +1669,9 @@ app.get('/api/attendance', authenticateToken, async (req, res) => {
   try {
     const { date } = req.query;
     console.log('Received date parameter:', date);
-    
+
     let query = {};
-    
+
     if (date) {
       // Convert the date to start and end of day in UTC
       const queryDate = new Date(date);
@@ -1384,13 +1679,13 @@ app.get('/api/attendance', authenticateToken, async (req, res) => {
       startOfDay.setUTCHours(0, 0, 0, 0);
       const endOfDay = new Date(queryDate);
       endOfDay.setUTCHours(23, 59, 59, 999);
-      
+
       console.log('Query date range:', {
         startOfDay: startOfDay.toISOString(),
         endOfDay: endOfDay.toISOString()
       });
-      
-      query.date = { 
+
+      query.date = {
         $gte: startOfDay,
         $lte: endOfDay
       };
@@ -1406,7 +1701,7 @@ app.get('/api/attendance', authenticateToken, async (req, res) => {
     const attendanceRecords = await Attendance.find(query)
       .sort({ timeIn: 1 })
       .lean();
-    
+
     console.log(`Found ${attendanceRecords.length} attendance records`);
     console.log('Sample record:', attendanceRecords[0]);
 
@@ -1421,10 +1716,10 @@ app.get('/api/attendance', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching attendance records:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Error fetching attendance records',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -1445,7 +1740,7 @@ app.get('/api/holidays', authenticateToken, async (req, res) => {
 app.post('/api/holidays', authenticateToken, checkPermission, async (req, res) => {
   try {
     const { holidayName, holidayDate } = req.body;
-    
+
     // Convert date string to Date object
     const date = new Date(holidayDate);
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -1483,7 +1778,7 @@ app.delete('/api/holidays/:id', authenticateToken, checkPermission, async (req, 
 const uploadResume = multer({
   storage: resumeStorage,
   limits: { fileSize: 5000000 }, // 5MB limit
-  fileFilter: function(req, file, cb) {
+  fileFilter: function (req, file, cb) {
     const filetypes = /pdf|doc|docx/;
     const mimetype = filetypes.test(file.mimetype);
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
@@ -1556,7 +1851,7 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
         role: 'hr_manager',
         branchName: { $regex: new RegExp('^' + branchName + '$', 'i') }
       }),
-      User.find({ 
+      User.find({
         $or: [
           { isAdmin: true },
           { role: 't1_member' }
@@ -1660,12 +1955,12 @@ app.get('/api/applicants', authenticateToken, async (req, res) => {
     // Transform the data to include all fields
     const transformedApplicants = applicants.map(applicant => {
       // Convert Maps to regular objects and preserve all fields
-      const personalDetails = applicant.personalDetails instanceof Map ? 
-        Object.fromEntries(applicant.personalDetails) : 
+      const personalDetails = applicant.personalDetails instanceof Map ?
+        Object.fromEntries(applicant.personalDetails) :
         (applicant.personalDetails || {});
 
-      const jobDetails = applicant.jobDetails instanceof Map ? 
-        Object.fromEntries(applicant.jobDetails) : 
+      const jobDetails = applicant.jobDetails instanceof Map ?
+        Object.fromEntries(applicant.jobDetails) :
         (applicant.jobDetails || {});
 
       // Collect any additional fields that don't fit in the main categories
@@ -1690,9 +1985,9 @@ app.get('/api/applicants', authenticateToken, async (req, res) => {
     res.json(transformedApplicants);
   } catch (error) {
     console.error('Error fetching applicants:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Error fetching applications',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -1700,7 +1995,7 @@ app.get('/api/applicants', authenticateToken, async (req, res) => {
 app.get('/api/applicants', authenticateToken, checkPermission, async (req, res) => {
   try {
     console.log('Fetching applicants...');
-    
+
     // Get query parameters
     const { status, position, branch } = req.query;
     const query = {};
@@ -1720,12 +2015,12 @@ app.get('/api/applicants', authenticateToken, checkPermission, async (req, res) 
     // Transform the data for response
     const transformedApplicants = applicants.map(applicant => {
       // Convert Maps to regular objects
-      const personalDetails = applicant.personalDetails instanceof Map ? 
-        Object.fromEntries(applicant.personalDetails) : 
+      const personalDetails = applicant.personalDetails instanceof Map ?
+        Object.fromEntries(applicant.personalDetails) :
         (applicant.personalDetails || {});
 
-      const jobDetails = applicant.jobDetails instanceof Map ? 
-        Object.fromEntries(applicant.jobDetails) : 
+      const jobDetails = applicant.jobDetails instanceof Map ?
+        Object.fromEntries(applicant.jobDetails) :
         (applicant.jobDetails || {});
 
       return {
@@ -1797,8 +2092,8 @@ app.put('/api/applicants/:id/status', authenticateToken, async (req, res) => {
     // Prepare status message for email
     let statusMessage = '';
     let nextSteps = '';
-    
-    switch(status) {
+
+    switch (status) {
       case 'reviewed':
         statusMessage = 'Your application has been reviewed by our HR team.';
         nextSteps = 'We are currently evaluating all applications and will update you soon about the next steps.';
@@ -1897,42 +2192,42 @@ app.put('/api/applicants/:id/status', authenticateToken, async (req, res) => {
 // Add this to your server.js
 app.get('/api/applicants/:id', authenticateToken, async (req, res) => {
   try {
-      const applicant = await Applicant.findById(req.params.id);
-      
-      if (!applicant) {
-          return res.status(404).json({ message: 'Applicant not found' });
+    const applicant = await Applicant.findById(req.params.id);
+
+    if (!applicant) {
+      return res.status(404).json({ message: 'Applicant not found' });
+    }
+
+    // Transform the data
+    const processedData = {
+      _id: applicant._id,
+      personalDetails: applicant.personalDetails instanceof Map ?
+        Object.fromEntries(applicant.personalDetails) :
+        applicant.personalDetails,
+      jobDetails: applicant.jobDetails instanceof Map ?
+        Object.fromEntries(applicant.jobDetails) :
+        applicant.jobDetails,
+      status: applicant.status,
+      resume: applicant.resume,
+      createdAt: applicant.createdAt,
+      additionalFields: {}
+    };
+
+    // Add any additional fields that don't fit in the main categories
+    const rawData = applicant.toObject();
+    Object.keys(rawData).forEach(key => {
+      if (!['_id', 'personalDetails', 'jobDetails', 'status', 'resume', 'createdAt', 'updatedAt', '__v'].includes(key)) {
+        processedData.additionalFields[key] = rawData[key];
       }
+    });
 
-      // Transform the data
-      const processedData = {
-          _id: applicant._id,
-          personalDetails: applicant.personalDetails instanceof Map ? 
-              Object.fromEntries(applicant.personalDetails) : 
-              applicant.personalDetails,
-          jobDetails: applicant.jobDetails instanceof Map ? 
-              Object.fromEntries(applicant.jobDetails) : 
-              applicant.jobDetails,
-          status: applicant.status,
-          resume: applicant.resume,
-          createdAt: applicant.createdAt,
-          additionalFields: {}
-      };
-
-      // Add any additional fields that don't fit in the main categories
-      const rawData = applicant.toObject();
-      Object.keys(rawData).forEach(key => {
-          if (!['_id', 'personalDetails', 'jobDetails', 'status', 'resume', 'createdAt', 'updatedAt', '__v'].includes(key)) {
-              processedData.additionalFields[key] = rawData[key];
-          }
-      });
-
-      res.json(processedData);
+    res.json(processedData);
   } catch (error) {
-      console.error('Error fetching applicant details:', error);
-      res.status(500).json({ 
-          message: 'Error fetching applicant details',
-          error: error.message 
-      });
+    console.error('Error fetching applicant details:', error);
+    res.status(500).json({
+      message: 'Error fetching applicant details',
+      error: error.message
+    });
   }
 });
 
@@ -1964,7 +2259,7 @@ app.get('/api/applicants/:id/resume', authenticateToken, async (req, res) => {
 });
 
 // Admin routes for managing form fields (protected)
-app.get('/api/admin/form-fields', authenticateToken, isAdmin, async (req, res) => {
+app.get('/api/admin/form-fields', authenticateToken, checkFormFieldsAccess, async (req, res) => {
   try {
     const fields = await FormField.find().sort({ order: 1 });
     res.json(fields);
@@ -1972,7 +2267,7 @@ app.get('/api/admin/form-fields', authenticateToken, isAdmin, async (req, res) =
     res.status(500).json({ message: error.message });
   }
 });
-app.post('/api/admin/form-fields', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/admin/form-fields', authenticateToken, checkFormFieldsAccess, async (req, res) => {
   try {
     const field = new FormField(req.body);
     const newField = await field.save();
@@ -1981,7 +2276,7 @@ app.post('/api/admin/form-fields', authenticateToken, isAdmin, async (req, res) 
     res.status(400).json({ message: error.message });
   }
 });
-app.put('/api/admin/form-fields/:id', authenticateToken, isAdmin, async (req, res) => {
+app.put('/api/admin/form-fields/:id', authenticateToken, checkFormFieldsAccess, async (req, res) => {
   try {
     const updatedField = await FormField.findByIdAndUpdate(
       req.params.id,
@@ -1997,7 +2292,7 @@ app.put('/api/admin/form-fields/:id', authenticateToken, isAdmin, async (req, re
   }
 });
 
-app.delete('/api/admin/form-fields/:id', authenticateToken, isAdmin, async (req, res) => {
+app.delete('/api/admin/form-fields/:id', authenticateToken, checkFormFieldsAccess, async (req, res) => {
   try {
     const field = await FormField.findByIdAndDelete(req.params.id);
     if (!field) {
@@ -2009,10 +2304,10 @@ app.delete('/api/admin/form-fields/:id', authenticateToken, isAdmin, async (req,
   }
 });
 
-app.put('/api/admin/form-fields/reorder', authenticateToken, isAdmin, async (req, res) => {
+app.put('/api/admin/form-fields/reorder', authenticateToken, checkFormFieldsAccess, async (req, res) => {
   try {
     const { fields } = req.body;
-    await Promise.all(fields.map(field => 
+    await Promise.all(fields.map(field =>
       FormField.findByIdAndUpdate(field._id, { order: field.order })
     ));
     res.json({ message: 'Field order updated' });
@@ -2076,7 +2371,7 @@ app.get('/api/hr/employees', authenticateToken, async (req, res) => {
       return res.status(403).json({ message: 'Insufficient permissions' });
     }
 
-    const query = user.role === 'hr_manager' ? 
+    const query = user.role === 'hr_manager' ?
       { 'professionalDetails.branch': user.branchName } : {};
 
     const employees = await Employee.aggregate([
@@ -2155,11 +2450,11 @@ app.get('/api/hr/applicants', authenticateToken, async (req, res) => {
     if (user.role === 'hr_manager') {
       applicantsToShow = allApplicants.filter(applicant => {
         // Get branch name from various possible locations
-        const branchName = applicant.branchName || 
-          (applicant.jobDetails instanceof Map ? 
-            applicant.jobDetails.get('branchName') || 
-            applicant.jobDetails.get('branch') : 
-            applicant.jobDetails?.branchName || 
+        const branchName = applicant.branchName ||
+          (applicant.jobDetails instanceof Map ?
+            applicant.jobDetails.get('branchName') ||
+            applicant.jobDetails.get('branch') :
+            applicant.jobDetails?.branchName ||
             applicant.jobDetails?.branch);
 
         return branchName && branchName.toLowerCase() === user.branchName.toLowerCase();
@@ -2186,11 +2481,11 @@ app.get('/api/hr/applicants', authenticateToken, async (req, res) => {
 
       // Log raw data for debugging
       console.log('Raw applicant data:', {
-        personalDetails: applicant.personalDetails instanceof Map ? 
-          Object.fromEntries(applicant.personalDetails) : 
+        personalDetails: applicant.personalDetails instanceof Map ?
+          Object.fromEntries(applicant.personalDetails) :
           applicant.personalDetails,
-        jobDetails: applicant.jobDetails instanceof Map ? 
-          Object.fromEntries(applicant.jobDetails) : 
+        jobDetails: applicant.jobDetails instanceof Map ?
+          Object.fromEntries(applicant.jobDetails) :
           applicant.jobDetails
       });
 
@@ -2205,10 +2500,10 @@ app.get('/api/hr/applicants', authenticateToken, async (req, res) => {
         },
         jobDetails: {
           position: jobDetails.position || 'Not specified',
-          branchName: applicant.branchName || 
-                     jobDetails.branchName || 
-                     jobDetails.branch || 
-                     'Not specified',
+          branchName: applicant.branchName ||
+            jobDetails.branchName ||
+            jobDetails.branch ||
+            'Not specified',
           ...jobDetails
         },
         status: applicant.status || 'pending',
@@ -2262,7 +2557,7 @@ app.get('/api/hr/edit-profiles', authenticateToken, isHrManager, async (req, res
 app.put('/api/hr/edit-profiles/:id', authenticateToken, isHrManager, upload.array('documents', 5), async (req, res) => {
   try {
     const employee = await Employee.findById(req.params.id);
-    
+
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
     }
@@ -2351,17 +2646,88 @@ app.get('/api/hr/notifications', authenticateToken, async (req, res) => {
           }
         ]
       })
-      .sort({ createdAt: -1 })
-      .limit(20);
+        .sort({ createdAt: -1 })
+        .limit(20);
     }
 
     console.log(`Found ${notifications.length} notifications`);
     res.json(notifications);
   } catch (error) {
     console.error('Error in HR notifications:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to fetch notifications',
-      details: error.message 
+      details: error.message
+    });
+  }
+});
+
+// Add this DELETE endpoint for branches to your server.js file
+app.delete('/api/branches/:id', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    // First, find the branch to get manager information
+    const branch = await Branch.findById(req.params.id);
+    
+    if (!branch) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Branch not found' 
+      });
+    }
+
+    // Optional: Reset roles of position holders if needed
+    // This prevents orphaned role assignments when a branch is deleted
+    // You can remove or modify this section based on your requirements
+    try {
+      // Reset HR Manager role
+      if (branch.hrManager) {
+        await Employee.findByIdAndUpdate(branch.hrManager, {
+          'professionalDetails.role': 'employee'
+        });
+      }
+      
+      // Reset T1 Member role
+      if (branch.t1Member) {
+        await Employee.findByIdAndUpdate(branch.t1Member, {
+          'professionalDetails.role': 'employee'
+        });
+      }
+      
+      // Reset Operational Manager role
+      if (branch.operationalManager) {
+        await Employee.findByIdAndUpdate(branch.operationalManager, {
+          'professionalDetails.role': 'employee'
+        });
+      }
+    } catch (roleError) {
+      console.warn('Warning: Could not reset all branch position roles:', roleError);
+      // Continue with branch deletion even if role reset fails
+    }
+
+    // Now delete the branch itself
+    const deletedBranch = await Branch.findByIdAndDelete(req.params.id);
+    
+    // Optional: Update employee records to remove this branch
+    try {
+      await Employee.updateMany(
+        { 'professionalDetails.branch': branch.name },
+        { 'professionalDetails.branch': 'Unassigned' }
+      );
+    } catch (empError) {
+      console.warn('Warning: Could not update employee branches:', empError);
+      // Continue with response even if employee update fails
+    }
+
+    res.json({
+      success: true,
+      message: 'Branch deleted successfully',
+      branchName: branch.name
+    });
+  } catch (error) {
+    console.error('Error deleting branch:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to delete branch',
+      error: error.message 
     });
   }
 });

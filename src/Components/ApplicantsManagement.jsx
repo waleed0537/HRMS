@@ -17,7 +17,7 @@ import { useToast } from './common/ToastContent';
 const ApplicantsManagement = () => {
     // Get toast functionality
     const toast = useToast();
-    
+
     // Core state
     const [showFieldManager, setShowFieldManager] = useState(false);
     const [applicants, setApplicants] = useState([]);
@@ -26,7 +26,8 @@ const ApplicantsManagement = () => {
     const [error, setError] = useState(null);
     const [selectedApplicant, setSelectedApplicant] = useState(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    
+    const [currentUser, setCurrentUser] = useState(null);
+    const [user, setUser] = useState(null);
     // Search & filter state
     const [searchTerm, setSearchTerm] = useState('');
     const [showFilters, setShowFilters] = useState(false);
@@ -37,7 +38,7 @@ const ApplicantsManagement = () => {
     });
     const [uniquePositions, setUniquePositions] = useState([]);
     const [uniqueBranches, setUniqueBranches] = useState([]);
-    
+
     // View state
     const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', or 'compact'
     const [sortConfig, setSortConfig] = useState({
@@ -45,45 +46,93 @@ const ApplicantsManagement = () => {
         direction: 'desc'
     });
 
+    // Get current user on component mount
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            setCurrentUser(JSON.parse(userData));
+        }
+    }, []);
+
+    // Check if user has form customization permissions
+    const canCustomizeForm = () => {
+        if (!currentUser) return false;
+        return currentUser.isAdmin || currentUser.role === 'hr_manager';
+    };
+    const getBranchName = (applicant) => {
+        // Check all possible locations for branch name
+        return applicant.branchName || 
+               applicant.jobDetails?.branch || 
+               applicant.jobDetails?.branchName || 
+               (applicant.jobDetails instanceof Map ? 
+                  applicant.jobDetails.get('branch') || 
+                  applicant.jobDetails.get('branchName') : null) ||
+               'N/A';
+      };
     // Get a consistent profile pic number based on email
     const getProfilePicNumber = (email) => {
         if (!email) return Math.floor(Math.random() * 11) + 1;
-        
+
         // Generate a number based on the email's first character code
         const charCode = email.charCodeAt(0);
         return (charCode % 11) + 1; // Returns a number between 1-11
     };
+    const getPersonalDetails = (applicant) => {
+        let details = {};
 
+        // Check if personalDetails is a Map and convert it
+        if (applicant.personalDetails instanceof Map) {
+            details = Object.fromEntries(applicant.personalDetails);
+        } else if (typeof applicant.personalDetails === 'object' && applicant.personalDetails !== null) {
+            details = { ...applicant.personalDetails };
+        }
+
+        return details;
+    };
+
+    // Helper function to extract all job details fields
+    const getJobDetails = (applicant) => {
+        let details = {};
+
+        // Check if jobDetails is a Map and convert it
+        if (applicant.jobDetails instanceof Map) {
+            details = Object.fromEntries(applicant.jobDetails);
+        } else if (typeof applicant.jobDetails === 'object' && applicant.jobDetails !== null) {
+            details = { ...applicant.jobDetails };
+        }
+
+        return details;
+    };
     // Render avatar with image and fallback to initials
     const renderAvatar = (applicant, size = 'medium') => {
         // Get applicant name and initial for fallback
         const name = applicant.personalDetails?.name || 'Unknown';
         const initial = name.charAt(0).toUpperCase();
-        
+
         // Get profile pic number based on email
         const email = applicant.personalDetails?.email || '';
         const profilePicNum = getProfilePicNumber(email);
-        
+
         // Determine appropriate CSS class based on size
         const sizeClass = {
             small: 'applicants-managements-avatar-sm',
             medium: 'applicants-managements-avatar',
             large: 'applicants-managements-modal-avatar'
         }[size] || 'applicants-managements-avatar';
-        
+
         // Determine border radius based on the existing component style
         const borderRadius = size === 'large' ? '12px' : '50%';
-        
+
         return (
             <div className={sizeClass}>
-                <img 
+                <img
                     src={`/src/avatars/avatar-${profilePicNum}.jpg`}
                     alt={name}
-                    style={{ 
-                        width: '100%', 
-                        height: '100%', 
+                    style={{
+                        width: '100%',
+                        height: '100%',
                         borderRadius,
-                        objectFit: 'cover' 
+                        objectFit: 'cover'
                     }}
                     onError={(e) => {
                         // If image fails to load, replace with initial
@@ -144,7 +193,7 @@ const ApplicantsManagement = () => {
             toast.error('Failed to download resume');
         }
     };
-    
+
     // Fetch applicants on component mount
     useEffect(() => {
         fetchApplicants();
@@ -183,51 +232,18 @@ const ApplicantsManagement = () => {
             setLoading(false);
         }
     };
-    
+
     // View applicant details
-    const handleViewDetails = async (applicant) => {
-        try {
-            // Fetch complete details for the applicant
-            const response = await fetch(`${API_BASE_URL}/api/applicants/${applicant._id}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch applicant details');
-            }
-
-            const detailedData = await response.json();
-
-            // Process the data
-            const processedData = {
-                ...detailedData,
-                personalDetails: detailedData.personalDetails instanceof Map ?
-                    Object.fromEntries(detailedData.personalDetails) :
-                    detailedData.personalDetails || {},
-                jobDetails: detailedData.jobDetails instanceof Map ?
-                    Object.fromEntries(detailedData.jobDetails) :
-                    detailedData.jobDetails || {},
-            };
-
-            setSelectedApplicant(processedData);
-        } catch (error) {
-            console.error('Error fetching applicant details:', error);
-            toast.error('Could not load complete applicant details');
-            // Still show the modal with available data as fallback
-            setSelectedApplicant(applicant);
-        }
-    };
 
     // Handle sorting
     const handleSort = (key) => {
         let direction = 'asc';
-        
+
         if (sortConfig.key === key && sortConfig.direction === 'asc') {
             direction = 'desc';
         }
-        
+
         setSortConfig({ key, direction });
     };
 
@@ -240,7 +256,7 @@ const ApplicantsManagement = () => {
             result.sort((a, b) => {
                 const aValue = getValueByPath(a, sortConfig.key);
                 const bValue = getValueByPath(b, sortConfig.key);
-                
+
                 if (aValue < bValue) {
                     return sortConfig.direction === 'asc' ? -1 : 1;
                 }
@@ -259,8 +275,8 @@ const ApplicantsManagement = () => {
             result = result.filter(app => app.jobDetails?.position === filters.position);
         }
         if (filters.branch) {
-            result = result.filter(app => 
-                app.jobDetails?.branch === filters.branch || 
+            result = result.filter(app =>
+                app.jobDetails?.branch === filters.branch ||
                 app.branchName === filters.branch
             );
         }
@@ -333,16 +349,54 @@ const ApplicantsManagement = () => {
     // Export to Excel
     const exportToExcel = () => {
         try {
-            const exportData = filteredApplicants.map(app => ({
-                'Full Name': app.personalDetails?.name || 'N/A',
-                'Email': app.personalDetails?.email || 'N/A',
-                'Phone': app.personalDetails?.phone || 'N/A',
-                'Position': app.jobDetails?.position || 'N/A',
-                'Branch': app.jobDetails?.branch || app.branchName || 'N/A',
-                'Status': app.status || 'N/A',
-                'Applied Date': new Date(app.createdAt).toLocaleDateString(),
-                'Resume': app.resume?.filename || 'No Resume'
-            }));
+            // Create a more comprehensive export data structure
+            const exportData = filteredApplicants.map(app => {
+                const personalDetails = getPersonalDetails(app);
+                const jobDetails = getJobDetails(app);
+                const branchName = getBranchName(app);
+
+                // Create base export object with standard fields
+                const exportObj = {
+                    'Full Name': personalDetails.name || personalDetails.fullName || 'N/A',
+                    'Email': personalDetails.email || 'N/A',
+                    'Phone': personalDetails.phone || personalDetails.phoneNumber || personalDetails.contact || 'N/A',
+                    'Position': jobDetails.position || jobDetails.jobTitle || 'N/A',
+                    'Branch': branchName,
+                    'Status': app.status || 'pending',
+                    'Applied Date': new Date(app.createdAt).toLocaleDateString(),
+                    'Resume': app.resume?.filename || 'No Resume'
+                };
+
+                // Add any additional personal details fields that aren't already included
+                Object.entries(personalDetails).forEach(([key, value]) => {
+                    if (!['name', 'fullName', 'email', 'phone', 'phoneNumber', 'contact'].includes(key) && value) {
+                        // Format the key for readability
+                        const formattedKey = key.replace(/([A-Z])/g, ' $1')
+                            .replace(/^./, str => str.toUpperCase())
+                            .trim();
+
+                        if (!exportObj[formattedKey]) {
+                            exportObj[formattedKey] = value;
+                        }
+                    }
+                });
+
+                // Add any additional job details fields that aren't already included
+                Object.entries(jobDetails).forEach(([key, value]) => {
+                    if (!['position', 'jobTitle', 'branch', 'branchName'].includes(key) && value) {
+                        // Format the key for readability
+                        const formattedKey = key.replace(/([A-Z])/g, ' $1')
+                            .replace(/^./, str => str.toUpperCase())
+                            .trim();
+
+                        if (!exportObj[formattedKey]) {
+                            exportObj[`Job ${formattedKey}`] = value;
+                        }
+                    }
+                });
+
+                return exportObj;
+            });
 
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
@@ -350,13 +404,21 @@ const ApplicantsManagement = () => {
 
             // Auto-size columns
             const colWidths = [];
+            // Get headers first
+            const headers = Object.keys(exportData[0] || {});
+            headers.forEach((header, i) => {
+                colWidths[i] = Math.max(header.length, colWidths[i] || 0);
+            });
+
+            // Then check all data rows
             exportData.forEach(row => {
                 Object.values(row).forEach((value, i) => {
-                    const length = value.toString().length;
+                    const length = (value || '').toString().length;
                     colWidths[i] = Math.max(colWidths[i] || 0, length);
                 });
             });
-            ws['!cols'] = colWidths.map(width => ({ wch: width }));
+
+            ws['!cols'] = colWidths.map(width => ({ wch: Math.min(width + 2, 50) })); // Add padding but cap at 50
 
             XLSX.writeFile(wb, `applicants_${new Date().toISOString().split('T')[0]}.xlsx`);
             toast.success('Excel export completed successfully');
@@ -366,7 +428,7 @@ const ApplicantsManagement = () => {
         }
     };
 
-    // Export to PDF
+    // Updated PDF export function
     const exportToPDF = () => {
         try {
             const doc = new jsPDF();
@@ -379,25 +441,33 @@ const ApplicantsManagement = () => {
             doc.setFontSize(10);
             doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
 
-            // Define columns for the table
+            // Prepare rows data with all fields properly extracted
+            const tableRows = filteredApplicants.map(app => {
+                const personalDetails = getPersonalDetails(app);
+                const jobDetails = getJobDetails(app);
+                const branchName = getBranchName(app);
+
+                return [
+                    personalDetails.name || personalDetails.fullName || 'N/A',
+                    personalDetails.email || 'N/A',
+                    personalDetails.phone || personalDetails.phoneNumber || personalDetails.contact || 'N/A',
+                    jobDetails.position || jobDetails.jobTitle || 'N/A',
+                    branchName, // Using our helper function to get branch from all possible locations
+                    app.status || 'pending',
+                    new Date(app.createdAt).toLocaleDateString()
+                ];
+            });
+
+            // Define columns for the table with fixed set for PDF layout
             const tableColumn = [
                 'Full Name',
                 'Email',
+                'Phone',
                 'Position',
                 'Branch',
                 'Status',
                 'Applied Date'
             ];
-
-            // Prepare rows data
-            const tableRows = filteredApplicants.map(app => [
-                app.personalDetails?.name || 'N/A',
-                app.personalDetails?.email || 'N/A',
-                app.jobDetails?.position || 'N/A',
-                app.jobDetails?.branch || app.branchName || 'N/A',
-                app.status || 'pending',
-                new Date(app.createdAt).toLocaleDateString()
-            ]);
 
             // Add the table
             doc.autoTable({
@@ -411,14 +481,184 @@ const ApplicantsManagement = () => {
                     fontSize: 8,
                     fontStyle: 'bold',
                     halign: 'center'
+                },
+                columnStyles: {
+                    0: { cellWidth: 30 }, // Name
+                    1: { cellWidth: 40 }, // Email
+                    2: { cellWidth: 25 }, // Phone
+                    3: { cellWidth: 30 }, // Position
+                    4: { cellWidth: 25 }, // Branch
+                    5: { cellWidth: 20 }, // Status
+                    6: { cellWidth: 25 }  // Date
                 }
             });
 
-            doc.save(`applicants_${new Date().toISOString().split('T')[0]}.pdf`);
+            // Add a second page with detailed information for each applicant
+            doc.addPage();
+            doc.setFontSize(14);
+            doc.text('Detailed Applicant Information', 14, 15);
+
+            let yPosition = 25;
+
+            // Loop through each applicant and add detailed information
+            filteredApplicants.forEach((app, index) => {
+                const personalDetails = getPersonalDetails(app);
+                const jobDetails = getJobDetails(app);
+                const branchName = getBranchName(app);
+
+                // Check if we need a new page
+                if (yPosition > 250) {
+                    doc.addPage();
+                    yPosition = 15;
+                }
+
+                // Add applicant header
+                doc.setFontSize(12);
+                doc.setTextColor(71, 71, 135);
+                doc.text(`Applicant ${index + 1}: ${personalDetails.name || 'N/A'}`, 14, yPosition);
+                yPosition += 6;
+
+                // Add applicant basic info
+                doc.setFontSize(9);
+                doc.setTextColor(0, 0, 0);
+                doc.text(`Email: ${personalDetails.email || 'N/A'}`, 14, yPosition);
+                yPosition += 5;
+                doc.text(`Phone: ${personalDetails.phone || personalDetails.phoneNumber || personalDetails.contact || 'N/A'}`, 14, yPosition);
+                yPosition += 5;
+                doc.text(`Position: ${jobDetails.position || jobDetails.jobTitle || 'N/A'}`, 14, yPosition);
+                yPosition += 5;
+                doc.text(`Branch: ${branchName}`, 14, yPosition);
+                yPosition += 5;
+                doc.text(`Status: ${app.status || 'pending'}`, 14, yPosition);
+                yPosition += 5;
+                doc.text(`Applied Date: ${new Date(app.createdAt).toLocaleDateString()}`, 14, yPosition);
+                yPosition += 5;
+
+                // Add resume information if available
+                if (app.resume) {
+                    doc.text(`Resume: ${app.resume.filename}`, 14, yPosition);
+                    yPosition += 5;
+                }
+
+                // Add additional personal details
+                doc.setFontSize(10);
+                doc.setTextColor(71, 71, 135);
+                doc.text('Additional Personal Details:', 14, yPosition);
+                yPosition += 6;
+
+                doc.setFontSize(9);
+                doc.setTextColor(0, 0, 0);
+
+                // Add all personal details not already included
+                Object.entries(personalDetails).forEach(([key, value]) => {
+                    if (!['name', 'fullName', 'email', 'phone', 'phoneNumber', 'contact'].includes(key) && value) {
+                        const formattedKey = key.replace(/([A-Z])/g, ' $1')
+                            .replace(/^./, str => str.toUpperCase())
+                            .trim();
+
+                        // Check if we need a new page
+                        if (yPosition > 270) {
+                            doc.addPage();
+                            yPosition = 15;
+                        }
+
+                        doc.text(`${formattedKey}: ${value}`, 14, yPosition);
+                        yPosition += 5;
+                    }
+                });
+
+                // Add additional job details
+                doc.setFontSize(10);
+                doc.setTextColor(71, 71, 135);
+                doc.text('Additional Job Details:', 14, yPosition);
+                yPosition += 6;
+
+                doc.setFontSize(9);
+                doc.setTextColor(0, 0, 0);
+
+                // Add all job details not already included
+                Object.entries(jobDetails).forEach(([key, value]) => {
+                    if (!['position', 'jobTitle', 'branch', 'branchName'].includes(key) && value) {
+                        const formattedKey = key.replace(/([A-Z])/g, ' $1')
+                            .replace(/^./, str => str.toUpperCase())
+                            .trim();
+
+                        // Check if we need a new page
+                        if (yPosition > 270) {
+                            doc.addPage();
+                            yPosition = 15;
+                        }
+
+                        doc.text(`${formattedKey}: ${value}`, 14, yPosition);
+                        yPosition += 5;
+                    }
+                });
+
+                // Add space between applicants
+                yPosition += 10;
+            });
+
+            doc.save(`applicants_detailed_${new Date().toISOString().split('T')[0]}.pdf`);
             toast.success('PDF export completed successfully');
         } catch (error) {
             console.error('Error exporting to PDF:', error);
             toast.error('Failed to export to PDF');
+        }
+    };
+
+    // Updated Detail View Handler
+    const handleViewDetails = async (applicant) => {
+        try {
+            // Fetch complete details for the applicant
+            const response = await fetch(`${API_BASE_URL}/api/applicants/${applicant._id}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch applicant details');
+            }
+
+            const detailedData = await response.json();
+
+            // Process the data
+            const processedData = {
+                ...detailedData,
+                personalDetails: detailedData.personalDetails instanceof Map ?
+                    Object.fromEntries(detailedData.personalDetails) :
+                    detailedData.personalDetails || {},
+                jobDetails: detailedData.jobDetails instanceof Map ?
+                    Object.fromEntries(detailedData.jobDetails) :
+                    detailedData.jobDetails || {},
+                // Ensure branchName is set from all possible sources
+                branchName: detailedData.branchName ||
+                    detailedData.jobDetails?.branch ||
+                    (detailedData.jobDetails instanceof Map ?
+                        detailedData.jobDetails.get('branch') ||
+                        detailedData.jobDetails.get('branchName') : null)
+            };
+
+            setSelectedApplicant(processedData);
+        } catch (error) {
+            console.error('Error fetching applicant details:', error);
+            toast.error('Could not load complete applicant details');
+
+            // Still show the modal with available data as fallback
+            // Ensure we still extract branch name properly
+            const processedApplicant = {
+                ...applicant,
+                personalDetails: applicant.personalDetails instanceof Map ?
+                    Object.fromEntries(applicant.personalDetails) :
+                    applicant.personalDetails || {},
+                jobDetails: applicant.jobDetails instanceof Map ?
+                    Object.fromEntries(applicant.jobDetails) :
+                    applicant.jobDetails || {},
+                // Ensure branchName is set from all possible sources
+                branchName: getBranchName(applicant)
+            };
+
+            setSelectedApplicant(processedApplicant);
         }
     };
 
@@ -442,7 +682,7 @@ const ApplicantsManagement = () => {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="applicants-managements-card-body">
                         <div className="applicants-managements-contact">
                             <div className="applicants-managements-contact-item">
@@ -462,7 +702,7 @@ const ApplicantsManagement = () => {
                                 </div>
                             )}
                         </div>
-                        
+
                         <div className="applicants-managements-meta">
                             <div className="applicants-managements-meta-item">
                                 <Calendar className="applicants-managements-meta-icon" size={16} />
@@ -470,7 +710,7 @@ const ApplicantsManagement = () => {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="applicants-managements-actions">
                         <div className="applicants-managements-status-select-wrapper">
                             <select
@@ -484,7 +724,7 @@ const ApplicantsManagement = () => {
                                 <option value="rejected">Rejected</option>
                             </select>
                         </div>
-                        
+
                         <div className="applicants-managements-action-buttons">
                             <button
                                 onClick={() => handleViewDetails(applicant)}
@@ -494,9 +734,9 @@ const ApplicantsManagement = () => {
                                 <Eye size={16} />
                                 View
                             </button>
-                            
+
                             {applicant.resume && (
-                                <button 
+                                <button
                                     onClick={() => downloadResume(applicant._id, applicant.resume.filename)}
                                     className="applicants-managements-download-btn"
                                     title="Download resume"
@@ -540,13 +780,13 @@ const ApplicantsManagement = () => {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="applicants-managements-list-right">
                         <div className={`applicants-managements-list-status-badge ${applicant.status || 'pending'}`}>
                             {getStatusIcon(applicant.status)}
                             <span>{applicant.status ? applicant.status.toUpperCase() : 'PENDING'}</span>
                         </div>
-                        
+
                         <div className="applicants-managements-list-actions">
                             <select
                                 value={applicant.status || 'pending'}
@@ -558,17 +798,17 @@ const ApplicantsManagement = () => {
                                 <option value="shortlisted">Shortlisted</option>
                                 <option value="rejected">Rejected</option>
                             </select>
-                            
+
                             <button
                                 onClick={() => handleViewDetails(applicant)}
-                                className="applicants-managements-list-view-btn" style={{width:'fit-content',height:'fit-conten'}}
+                                className="applicants-managements-list-view-btn" style={{ width: 'fit-content', height: 'fit-conten' }}
                             >
                                 <Eye size={16} />
-                                
+
                             </button>
-                            
+
                             {applicant.resume && (
-                                <button 
+                                <button
                                     onClick={() => downloadResume(applicant._id, applicant.resume.filename)}
                                     className="applicants-managements-list-download-btn"
                                 >
@@ -593,12 +833,12 @@ const ApplicantsManagement = () => {
                             {getStatusIcon(applicant.status)}
                         </div>
                     </div>
-                    
+
                     <div className="applicants-managements-compact-body">
                         <h3 className="applicants-managements-compact-name">{applicant.personalDetails?.name || 'Not provided'}</h3>
                         <p className="applicants-managements-compact-position">{applicant.jobDetails?.position || 'Position not specified'}</p>
                     </div>
-                    
+
                     <div className="applicants-managements-compact-actions">
                         <select
                             value={applicant.status || 'pending'}
@@ -610,7 +850,7 @@ const ApplicantsManagement = () => {
                             <option value="shortlisted">Shortlisted</option>
                             <option value="rejected">Rejected</option>
                         </select>
-                        
+
                         <button
                             onClick={() => handleViewDetails(applicant)}
                             className="applicants-managements-compact-view-btn"
@@ -627,32 +867,32 @@ const ApplicantsManagement = () => {
         <div className="applicants-managements-container">
             <div className="applicants-managements-header">
                 <h1>Application Management</h1>
-                
+
                 <div className="applicants-managements-toolbar">
-                    <button 
+                    <button
                         className={`applicants-managements-refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
                         onClick={refreshData}
                         title="Refresh data"
                     >
                         <RefreshCw size={18} />
                     </button>
-                    
+
                     <div className="applicants-managements-view-toggle">
-                        <button 
+                        <button
                             className={`applicants-managements-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
                             onClick={() => setViewMode('grid')}
                             title="Grid view"
                         >
                             <Grid size={18} />
                         </button>
-                        <button 
+                        <button
                             className={`applicants-managements-view-btn ${viewMode === 'list' ? 'active' : ''}`}
                             onClick={() => setViewMode('list')}
                             title="List view"
                         >
                             <List size={18} />
                         </button>
-                        <button 
+                        <button
                             className={`applicants-managements-view-btn ${viewMode === 'compact' ? 'active' : ''}`}
                             onClick={() => setViewMode('compact')}
                             title="Compact view"
@@ -660,7 +900,7 @@ const ApplicantsManagement = () => {
                             <LayoutGrid size={18} />
                         </button>
                     </div>
-                    
+
                     <div className="applicants-managements-search-container">
                         <Search className="applicants-managements-search-icon" size={18} />
                         <input
@@ -671,8 +911,8 @@ const ApplicantsManagement = () => {
                             className="applicants-managements-search-input"
                         />
                     </div>
-                    
-                    <button 
+
+                    <button
                         className={`applicants-managements-filter-btn ${showFilters ? 'active' : ''}`}
                         onClick={() => setShowFilters(!showFilters)}
                         title="Toggle filters"
@@ -681,9 +921,9 @@ const ApplicantsManagement = () => {
                         <span>Filters</span>
                         <ChevronDown size={16} className={`applicants-managements-chevron ${showFilters ? 'open' : ''}`} />
                     </button>
-                    
+
                     <div className="applicants-managements-export-options">
-                        <button 
+                        <button
                             onClick={exportToExcel}
                             className="applicants-managements-export-btn excel"
                             title="Export to Excel"
@@ -691,7 +931,7 @@ const ApplicantsManagement = () => {
                             <FileSpreadsheet size={18} />
                             <span>Excel</span>
                         </button>
-                        <button 
+                        <button
                             onClick={exportToPDF}
                             className="applicants-managements-export-btn pdf"
                             title="Export to PDF"
@@ -700,18 +940,20 @@ const ApplicantsManagement = () => {
                             <span>PDF</span>
                         </button>
                     </div>
-                    
-                    <button
-                        onClick={() => setShowFieldManager(true)}
-                        className="applicants-managements-customize-btn"
-                        title="Customize application form"
-                    >
-                        <Settings size={18} />
-                        <span>Customize Form</span>
-                    </button>
+
+                    {canCustomizeForm() && (
+                        <button
+                            onClick={() => setShowFieldManager(true)}
+                            className="applicants-managements-customize-btn"
+                            title="Customize application form"
+                        >
+                            <Settings size={18} />
+                            <span>Customize Form</span>
+                        </button>
+                    )}
                 </div>
             </div>
-            
+
             {showFilters && (
                 <div className="applicants-managements-filters-panel">
                     <div className="applicants-managements-filter-group">
@@ -728,7 +970,7 @@ const ApplicantsManagement = () => {
                             <option value="rejected">Rejected</option>
                         </select>
                     </div>
-                    
+
                     <div className="applicants-managements-filter-group">
                         <label>Position</label>
                         <select
@@ -742,7 +984,7 @@ const ApplicantsManagement = () => {
                             ))}
                         </select>
                     </div>
-                    
+
                     <div className="applicants-managements-filter-group">
                         <label>Branch</label>
                         <select
@@ -756,9 +998,9 @@ const ApplicantsManagement = () => {
                             ))}
                         </select>
                     </div>
-                    
+
                     <div className="applicants-managements-filter-actions">
-                        <button 
+                        <button
                             onClick={() => {
                                 setFilters({ status: '', position: '', branch: '' });
                                 toast.info('Filters have been reset');
@@ -770,7 +1012,7 @@ const ApplicantsManagement = () => {
                     </div>
                 </div>
             )}
-            
+
             <div className="applicants-managements-content">
                 {loading ? (
                     <div className="applicants-managements-loading-state">
@@ -793,12 +1035,12 @@ const ApplicantsManagement = () => {
                         <h3>No Applications Found</h3>
                         <p>Try adjusting your filters or search terms</p>
                         {(filters.status || filters.position || filters.branch || searchTerm) && (
-                            <button 
+                            <button
                                 onClick={() => {
                                     setFilters({ status: '', position: '', branch: '' });
                                     setSearchTerm('');
                                     toast.info('Search and filters have been cleared');
-                                }} 
+                                }}
                                 className="applicants-managements-clear-btn"
                             >
                                 Clear All Filters
@@ -813,7 +1055,7 @@ const ApplicantsManagement = () => {
                     </>
                 )}
             </div>
-            
+
             {showFieldManager && (
                 <FormFieldManager
                     isOpen={showFieldManager}
@@ -823,7 +1065,8 @@ const ApplicantsManagement = () => {
                     }}
                 />
             )}
-            
+
+            {/* Updated Applicant Detail Modal JSX */}
             {selectedApplicant && (
                 <div className="applicants-managements-detail-modal">
                     <div className="applicants-managements-modal-overlay" onClick={() => setSelectedApplicant(null)}></div>
@@ -831,7 +1074,7 @@ const ApplicantsManagement = () => {
                         <button className="applicants-managements-modal-close" onClick={() => setSelectedApplicant(null)}>
                             <X size={24} />
                         </button>
-                        
+
                         <div className="applicants-managements-modal-header">
                             {renderAvatar(selectedApplicant, 'large')}
                             <div className="applicants-managements-modal-title">
@@ -845,7 +1088,7 @@ const ApplicantsManagement = () => {
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div className="applicants-managements-modal-body">
                             <div className="applicants-managements-detail-section">
                                 <div className="applicants-managements-section-header">
@@ -859,8 +1102,9 @@ const ApplicantsManagement = () => {
                                             .map(([key, value]) => (
                                                 <div key={key} className="applicants-managements-detail-item">
                                                     <label>
-                                                        {key.split(/(?=[A-Z])/).join(' ').charAt(0).toUpperCase() +
-                                                            key.split(/(?=[A-Z])/).join(' ').slice(1)}
+                                                        {key.replace(/([A-Z])/g, ' $1')
+                                                            .replace(/^./, str => str.toUpperCase())
+                                                            .trim()}
                                                     </label>
                                                     <p>{value}</p>
                                                 </div>
@@ -868,7 +1112,7 @@ const ApplicantsManagement = () => {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div className="applicants-managements-detail-section">
                                 <div className="applicants-managements-section-header">
                                     <Briefcase className="applicants-managements-section-icon" />
@@ -876,13 +1120,29 @@ const ApplicantsManagement = () => {
                                 </div>
                                 <div className="applicants-managements-section-content">
                                     <div className="applicants-managements-detail-grid">
+                                        {/* Add explicit branch name field first */}
+                                        <div className="applicants-managements-detail-item">
+                                            <label>Branch</label>
+                                            <p>{selectedApplicant.branchName ||
+                                                selectedApplicant.jobDetails?.branch ||
+                                                selectedApplicant.jobDetails?.branchName ||
+                                                'Not specified'}</p>
+                                        </div>
+
+                                        {/* Then add the rest of the job details */}
                                         {Object.entries(selectedApplicant.jobDetails || {})
-                                            .filter(([key, value]) => value !== null && value !== undefined && value !== '')
+                                            .filter(([key, value]) =>
+                                                value !== null &&
+                                                value !== undefined &&
+                                                value !== '' &&
+                                                key !== 'branch' &&
+                                                key !== 'branchName')
                                             .map(([key, value]) => (
                                                 <div key={key} className="applicants-managements-detail-item">
                                                     <label>
-                                                        {key.split(/(?=[A-Z])/).join(' ').charAt(0).toUpperCase() +
-                                                            key.split(/(?=[A-Z])/).join(' ').slice(1)}
+                                                        {key.replace(/([A-Z])/g, ' $1')
+                                                            .replace(/^./, str => str.toUpperCase())
+                                                            .trim()}
                                                     </label>
                                                     <p>{value}</p>
                                                 </div>
@@ -890,7 +1150,7 @@ const ApplicantsManagement = () => {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             {selectedApplicant.resume && (
                                 <div className="applicants-managements-detail-section">
                                     <div className="applicants-managements-section-header">
@@ -911,7 +1171,7 @@ const ApplicantsManagement = () => {
                                     </div>
                                 </div>
                             )}
-                            
+
                             <div className="applicants-managements-detail-section">
                                 <div className="applicants-managements-section-header">
                                     <h3>Application Status</h3>
@@ -932,6 +1192,28 @@ const ApplicantsManagement = () => {
                                         <p className="applicants-managements-status-help-text">
                                             Changing status will notify the applicant via email automatically.
                                         </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Add application date section */}
+                            <div className="applicants-managements-detail-section">
+                                <div className="applicants-managements-section-header">
+                                    <Calendar className="applicants-managements-section-icon" />
+                                    <h3>Application Information</h3>
+                                </div>
+                                <div className="applicants-managements-section-content">
+                                    <div className="applicants-managements-detail-grid">
+                                        <div className="applicants-managements-detail-item">
+                                            <label>Applied On</label>
+                                            <p>{new Date(selectedApplicant.createdAt).toLocaleString()}</p>
+                                        </div>
+                                        {selectedApplicant.updatedAt && (
+                                            <div className="applicants-managements-detail-item">
+                                                <label>Last Updated</label>
+                                                <p>{new Date(selectedApplicant.updatedAt).toLocaleString()}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   User, Mail, Phone, MapPin, Building, Briefcase, 
-  Save, Upload, X, FileText, Clock, ChevronDown, ChevronUp 
+  Save, Upload, X, FileText, Clock, Award, Calendar, AlertCircle
 } from 'lucide-react';
 import { useToast } from './common/ToastContent.jsx';
 import '../assets/css/EditProfile.css';
@@ -15,7 +15,21 @@ const EditProfile = () => {
   const [loading, setLoading] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [uploadedDocuments, setUploadedDocuments] = useState([]);
-  // Removed expandedSections state as we're using activeSection to control visibility
+  const [documentError, setDocumentError] = useState(null);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [debugInfo, setDebugInfo] = useState(null);
+  
+  // Add milestone tracking
+  const [showMilestoneForm, setShowMilestoneForm] = useState(false);
+  const [milestone, setMilestone] = useState({
+    title: '',
+    description: '',
+    date: new Date().toISOString().split('T')[0],
+    impact: '',
+    branch: '',
+    type: 'milestone'
+  });
+  
   const [formData, setFormData] = useState({
     personalDetails: {
       name: '',
@@ -28,7 +42,8 @@ const EditProfile = () => {
       branch: '',
       department: '',
       status: 'active'
-    }
+    },
+    milestones: []
   });
 
   // Fetch employees on component mount
@@ -36,7 +51,6 @@ const EditProfile = () => {
     const loadEmployees = async () => {
       try {
         await fetchEmployees();
-        console.log("Employees loaded in useEffect");
       } catch (err) {
         console.error("Error in useEffect loading employees:", err);
       }
@@ -59,19 +73,16 @@ const EditProfile = () => {
       }
 
       const data = await response.json();
-      console.log("Fetched employees:", data);
       
       if (Array.isArray(data)) {
         setEmployees(data);
       } else {
         console.error("Employees data is not an array:", data);
-        error('Received invalid employee data format');
       }
       
       setLoading(false);
     } catch (err) {
       console.error("Error fetching employees:", err);
-      error('Failed to load employees: ' + (err.message || 'Unknown error'));
       setLoading(false);
     }
   };
@@ -80,16 +91,14 @@ const EditProfile = () => {
     if (!employeeId) {
       setSelectedEmployee(null);
       setDocuments([]);
+      resetForm();
       return;
     }
     
     try {
       setLoading(true);
-      console.log("Selected employee ID:", employeeId);
-      console.log("Available employees:", employees);
       
       const employee = employees.find(emp => emp._id === employeeId);
-      console.log("Found employee:", employee);
       
       if (employee) {
         setSelectedEmployee(employee);
@@ -107,11 +116,9 @@ const EditProfile = () => {
           }
           
           const docsData = await docsResponse.json();
-          console.log("Fetched documents:", docsData);
           setDocuments(Array.isArray(docsData) ? docsData : []);
         } catch (docError) {
           console.error("Error fetching documents:", docError);
-          // Continue with empty documents array if there's an error
           setDocuments([]);
         }
         
@@ -128,20 +135,48 @@ const EditProfile = () => {
             branch: employee?.professionalDetails?.branch || '',
             department: employee?.professionalDetails?.department || '',
             status: employee?.professionalDetails?.status || 'active'
-          }
+          },
+          milestones: []
         });
-        
-        info(`Loaded profile for ${employee?.personalDetails?.name || 'employee'}`);
       } else {
-        error("Employee not found in the list");
+        console.error("Employee not found in the list");
       }
       
       setLoading(false);
     } catch (err) {
       console.error("Error in handleEmployeeSelect:", err);
-      error('Error loading employee details: ' + (err.message || 'Unknown error'));
       setLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      personalDetails: {
+        name: '',
+        contact: '',
+        email: '',
+        address: ''
+      },
+      professionalDetails: {
+        role: '',
+        branch: '',
+        department: '',
+        status: 'active'
+      },
+      milestones: []
+    });
+    setMilestone({
+      title: '',
+      description: '',
+      date: new Date().toISOString().split('T')[0],
+      impact: '',
+      branch: '',
+      type: 'milestone'
+    });
+    setShowMilestoneForm(false);
+    setUploadedDocuments([]);
+    setDocumentError(null);
+    setDebugInfo(null);
   };
 
   const handleInputChange = (section, field, value) => {
@@ -156,21 +191,36 @@ const EditProfile = () => {
 
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files);
+    setDocumentError(null);
     
     // Check file size (5MB limit)
     const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
-      error(`Some files exceed the 5MB limit: ${oversizedFiles.map(f => f.name).join(', ')}`);
+      setDocumentError(`Some files exceed the 5MB limit: ${oversizedFiles.map(f => f.name).join(', ')}`);
+      return;
+    }
+    
+    // Check file type
+    const allowedTypes = [
+      'application/pdf', 
+      'application/msword', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+      'image/jpeg', 
+      'image/png',
+      'image/gif'
+    ];
+    
+    const invalidFiles = files.filter(file => !allowedTypes.includes(file.type));
+    if (invalidFiles.length > 0) {
+      setDocumentError(`Invalid file format: ${invalidFiles.map(f => f.name).join(', ')}. Only PDF, Word, and images are allowed.`);
       return;
     }
     
     setUploadedDocuments(prev => [...prev, ...files]);
-    info(`Added ${files.length} document${files.length !== 1 ? 's' : ''} for upload`);
   };
 
   const removeUploadedDocument = (index) => {
     setUploadedDocuments(prev => prev.filter((_, i) => i !== index));
-    info('Document removed from upload queue');
   };
 
   const removeExistingDocument = async (documentId) => {
@@ -189,40 +239,217 @@ const EditProfile = () => {
       }
 
       setDocuments(prev => prev.filter(doc => doc._id !== documentId));
-      success('Document deleted successfully');
     } catch (err) {
-      error('Error deleting document: ' + err.message);
+      console.error('Error deleting document:', err);
     }
   };
 
-  // Removed handleSectionToggle as we're directly controlling visibility with activeSection tabs
-
   const handleNavClick = (section) => {
     setActiveSection(section);
-    // No need to use expandedSections anymore as we're directly controlling visibility with activeSection
+  };
+
+  // Helper function to format role names for display
+  const formatRole = (role) => {
+    if (!role) return 'Unknown';
+    return role
+      .replace(/_/g, ' ')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  // Render role options with visual feedback about changes
+  const renderRoleOptions = () => {
+    const roles = [
+      { value: 'employee', label: 'Employee' },
+      { value: 'agent', label: 'Agent' },
+      { value: 'hr_manager', label: 'HR Manager' },
+      { value: 't1_member', label: 'T1 Member' },
+      { value: 'operational_manager', label: 'Operational Manager' }
+    ];
+    
+    return roles.map(role => {
+      const isCurrentRole = selectedEmployee?.professionalDetails?.role === role.value;
+      const isSelected = formData.professionalDetails.role === role.value;
+      const changed = isCurrentRole && !isSelected;
+      
+      return (
+        <option 
+          key={role.value} 
+          value={role.value}
+          className={changed ? 'role-changed' : isCurrentRole ? 'current-role' : ''}
+        >
+          {role.label} {isCurrentRole ? '(Current)' : ''}
+        </option>
+      );
+    });
+  };
+
+  // Handle milestone form changes
+  const handleMilestoneChange = (field, value) => {
+    setMilestone(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    
+    // Auto-set branch from professional details if not set
+    if (field === 'branch' && !value) {
+      setMilestone(prev => ({
+        ...prev,
+        branch: formData.professionalDetails.branch
+      }));
+    }
+  };
+
+  // Add milestone to pending list
+  const handleAddMilestone = () => {
+    if (!milestone.title || !milestone.description) {
+      error('Please provide both title and description for the milestone');
+      return;
+    }
+    
+    // Add milestone to form data with current date if not specified
+    const newMilestone = {
+      ...milestone,
+      branch: milestone.branch || formData.professionalDetails.branch,
+      date: milestone.date || new Date().toISOString().split('T')[0]
+    };
+    
+    setFormData(prev => ({
+      ...prev,
+      milestones: [...prev.milestones, newMilestone]
+    }));
+    
+    // Reset milestone form
+    setMilestone({
+      title: '',
+      description: '',
+      date: new Date().toISOString().split('T')[0],
+      impact: '',
+      branch: '',
+      type: 'milestone'
+    });
+    setShowMilestoneForm(false);
+    
+    // Show success message
+    success('Milestone added and will be saved with profile updates');
+  };
+
+  // Remove a pending milestone
+  const removePendingMilestone = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      milestones: prev.milestones.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Verify history was created by fetching it directly
+  const verifyHistory = async (employeeId) => {
+    try {
+      const historyResponse = await fetch(`${API_BASE_URL}/api/employees/${employeeId}/history`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!historyResponse.ok) {
+        throw new Error('Failed to fetch history');
+      }
+      
+      const historyData = await historyResponse.json();
+      
+      // Add this for debugging 
+      setDebugInfo({
+        historyCount: historyData.length,
+        history: historyData
+      });
+      
+      // Return whether history has items
+      return historyData.length > 0;
+    } catch (err) {
+      console.error("Error verifying history:", err);
+      return false;
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    const GENERATE_AUTO_MILESTONES_CLIENT_SIDE = false;
+const autoMilestones = [];
     if (!selectedEmployee || !selectedEmployee._id) {
       error('No employee selected');
       return;
     }
     
+    // Check if there are document validation errors
+    if (documentError) {
+      error(documentError);
+      return;
+    }
+    
     try {
       setLoading(true);
-      console.log("Submitting update for employee:", selectedEmployee._id);
       
       const formPayload = new FormData();
       
-      // Make sure formData is properly structured before stringifying
+      // Detect role changes and branch transfers and add as automatic milestones
+      const autoMilestones = [];
+      
+      // Check for role change  
+      if (GENERATE_AUTO_MILESTONES_CLIENT_SIDE) {
+        // Check for role change  
+        if (selectedEmployee.professionalDetails?.role !== formData.professionalDetails.role) {
+          const roleMilestone = {
+            title: `Role changed to ${formatRole(formData.professionalDetails.role)}`,
+            description: `Role updated from ${formatRole(selectedEmployee.professionalDetails?.role || 'None')} to ${formatRole(formData.professionalDetails.role)}`,
+            date: new Date().toISOString().split('T')[0],
+            branch: formData.professionalDetails.branch,
+            impact: 'Employee role has been updated with new responsibilities and permissions',
+            type: 'role_change'
+          };
+          autoMilestones.push(roleMilestone);
+        }
+      
+      // Check for branch transfer
+      if (selectedEmployee.professionalDetails?.branch !== formData.professionalDetails.branch) {
+        const branchMilestone = {
+          title: `Transferred to ${formData.professionalDetails.branch} branch`,
+          description: `Branch transfer from ${selectedEmployee.professionalDetails?.branch || 'None'} to ${formData.professionalDetails.branch}`,
+          date: new Date().toISOString().split('T')[0],
+          branch: formData.professionalDetails.branch,
+          impact: 'Employee moved to a new branch location',
+          type: 'branch_transfer'
+        };
+        autoMilestones.push(branchMilestone);
+      }
+      
+      // Check for status change
+      if (selectedEmployee.professionalDetails?.status !== formData.professionalDetails.status) {
+        const statusText = formData.professionalDetails.status.replace('_', ' ');
+        const statusMilestone = {
+          title: `Status changed to ${statusText}`,
+          description: `Employee status updated from ${(selectedEmployee.professionalDetails?.status || 'active').replace('_', ' ')} to ${statusText}`,
+          date: new Date().toISOString().split('T')[0],
+          branch: formData.professionalDetails.branch,
+          impact: `Employee is now ${statusText}`,
+          type: 'status_change'
+        };
+        autoMilestones.push(statusMilestone);
+      }
+    }
+      
+      // Combine auto-generated milestones with manually added ones
+      const allMilestones = [...autoMilestones, ...formData.milestones];
+      
+      // Prepare data structure with all updates
       const sanitizedFormData = {
         personalDetails: {
           name: formData.personalDetails?.name || '',
           contact: formData.personalDetails?.contact || '',
           email: formData.personalDetails?.email || '',
-          address: formData.personalDetails?.address || ''
+          address: formData.personalDetails?.address || '',
+          // Preserve the original ID
+          id: selectedEmployee.personalDetails?.id || ''
         },
         professionalDetails: {
           role: formData.professionalDetails?.role || '',
@@ -231,8 +458,13 @@ const EditProfile = () => {
           status: formData.professionalDetails?.status || 'active'
         }
       };
+
       
-      console.log("Submitting data:", sanitizedFormData);
+      // Always include milestones array to ensure it's processed
+      sanitizedFormData.milestones = allMilestones;
+      
+      console.log("Submitting employee update with milestones:", sanitizedFormData.milestones);
+      
       formPayload.append('employeeData', JSON.stringify(sanitizedFormData));
       
       // Add uploaded documents if any
@@ -242,45 +474,53 @@ const EditProfile = () => {
             formPayload.append('documents', doc);
           }
         });
-        console.log("Added", uploadedDocuments.length, "documents to form data");
       }
       
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/employees/${selectedEmployee._id}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: formPayload
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("Server error response:", errorText);
-          throw new Error(`Failed to update employee details: ${response.status} ${response.statusText}`);
-        }
-
-        // Reset uploaded documents
-        setUploadedDocuments([]);
-        
-        // Get response data for debug
-        let responseData;
-        try {
-          responseData = await response.json();
-          console.log("Update response:", responseData);
-        } catch (jsonError) {
-          console.log("Response was not JSON:", jsonError);
-        }
-        
-        // Refresh employee data
-        await fetchEmployees(); // Refresh the whole list
-        await handleEmployeeSelect(selectedEmployee._id);
-        
-        success('Employee profile updated successfully');
-      } catch (fetchError) {
-        console.error("Fetch error:", fetchError);
-        throw fetchError;
+      const response = await fetch(`${API_BASE_URL}/api/employees/${selectedEmployee._id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formPayload
+      });
+  
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Server error response:", errorText);
+        throw new Error(`Failed to update employee details: ${response.status} ${response.statusText}`);
       }
+  
+      // Get response data
+      const responseData = await response.json();
+      console.log("Update response:", responseData);
+      
+      const milestonesCount = sanitizedFormData.milestones.length;
+      const autoCount = autoMilestones.length;
+      
+      // Reset uploaded documents and milestones
+      setUploadedDocuments([]);
+      setDocumentError(null);
+      setFormData(prev => ({
+        ...prev,
+        milestones: []
+      }));
+      
+      // Refresh employee data
+      await fetchEmployees();
+      await handleEmployeeSelect(selectedEmployee._id);
+      
+      // Show toast with milestone count information
+      let successMessage = 'Employee profile updated successfully.';
+      if (milestonesCount > 0) {
+        successMessage += ` Added ${milestonesCount} history entries`;
+        if (autoCount > 0) {
+          successMessage += ` (${autoCount} automatic, ${milestonesCount - autoCount} manual)`;
+        }
+        successMessage += '.';
+      }
+      
+      success(successMessage);
+      
     } catch (err) {
       console.error("Submit error:", err);
       error('Error updating profile: ' + (err.message || 'Unknown error'));
@@ -325,7 +565,7 @@ const EditProfile = () => {
     const status = selectedEmployee.professionalDetails?.status || 'active';
     return (
       <span className={`profile-status status-${status}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
       </span>
     );
   };
@@ -348,7 +588,7 @@ const EditProfile = () => {
             <option value="">Select an employee</option>
             {employees && employees.map(emp => (
               <option key={emp._id} value={emp._id}>
-                {emp.personalDetails?.name || 'Unknown'} - {emp.professionalDetails?.role || 'Employee'}
+                {emp.personalDetails?.name || 'Unknown'} - {formatRole(emp.professionalDetails?.role) || 'Employee'}
               </option>
             ))}
           </select>
@@ -363,7 +603,7 @@ const EditProfile = () => {
                 {getInitials(selectedEmployee?.personalDetails?.name || '')}
               </div>
               <h3 className="profile-name">{selectedEmployee?.personalDetails?.name || 'Unknown'}</h3>
-              <p className="profile-role">{selectedEmployee?.professionalDetails?.role || 'Employee'}</p>
+              <p className="profile-role">{formatRole(selectedEmployee?.professionalDetails?.role) || 'Employee'}</p>
               {renderStatusBadge()}
             </div>
             
@@ -383,6 +623,13 @@ const EditProfile = () => {
                 Professional Details
               </button>
               <button 
+                className={`nav-item ${activeSection === 'milestones' ? 'active' : ''}`}
+                onClick={() => handleNavClick('milestones')}
+              >
+                <Award size={18} />
+                Employment Milestones
+              </button>
+              <button 
                 className={`nav-item ${activeSection === 'documents' ? 'active' : ''}`}
                 onClick={() => handleNavClick('documents')}
               >
@@ -390,6 +637,9 @@ const EditProfile = () => {
                 Documents
               </button>
             </div>
+            
+            {/* Debug toggle for admins */}
+            
           </div>
           
           <div className="edit-form">
@@ -399,8 +649,19 @@ const EditProfile = () => {
               </div>
             )}
             
+            {/* Debug info panel */}
+            {showDebugInfo && debugInfo && (
+              <div className="debug-panel">
+                <h3>Debug Information</h3>
+                <div className="debug-content">
+                  <p>History Items: {debugInfo.historyCount}</p>
+                  <pre>{JSON.stringify(debugInfo.history, null, 2)}</pre>
+                </div>
+              </div>
+            )}
+            
             <form onSubmit={handleSubmit}>
-              {/* Only show the section that matches the active tab */}
+              {/* Personal Details Section */}
               {activeSection === 'personal' && (
                 <div className="form-section">
                   <div className="section-header">
@@ -491,11 +752,7 @@ const EditProfile = () => {
                           required
                         >
                           <option value="">Select Role</option>
-                          <option value="employee">Employee</option>
-                          <option value="agent">Agent</option>
-                          <option value="hr_manager">HR Manager</option>
-                          <option value="t1_member">T1 Member</option>
-                          <option value="operational_manager">Operational Manager</option>
+                          {renderRoleOptions()}
                         </select>
                       </div>
                     </div>
@@ -545,6 +802,223 @@ const EditProfile = () => {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Feedback about automatic milestone tracking */}
+                  <div className="form-feedback">
+                    {formData.milestones.length > 0 && (
+                      <div className="milestones-pending">
+                        <Award size={16} />
+                        <span>You have {formData.milestones.length} pending milestones to be saved</span>
+                      </div>
+                    )}
+                    
+                    {selectedEmployee?.professionalDetails?.role !== formData.professionalDetails.role && (
+                      <div className="change-indicator role">
+                        <Briefcase size={16} />
+                        <span>Role change will be recorded in history</span>
+                      </div>
+                    )}
+                    
+                    {selectedEmployee?.professionalDetails?.branch !== formData.professionalDetails.branch && (
+                      <div className="change-indicator branch">
+                        <Building size={16} />
+                        <span>Branch transfer will be recorded in history</span>
+                      </div>
+                    )}
+                    
+                    {selectedEmployee?.professionalDetails?.status !== formData.professionalDetails.status && (
+                      <div className="change-indicator status">
+                        <Clock size={16} />
+                        <span>Status change will be recorded in history</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {selectedEmployee.professionalDetails?.role !== formData.professionalDetails.role && (
+                    <div className="role-change-alert">
+                      <Award size={18} />
+                      <p>
+                        <strong>Role Change Detected:</strong> Changing from {formatRole(selectedEmployee.professionalDetails?.role)} to {formatRole(formData.professionalDetails.role)}. 
+                        This change will be automatically recorded in the employee's history.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {selectedEmployee.professionalDetails?.branch !== formData.professionalDetails.branch && (
+                    <div className="branch-change-alert">
+                      <Building size={18} />
+                      <p>
+                        <strong>Branch Transfer Detected:</strong> Moving from {selectedEmployee.professionalDetails?.branch} to {formData.professionalDetails.branch}. 
+                        This change will be automatically recorded in the employee's history.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Milestones Section */}
+              {activeSection === 'milestones' && (
+                <div className="form-section">
+                  <div className="section-header milestone-header">
+                    <h3>
+                      <Award size={18} />
+                      Employment Milestones
+                    </h3>
+                    {!showMilestoneForm && (
+                      <button 
+                        type="button" 
+                        className="add-milestone-btn"
+                        onClick={() => setShowMilestoneForm(true)}
+                      >
+                        Add Milestone
+                      </button>
+                    )}
+                  </div>
+                  
+                  {showMilestoneForm ? (
+                    <div className="milestone-form">
+                      <div className="form-grid">
+                        <div className="form-field">
+                          <label>Milestone Title <span className="required">*</span></label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={milestone.title}
+                            onChange={(e) => handleMilestoneChange('title', e.target.value)}
+                            placeholder="e.g., Promotion, Award, Certification"
+                            required
+                          />
+                        </div>
+                        
+                        <div className="form-field">
+                          <label>Date <span className="required">*</span></label>
+                          <input
+                            type="date"
+                            className="form-input"
+                            value={milestone.date}
+                            onChange={(e) => handleMilestoneChange('date', e.target.value)}
+                            required
+                          />
+                        </div>
+                        
+                        <div className="form-field full-width">
+                          <label>Description <span className="required">*</span></label>
+                          <textarea
+                            className="form-textarea"
+                            value={milestone.description}
+                            onChange={(e) => handleMilestoneChange('description', e.target.value)}
+                            placeholder="Describe the milestone in detail"
+                            rows={3}
+                            required
+                          />
+                        </div>
+                        
+                        <div className="form-field">
+                          <label>Branch</label>
+                          <div className="input-icon-wrapper">
+                            <Building size={18} className="field-icon" />
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={milestone.branch || formData.professionalDetails.branch}
+                              onChange={(e) => handleMilestoneChange('branch', e.target.value)}
+                              placeholder="Default is current branch"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="form-field full-width">
+                          <label>Impact (Optional)</label>
+                          <textarea
+                            className="form-textarea"
+                            value={milestone.impact}
+                            onChange={(e) => handleMilestoneChange('impact', e.target.value)}
+                            placeholder="How does this milestone impact the employee's career or role?"
+                            rows={2}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="milestone-actions">
+                        <button 
+                          type="button" 
+                          className="cancel-milestone-btn"
+                          onClick={() => setShowMilestoneForm(false)}
+                        >
+                          Cancel
+                        </button>
+                        <button 
+                          type="button" 
+                          className="add-milestone-btn"
+                          onClick={handleAddMilestone}
+                        >
+                          Add Milestone
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {formData.milestones.length > 0 ? (
+                        <div className="pending-milestones">
+                          <h4>Pending Milestones</h4>
+                          <div className="milestone-list">
+                            {formData.milestones.map((ms, index) => (
+                              <div className="milestone-item" key={index}>
+                                <div className="milestone-header">
+                                  <h5>{ms.title}</h5>
+                                  <span className="milestone-date">
+                                    <Calendar size={14} />
+                                    {formatDate(ms.date)}
+                                  </span>
+                                </div>
+                                <p className="milestone-description">{ms.description}</p>
+                                {ms.branch && (
+                                  <div className="milestone-branch">
+                                    <Building size={14} />
+                                    <span>{ms.branch}</span>
+                                  </div>
+                                )}
+                                {ms.impact && (
+                                  <p className="milestone-impact">
+                                    <strong>Impact:</strong> {ms.impact}
+                                  </p>
+                                )}
+                                <button
+                                  type="button"
+                                  className="remove-milestone-btn"
+                                  onClick={() => removePendingMilestone(index)}
+                                >
+                                  <X size={16} />
+                                  Remove
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="no-milestones">
+                          <p>No pending milestones. Add a milestone to record important career events.</p>
+                          <div className="milestone-hint">
+                            <div className="hint-item">
+                              <Award size={16} />
+                              <span>Promotions</span>
+                            </div>
+                            <div className="hint-item">
+                              <Calendar size={16} />
+                              <span>Certifications</span>
+                            </div>
+                            <div className="hint-item">
+                              <Building size={16} />
+                              <span>Transfers</span>
+                            </div>
+                          </div>
+                          <p className="auto-milestone-note">
+                            <strong>Note:</strong> Role changes and branch transfers will automatically be recorded as milestones when you save changes.
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
               
@@ -572,10 +1046,18 @@ const EditProfile = () => {
                       </div>
                       <div className="upload-text">
                         <span className="upload-title">Upload Documents</span>
-                        <span className="upload-hint">Click to browse or drag and drop files here (Max: 5MB)</span>
+                        <span className="upload-hint">Click to browse or drag and drop files here</span>
+                        <span className="upload-format">Allowed: PDF, Word, JPEG, PNG (Max: 5MB)</span>
                       </div>
                     </label>
                   </div>
+                  
+                  {documentError && (
+                    <div className="document-error">
+                      <AlertCircle size={18} />
+                      <span>{documentError}</span>
+                    </div>
+                  )}
                   
                   {uploadedDocuments.length > 0 && (
                     <div className="document-list">

@@ -200,30 +200,45 @@ const ManageLeaves = () => {
       if (!token) {
         throw new Error('Authentication required');
       }
-
+  
+      // Find the leave request before updating to get employee information
+      const leaveRequest = leaveRequests.find(leave => leave._id === id);
+      if (!leaveRequest) {
+        throw new Error('Leave request not found');
+      }
+  
       const response = await fetch(`${API_BASE_URL}/api/leaves/${id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ 
+          status,
+          // Include employee email for notification
+          email: leaveRequest.employeeEmail,
+          employeeName: leaveRequest.employeeName,
+          leaveType: leaveRequest.leaveType,
+          startDate: leaveRequest.startDate,
+          endDate: leaveRequest.endDate
+        })
       });
-
+  
       if (!response.ok) {
-        throw new Error('Failed to update leave request status');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update leave request status');
       }
-
+  
       // Update leave request in state
       setLeaveRequests(prev => 
         prev.map(leave => 
           leave._id === id ? { ...leave, status } : leave
         )
       );
-
+  
       // Show toast notification
-      toast.success(`Leave request ${status}`, 3000);
-
+      toast.success(`Leave request ${status} and email notification sent`, 3000);
+  
       // Close detail view if open
       if (selectedLeave && selectedLeave._id === id) {
         setSelectedLeave(null);

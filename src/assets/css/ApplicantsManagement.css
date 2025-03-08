@@ -1506,3 +1506,185 @@
     padding: 1rem 1.5rem 1.5rem;
   }
 }
+/* Form Field Manager Modal Styling */
+.applicants-managements-form-field-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.applicants-managements-form-field-content {
+  position: relative;
+  width: 90%;
+  max-width: 800px;
+  max-height: 85vh;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  overflow-y: auto;
+  z-index: 101;
+  animation: modalFadeIn 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.applicants-managements-form-field-header {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(to right, #f8fafc, #ffffff);
+}
+
+.applicants-managements-form-field-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #be95be;
+}
+
+.applicants-managements-form-field-header p {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Form field modal body (will contain the FormFieldManager component) */
+.applicants-managements-form-field-body {
+  flex: 1;
+  padding: 1.5rem 2rem;
+  overflow-y: auto;
+}
+
+/* Permission error alert banner */
+.applicants-managements-permission-alert {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 2rem;
+  background-color: #fff3cd;
+  border-left: 4px solid #ffc107;
+  margin-bottom: 1.5rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.applicants-managements-permission-alert svg {
+  color: #ffc107;
+  flex-shrink: 0;
+}
+
+.applicants-managements-permission-alert p {
+  margin: 0;
+  color: #856404;
+  font-size: 0.875rem;
+}
+
+/* Ensure the default form field manager styles work within modal */
+.applicants-managements-form-field-content .form-field-manager-container {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Ensure styles work on different screen sizes */
+@media (max-width: 768px) {
+  .applicants-managements-form-field-content {
+    width: 95%;
+    max-height: 90vh;
+  }
+  
+  .applicants-managements-form-field-header {
+    padding: 1rem 1.5rem;
+  }
+  
+  .applicants-managements-form-field-body {
+    padding: 1rem 1.5rem;
+  }
+}
+
+/* Status update styling based on user role restrictions */
+.applicants-managements-status-update-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.applicants-managements-status-update-message {
+  font-size: 0.75rem;
+  color: #dc3545;
+  margin-top: 0.5rem;
+}
+
+/* Hide customize button for non-admin users */
+.applicants-managements-customize-btn.disabled {
+  background: linear-gradient(-135deg, #d1d5db, #9ca3af);
+  opacity: 0.7;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Tooltip for permission info */
+.applicants-managements-permission-tooltip {
+  position: relative;
+  display: inline-flex;
+  margin-left: 0.5rem;
+}
+
+.applicants-managements-permission-tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+.applicants-managements-permission-tooltip .tooltip-text {
+  visibility: hidden;
+  width: 200px;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 8px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 0.75rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.applicants-managements-permission-tooltip .tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #333 transparent transparent transparent;
+}

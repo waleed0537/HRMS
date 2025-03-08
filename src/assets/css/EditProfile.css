@@ -14,7 +14,414 @@
   flex-wrap: wrap;
   gap: 16px;
 }
+/* Add these styles to EditProfile.css */
 
+/* Milestone form styling */
+.milestone-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.add-milestone-btn {
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.add-milestone-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.milestone-form {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.milestone-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.cancel-milestone-btn {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-milestone-btn:hover {
+  background-color: #e5e7eb;
+}
+
+.pending-milestones {
+  margin-top: 20px;
+}
+
+.pending-milestones h4 {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+}
+
+.milestone-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.milestone-item {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  position: relative;
+}
+
+.milestone-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.milestone-header h5 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.milestone-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.milestone-description {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.milestone-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background-color: #dbeafe;
+  color: #2563eb;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.milestone-impact {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.remove-milestone-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.remove-milestone-btn:hover {
+  color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.no-milestones {
+  margin-top: 20px;
+  text-align: center;
+  padding: 32px 16px;
+  background-color: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+}
+
+.milestone-hint {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin: 16px 0;
+}
+
+.hint-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+}
+
+.auto-milestone-note {
+  margin-top: 16px;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.required {
+  color: #ef4444;
+}
+
+/* Document upload improvements */
+.upload-format {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.document-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-top: 12px;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+/* Make sure the form sections have a consistent look */
+.form-section {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+/* Add these CSS rules to your EditProfile.css file */
+
+/* Debug panel styling */
+.debug-toggle {
+  margin-top: 20px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
+}
+
+.debug-button {
+  width: 100%;
+  padding: 8px;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #4b5563;
+  cursor: pointer;
+}
+
+.debug-button:hover {
+  background-color: #e5e7eb;
+}
+
+.debug-panel {
+  margin-bottom: 20px;
+  padding: 16px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-family: monospace;
+}
+
+.debug-panel h3 {
+  margin-top: 0;
+  font-size: 16px;
+  color: #475569;
+  margin-bottom: 12px;
+}
+
+.debug-content {
+  max-height: 300px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.debug-content pre {
+  background-color: #f1f5f9;
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+/* Change alerts */
+.role-change-alert,
+.branch-change-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.role-change-alert {
+  background-color: #e0f2fe;
+  border: 1px solid #bae6fd;
+  color: #0369a1;
+}
+
+.branch-change-alert {
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+.role-change-alert svg,
+.branch-change-alert svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.role-change-alert p,
+.branch-change-alert p {
+  margin: 0;
+}
+
+/* Highlight role change in dropdown */
+.form-select option:disabled {
+  color: #9ca3af;
+}
+
+.form-select option.was-selected {
+  background-color: #f3f4f6;
+  font-style: italic;
+}
+
+/* Improved milestone section styling */
+.milestone-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.milestone-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.role-changed {
+  background-color: #fee2e2;
+}
+
+.current-role {
+  font-weight: 500;
+} 
+.form-feedback {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+}
+
+.milestones-pending, 
+.change-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.milestones-pending {
+  background-color: #f0f9ff;
+  color: #0369a1;
+}
+
+.change-indicator.role {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.change-indicator.branch {
+  background-color: #f0fdf4;
+  color: #15803d;
+}
+
+.change-indicator.status {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.milestone-item {
+  position: relative;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.milestone-item:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+.section-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
 .header-content {
   margin-bottom: 12px;
 }

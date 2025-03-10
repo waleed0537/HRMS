@@ -1,12 +1,12 @@
 // components/AnnouncementModal.jsx
 import React, { useState, useEffect } from 'react';
-import { X, AlertCircle, Check, Calendar, Bell, Flag, Clock, Building } from 'lucide-react';
+import { X, Check, Bell, Flag, Clock, Building } from 'lucide-react';
 import { useToast } from './common/ToastContent.jsx';
 import '../assets/css/AnnouncementModal.css';
 import API_BASE_URL from '../config/api.js';
 
 const AnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
-  const { success, error } = useToast(); // Use the toast hook
+  const { success, error, info } = useToast();
   const [branches, setBranches] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
@@ -39,11 +39,16 @@ const AnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch branches: ${response.status}`);
+      }
+      
       const data = await response.json();
       setBranches(data);
     } catch (err) {
       console.error('Error fetching branches:', err);
-      error('Unable to load branches. Please try again.'); // Use toast for error
+      error('Failed to load branches. Please try again.'); // Added toast error
     } finally {
       setLoading(false);
     }
@@ -60,29 +65,38 @@ const AnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      error('Please fix the errors in the form.'); // Added toast error
+      return;
+    }
     
     setLoading(true);
-    onSubmit(formData)
-      .then(() => {
-        success('Announcement created successfully!'); // Use toast for success
-        setFormData({
-          title: '',
-          content: '',
-          branchId: '',
-          priority: 'medium',
-          expiresAt: ''
-        });
-        onClose();
-      })
-      .catch(err => {
-        error(err.message || 'Failed to create announcement'); // Use toast for error
-      })
-      .finally(() => {
-        setLoading(false);
+    
+    try {
+      // Call the onSubmit prop with formData
+      await onSubmit(formData);
+      
+      // Reset form
+      setFormData({
+        title: '',
+        content: '',
+        branchId: '',
+        priority: 'medium',
+        expiresAt: ''
       });
+      
+      // Successful toast message is handled by the parent component via onSubmit
+      
+      // Close the modal
+      onClose();
+    } catch (err) {
+      console.error('Error creating announcement:', err);
+      error(err.message || 'Failed to create announcement. Please try again.'); // Added toast error
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getPriorityColor = (priority) => {

@@ -982,27 +982,7 @@ app.post('/api/leaves', authenticateToken, upload.array('documents', 5), async (
     res.status(500).json({ message: error.message });
   }
 });
-app.get('/api/leaves', authenticateToken, async (req, res) => {
-  try {
-    const { employeeEmail } = req.query;
 
-    // Build query based on email and user role
-    const query = {};
-    if (employeeEmail) {
-      query.employeeEmail = employeeEmail;
-    } else if (!req.user.isAdmin) {
-      query.employeeEmail = req.user.email;
-    }
-
-    const leaveRequests = await Leave.find(query)
-      .sort({ createdAt: -1 });
-
-    res.json(leaveRequests);
-  } catch (error) {
-    console.error('Error fetching leaves:', error);
-    res.status(500).json({ message: 'Error fetching leave requests' });
-  }
-});
 
 app.get('/api/leaves/debug/:email', authenticateToken, async (req, res) => {
   try {
@@ -1204,20 +1184,32 @@ app.delete('/api/leaves/:id', authenticateToken, async (req, res) => {
 
 app.get('/api/leaves', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    let leaveRequests;
-
-    if (user.isAdmin) {
-      // Admins can see all requests
-      leaveRequests = await Leave.find().sort({ createdAt: -1 });
-    } else {
-      // Regular users can only see their own requests
-      leaveRequests = await Leave.find({ employeeId: req.user.id }).sort({ createdAt: -1 });
+    const { employeeEmail, management } = req.query;
+    
+    // Build query based on email and user role
+    let query = {};
+    
+    if (employeeEmail) {
+      // Case 1: Getting a specific employee's leaves
+      query.employeeEmail = employeeEmail;
+    } else if (management === 'true') {
+      // Case 2: Management view - see all leaves EXCEPT their own
+      // This is the new functionality we're adding
+      query = { employeeEmail: { $ne: req.user.email } };
+    } else if (!req.user.isAdmin) {
+      // Case 3: Regular view - see only their own leaves
+      query.employeeEmail = req.user.email;
     }
+    
+    // Admin with no query params sees all leaves
+    
+    const leaveRequests = await Leave.find(query)
+      .sort({ createdAt: -1 });
 
     res.json(leaveRequests);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching leaves:', error);
+    res.status(500).json({ message: 'Error fetching leave requests' });
   }
 });
 
@@ -2412,15 +2404,62 @@ app.get('/api/hr/leaves', authenticateToken, isHrManager, async (req, res) => {
 
     const employeeEmails = branchEmployees.map(emp => emp.personalDetails.email);
 
-    // Then get leave requests for those employees
+    // Then get leave requests for those employees EXCEPT the HR manager's own requests
     const leaves = await Leave.find({
-      employeeEmail: { $in: employeeEmails }
+      employeeEmail: { 
+        $in: employeeEmails,
+        $ne: req.user.email  // This is the key filter - exclude HR manager's email
+      }
     }).sort({ createdAt: -1 });
 
     res.json(leaves);
   } catch (error) {
     console.error('Error fetching branch leaves:', error);
     res.status(500).json({ message: error.message });
+  }
+});
+
+app.get('/api/leaves/management', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    
+    // Check if user has management privileges
+    if (!(user.isAdmin || user.role === 'hr_manager' || user.role === 't1_member' || user.role === 'operational_manager')) {
+      return res.status(403).json({ message: 'Access denied. Management privileges required.' });
+    }
+    
+    let query = {};
+    
+    // For HR manager, only show leaves from their branch
+    if (user.role === 'hr_manager') {
+      // Get all employees from HR's branch
+      const branchEmployees = await Employee.find({
+        'professionalDetails.branch': user.branchName
+      }).select('personalDetails.email');
+      
+      const employeeEmails = branchEmployees.map(emp => emp.personalDetails.email);
+      
+      // Filter by branch emails but exclude manager's own email
+      query = {
+        employeeEmail: { 
+          $in: employeeEmails,
+          $ne: user.email
+        }
+      };
+    } else {
+      // For admin, T1, and operational managers - show all leaves except their own
+      query = { employeeEmail: { $ne: user.email } };
+    }
+    
+    const leaves = await Leave.find(query).sort({ createdAt: -1 });
+    
+    res.json(leaves);
+  } catch (error) {
+    console.error('Error fetching management leaves:', error);
+    res.status(500).json({ 
+      message: 'Error fetching leave requests',
+      error: error.message
+    });
   }
 });
 

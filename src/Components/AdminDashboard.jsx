@@ -408,9 +408,7 @@ const AdminDashboard = () => {
       if (!response.ok) {
         throw new Error(data.message || 'Failed to create announcement');
       }
-  
-      setNotificationMessage('Announcement created successfully!');
-      setNotificationType('success');
+      
       setIsAnnouncementModalOpen(false);
       setSelectedBranch(announcementData.branchId);
     } catch (error) {

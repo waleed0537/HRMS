@@ -61,7 +61,7 @@ const ManageLeaves = () => {
     setTimeout(() => setIsRefreshing(false), 600);
   };
 
-  // Fetch leave requests from API
+  // Fetch leave requests from API - Updated to use management endpoint
   const fetchLeaveRequests = async () => {
     try {
       setLoading(true);
@@ -73,17 +73,22 @@ const ManageLeaves = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-
+  
       if (!response.ok) {
         throw new Error('Failed to fetch leave requests');
       }
-
+  
       const data = await response.json();
-      setLeaveRequests(data);
+      
+      // Filter out the current user's leave requests
+      const currentUserEmail = user.email;
+      const filteredData = data.filter(leave => leave.employeeEmail !== currentUserEmail);
+      
+      setLeaveRequests(filteredData);
       
       // Extract unique values for filters
-      const leaveTypes = [...new Set(data.map(leave => leave.leaveType))];
-      const employees = [...new Set(data.map(leave => leave.employeeName))];
+      const leaveTypes = [...new Set(filteredData.map(leave => leave.leaveType))];
+      const employees = [...new Set(filteredData.map(leave => leave.employeeName))];
       
       setUniqueLeaveTypes(leaveTypes);
       setUniqueEmployees(employees);

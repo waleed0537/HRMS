@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   User, Mail, Phone, MapPin, Building, Briefcase, 
-  Save, Upload, X, FileText, Clock, Award, Calendar, AlertCircle
+  Save, Upload, X, FileText, Clock, Award, Calendar, AlertCircle,
+  Menu, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useToast } from './common/ToastContent.jsx';
 import '../assets/css/EditProfile.css';
@@ -30,6 +31,10 @@ const EditProfile = () => {
     type: 'milestone'
   });
   
+  // Mobile specific states
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  
   const [formData, setFormData] = useState({
     personalDetails: {
       name: '',
@@ -45,6 +50,20 @@ const EditProfile = () => {
     },
     milestones: []
   });
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+      // Close mobile nav when resizing to desktop
+      if (window.innerWidth > 768) {
+        setMobileNavOpen(false);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Fetch employees on component mount
   useEffect(() => {
@@ -138,6 +157,9 @@ const EditProfile = () => {
           },
           milestones: []
         });
+        
+        // Reset the mobile nav menu when selecting a new employee
+        setMobileNavOpen(false);
       } else {
         console.error("Employee not found in the list");
       }
@@ -246,6 +268,10 @@ const EditProfile = () => {
 
   const handleNavClick = (section) => {
     setActiveSection(section);
+    // Close mobile nav after selecting a section
+    if (windowWidth <= 768) {
+      setMobileNavOpen(false);
+    }
   };
 
   // Helper function to format role names for display
@@ -375,7 +401,7 @@ const EditProfile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const GENERATE_AUTO_MILESTONES_CLIENT_SIDE = false;
-const autoMilestones = [];
+    const autoMilestones = [];
     if (!selectedEmployee || !selectedEmployee._id) {
       error('No employee selected');
       return;
@@ -393,9 +419,7 @@ const autoMilestones = [];
       const formPayload = new FormData();
       
       // Detect role changes and branch transfers and add as automatic milestones
-      const autoMilestones = [];
       
-      // Check for role change  
       if (GENERATE_AUTO_MILESTONES_CLIENT_SIDE) {
         // Check for role change  
         if (selectedEmployee.professionalDetails?.role !== formData.professionalDetails.role) {
@@ -410,33 +434,33 @@ const autoMilestones = [];
           autoMilestones.push(roleMilestone);
         }
       
-      // Check for branch transfer
-      if (selectedEmployee.professionalDetails?.branch !== formData.professionalDetails.branch) {
-        const branchMilestone = {
-          title: `Transferred to ${formData.professionalDetails.branch} branch`,
-          description: `Branch transfer from ${selectedEmployee.professionalDetails?.branch || 'None'} to ${formData.professionalDetails.branch}`,
-          date: new Date().toISOString().split('T')[0],
-          branch: formData.professionalDetails.branch,
-          impact: 'Employee moved to a new branch location',
-          type: 'branch_transfer'
-        };
-        autoMilestones.push(branchMilestone);
-      }
+        // Check for branch transfer
+        if (selectedEmployee.professionalDetails?.branch !== formData.professionalDetails.branch) {
+          const branchMilestone = {
+            title: `Transferred to ${formData.professionalDetails.branch} branch`,
+            description: `Branch transfer from ${selectedEmployee.professionalDetails?.branch || 'None'} to ${formData.professionalDetails.branch}`,
+            date: new Date().toISOString().split('T')[0],
+            branch: formData.professionalDetails.branch,
+            impact: 'Employee moved to a new branch location',
+            type: 'branch_transfer'
+          };
+          autoMilestones.push(branchMilestone);
+        }
       
-      // Check for status change
-      if (selectedEmployee.professionalDetails?.status !== formData.professionalDetails.status) {
-        const statusText = formData.professionalDetails.status.replace('_', ' ');
-        const statusMilestone = {
-          title: `Status changed to ${statusText}`,
-          description: `Employee status updated from ${(selectedEmployee.professionalDetails?.status || 'active').replace('_', ' ')} to ${statusText}`,
-          date: new Date().toISOString().split('T')[0],
-          branch: formData.professionalDetails.branch,
-          impact: `Employee is now ${statusText}`,
-          type: 'status_change'
-        };
-        autoMilestones.push(statusMilestone);
+        // Check for status change
+        if (selectedEmployee.professionalDetails?.status !== formData.professionalDetails.status) {
+          const statusText = formData.professionalDetails.status.replace('_', ' ');
+          const statusMilestone = {
+            title: `Status changed to ${statusText}`,
+            description: `Employee status updated from ${(selectedEmployee.professionalDetails?.status || 'active').replace('_', ' ')} to ${statusText}`,
+            date: new Date().toISOString().split('T')[0],
+            branch: formData.professionalDetails.branch,
+            impact: `Employee is now ${statusText}`,
+            type: 'status_change'
+          };
+          autoMilestones.push(statusMilestone);
+        }
       }
-    }
       
       // Combine auto-generated milestones with manually added ones
       const allMilestones = [...autoMilestones, ...formData.milestones];
@@ -570,6 +594,92 @@ const autoMilestones = [];
     );
   };
 
+  // Render mobile navigation toggle
+  const renderMobileNavToggle = () => {
+    if (windowWidth > 768 || !selectedEmployee) return null;
+    
+    return (
+      <button 
+        className="mobile-nav-toggle"
+        onClick={() => setMobileNavOpen(!mobileNavOpen)}
+        aria-label={mobileNavOpen ? "Close navigation menu" : "Open navigation menu"}
+      >
+        <div className="toggle-label">
+          {activeSection.charAt(0).toUpperCase() + activeSection.slice(1)}
+        </div>
+        {mobileNavOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+      </button>
+    );
+  };
+
+  // Render mobile section navigation
+  const renderMobileNav = () => {
+    if (windowWidth > 768 || !selectedEmployee || !mobileNavOpen) return null;
+    
+    return (
+      <div className="mobile-nav-menu">
+        <button 
+          className={`mobile-nav-item ${activeSection === 'personal' ? 'active' : ''}`}
+          onClick={() => handleNavClick('personal')}
+        >
+          <User size={18} />
+          Personal Details
+        </button>
+        <button 
+          className={`mobile-nav-item ${activeSection === 'professional' ? 'active' : ''}`}
+          onClick={() => handleNavClick('professional')}
+        >
+          <Briefcase size={18} />
+          Professional Details
+        </button>
+        <button 
+          className={`mobile-nav-item ${activeSection === 'milestones' ? 'active' : ''}`}
+          onClick={() => handleNavClick('milestones')}
+        >
+          <Award size={18} />
+          Employment Milestones
+        </button>
+        <button 
+          className={`mobile-nav-item ${activeSection === 'documents' ? 'active' : ''}`}
+          onClick={() => handleNavClick('documents')}
+        >
+          <FileText size={18} />
+          Documents
+        </button>
+      </div>
+    );
+  };
+
+  // Responsive document item component
+  const DocumentItem = ({ document, isUploaded = false, index }) => (
+    <div className="document-item">
+      <div className="document-content">
+        <div className="document-icon">
+          <FileText size={20} />
+        </div>
+        <div className="document-info">
+          <div className="document-name" title={isUploaded ? document.name : document.name}>
+            {isUploaded ? document.name : document.name}
+          </div>
+          {isUploaded ? (
+            <div className="document-size">{(document.size / 1024).toFixed(2)} KB</div>
+          ) : (
+            <div className="document-date">Uploaded: {formatDate(document.uploadedAt)}</div>
+          )}
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={() => isUploaded ? removeUploadedDocument(index) : removeExistingDocument(document._id)}
+        className="remove-document"
+        title={`Remove ${isUploaded ? 'uploaded' : 'existing'} document`}
+        aria-label={`Remove ${isUploaded ? 'uploaded' : 'existing'} document`}
+      >
+        <X size={16} />
+      </button>
+    </div>
+  );
+
   return (
     <div className="edit-profiles-container">
       <div className="edit-profiles-header">
@@ -579,8 +689,9 @@ const autoMilestones = [];
         </div>
         
         <div className="employee-selector">
-          <label>Select Employee</label>
+          <label htmlFor="employee-select">Select Employee</label>
           <select 
+            id="employee-select"
             className="employee-select"
             value={selectedEmployee?._id || ''}
             onChange={(e) => handleEmployeeSelect(e.target.value)}
@@ -597,6 +708,10 @@ const autoMilestones = [];
 
       {selectedEmployee && (
         <div className="edit-profile-content">
+          {/* Mobile navigation toggle and dropdown */}
+          {renderMobileNavToggle()}
+          {renderMobileNav()}
+          
           <div className="profile-sidebar">
             <div className="profile-info">
               <div className="profile-avatar">
@@ -637,9 +752,6 @@ const autoMilestones = [];
                 Documents
               </button>
             </div>
-            
-            {/* Debug toggle for admins */}
-            
           </div>
           
           <div className="edit-form">
@@ -673,10 +785,11 @@ const autoMilestones = [];
                   
                   <div className="form-grid">
                     <div className="form-field">
-                      <label>Full Name</label>
+                      <label htmlFor="full-name">Full Name</label>
                       <div className="input-icon-wrapper">
                         <User size={18} className="field-icon" />
                         <input
+                          id="full-name"
                           type="text"
                           className="form-input"
                           value={formData.personalDetails.name}
@@ -687,10 +800,11 @@ const autoMilestones = [];
                     </div>
                     
                     <div className="form-field">
-                      <label>Email</label>
+                      <label htmlFor="email">Email</label>
                       <div className="input-icon-wrapper">
                         <Mail size={18} className="field-icon" />
                         <input
+                          id="email"
                           type="email"
                           className="form-input"
                           value={formData.personalDetails.email}
@@ -701,10 +815,11 @@ const autoMilestones = [];
                     </div>
                     
                     <div className="form-field">
-                      <label>Contact Number</label>
+                      <label htmlFor="contact">Contact Number</label>
                       <div className="input-icon-wrapper">
                         <Phone size={18} className="field-icon" />
                         <input
+                          id="contact"
                           type="tel"
                           className="form-input"
                           value={formData.personalDetails.contact}
@@ -715,10 +830,11 @@ const autoMilestones = [];
                     </div>
                     
                     <div className="form-field full-width">
-                      <label>Address</label>
+                      <label htmlFor="address">Address</label>
                       <div className="input-icon-wrapper">
                         <MapPin size={18} className="field-icon" />
                         <textarea
+                          id="address"
                           className="form-textarea"
                           value={formData.personalDetails.address}
                           onChange={(e) => handleInputChange('personalDetails', 'address', e.target.value)}
@@ -742,10 +858,11 @@ const autoMilestones = [];
                   
                   <div className="form-grid">
                     <div className="form-field">
-                      <label>Role</label>
+                      <label htmlFor="role">Role</label>
                       <div className="input-icon-wrapper">
                         <Briefcase size={18} className="field-icon" />
                         <select
+                          id="role"
                           className="form-select"
                           value={formData.professionalDetails.role}
                           onChange={(e) => handleInputChange('professionalDetails', 'role', e.target.value)}
@@ -758,10 +875,11 @@ const autoMilestones = [];
                     </div>
                     
                     <div className="form-field">
-                      <label>Branch</label>
+                      <label htmlFor="branch">Branch</label>
                       <div className="input-icon-wrapper">
                         <Building size={18} className="field-icon" />
                         <input
+                          id="branch"
                           type="text"
                           className="form-input"
                           value={formData.professionalDetails.branch}
@@ -772,10 +890,11 @@ const autoMilestones = [];
                     </div>
                     
                     <div className="form-field">
-                      <label>Department</label>
+                      <label htmlFor="department">Department</label>
                       <div className="input-icon-wrapper">
                         <MapPin size={18} className="field-icon" />
                         <input
+                          id="department"
                           type="text"
                           className="form-input"
                           value={formData.professionalDetails.department}
@@ -785,10 +904,11 @@ const autoMilestones = [];
                     </div>
                     
                     <div className="form-field">
-                      <label>Status</label>
+                      <label htmlFor="status">Status</label>
                       <div className="input-icon-wrapper">
                         <Clock size={18} className="field-icon" />
                         <select
+                          id="status"
                           className="form-select"
                           value={formData.professionalDetails.status}
                           onChange={(e) => handleInputChange('professionalDetails', 'status', e.target.value)}
@@ -879,8 +999,9 @@ const autoMilestones = [];
                     <div className="milestone-form">
                       <div className="form-grid">
                         <div className="form-field">
-                          <label>Milestone Title <span className="required">*</span></label>
+                          <label htmlFor="milestone-title">Milestone Title <span className="required">*</span></label>
                           <input
+                            id="milestone-title"
                             type="text"
                             className="form-input"
                             value={milestone.title}
@@ -891,8 +1012,9 @@ const autoMilestones = [];
                         </div>
                         
                         <div className="form-field">
-                          <label>Date <span className="required">*</span></label>
+                          <label htmlFor="milestone-date">Date <span className="required">*</span></label>
                           <input
+                            id="milestone-date"
                             type="date"
                             className="form-input"
                             value={milestone.date}
@@ -902,8 +1024,9 @@ const autoMilestones = [];
                         </div>
                         
                         <div className="form-field full-width">
-                          <label>Description <span className="required">*</span></label>
+                          <label htmlFor="milestone-description">Description <span className="required">*</span></label>
                           <textarea
+                            id="milestone-description"
                             className="form-textarea"
                             value={milestone.description}
                             onChange={(e) => handleMilestoneChange('description', e.target.value)}
@@ -914,10 +1037,11 @@ const autoMilestones = [];
                         </div>
                         
                         <div className="form-field">
-                          <label>Branch</label>
+                          <label htmlFor="milestone-branch">Branch</label>
                           <div className="input-icon-wrapper">
                             <Building size={18} className="field-icon" />
                             <input
+                              id="milestone-branch"
                               type="text"
                               className="form-input"
                               value={milestone.branch || formData.professionalDetails.branch}
@@ -928,8 +1052,9 @@ const autoMilestones = [];
                         </div>
                         
                         <div className="form-field full-width">
-                          <label>Impact (Optional)</label>
+                          <label htmlFor="milestone-impact">Impact (Optional)</label>
                           <textarea
+                            id="milestone-impact"
                             className="form-textarea"
                             value={milestone.impact}
                             onChange={(e) => handleMilestoneChange('impact', e.target.value)}
@@ -987,9 +1112,10 @@ const autoMilestones = [];
                                   type="button"
                                   className="remove-milestone-btn"
                                   onClick={() => removePendingMilestone(index)}
+                                  aria-label="Remove milestone"
                                 >
                                   <X size={16} />
-                                  Remove
+                                  <span className="remove-text">Remove</span>
                                 </button>
                               </div>
                             ))}
@@ -1064,25 +1190,16 @@ const autoMilestones = [];
                       <div className="document-list-header">
                         <h4>New Documents</h4>
                       </div>
-                      {uploadedDocuments.map((doc, index) => (
-                        <div className="document-item" key={index}>
-                          <div className="document-icon">
-                            <FileText size={20} />
-                          </div>
-                          <div className="document-info">
-                            <div className="document-name">{doc.name}</div>
-                            <div className="document-size">{(doc.size / 1024).toFixed(2)} KB</div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeUploadedDocument(index)}
-                            className="remove-document"
-                            title="Remove document"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      ))}
+                      <div className="document-items-container">
+                        {uploadedDocuments.map((doc, index) => (
+                          <DocumentItem 
+                            key={index} 
+                            document={doc} 
+                            isUploaded={true} 
+                            index={index} 
+                          />
+                        ))}
+                      </div>
                     </div>
                   )}
                   
@@ -1091,25 +1208,15 @@ const autoMilestones = [];
                       <div className="document-list-header">
                         <h4>Existing Documents</h4>
                       </div>
-                      {documents.map(doc => (
-                        <div className="document-item" key={doc._id}>
-                          <div className="document-icon">
-                            <FileText size={20} />
-                          </div>
-                          <div className="document-info">
-                            <div className="document-name">{doc.name}</div>
-                            <div className="document-date">Uploaded: {formatDate(doc.uploadedAt)}</div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeExistingDocument(doc._id)}
-                            className="remove-document"
-                            title="Delete document"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      ))}
+                      <div className="document-items-container">
+                        {documents.map(doc => (
+                          <DocumentItem 
+                            key={doc._id} 
+                            document={doc} 
+                            isUploaded={false} 
+                          />
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, Building, User, Briefcase, FileText } from 'lucide-react';
 import '../assets/css/EmployeeProfile.css';
 import API_BASE_URL from '../config/api.js';
+
 const EmployeeProfile = () => {
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
+  const [avatarError, setAvatarError] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -29,6 +31,7 @@ const EmployeeProfile = () => {
   if (error) return <div className="error-container">Error loading profile: {error}</div>;
   if (!profile) return <div className="loading-container">Loading...</div>;
 
+  // Get initials for avatar fallback
   const getInitials = (name) => {
     return name
       .split(' ')
@@ -37,13 +40,59 @@ const EmployeeProfile = () => {
       .toUpperCase();
   };
 
+  // Handle avatar image error
+  const handleAvatarError = () => {
+    setAvatarError(true);
+  };
+
+  // Get profile picture number based on employee data
+  const getProfilePicNumber = () => {
+    // If user has profilePic property in localStorage
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user && user.profilePic) {
+      return user.profilePic;
+    }
+    
+    // Try to get a consistent number based on email
+    const email = profile.personalDetails?.email;
+    if (email) {
+      return (email.charCodeAt(0) % 11) + 1;
+    }
+    
+    // Fallback to a random number
+    return Math.floor(Math.random() * 11) + 1;
+  };
+
+  // Render avatar with image or fallback to initials
+  const renderAvatar = () => {
+    const initials = getInitials(profile.personalDetails.name);
+    const profilePicNum = getProfilePicNumber();
+    
+    if (avatarError) {
+      return (
+        <div className="profile-avatar">
+          {initials}
+        </div>
+      );
+    }
+    
+    return (
+      <div className="profile-avatar" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <img 
+          src={`/src/avatars/avatar-${profilePicNum}.jpg`}
+          alt={profile.personalDetails.name}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={handleAvatarError}
+        />
+      </div>
+    );
+  };
+
   return (
     <div className="profile-container">
       <div className="profile-header-card">
         <div className="profile-header-content">
-          <div className="profile-avatar">
-            {getInitials(profile.personalDetails.name)}
-          </div>
+          {renderAvatar()}
           <div className="profile-overview">
             <h1>{profile.personalDetails.name}</h1>
             <p className="profile-id">ID: {profile.personalDetails.id}</p>

@@ -15,57 +15,6 @@
   animation: announcement-modal-fadeIn 0.3s ease;
 }
 
-/* Toast Notification Styles */
-.toast-notification {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  padding: 10px 16px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.85rem;
-  max-width: 320px;
-  z-index: 1100;
-  animation: toastSlideIn 0.3s ease, toastFadeOut 0.3s ease 3.7s;
-  transform-origin: bottom right;
-}
-
-.toast-notification.success {
-  background-color: #dcfce7;
-  color: #166534;
-  border-left: 3px solid #166534;
-}
-
-.toast-notification.error {
-  background-color: #fee2e2;
-  color: #b91c1c;
-  border-left: 3px solid #b91c1c;
-}
-
-@keyframes toastSlideIn {
-  from {
-    transform: translateY(100%) scale(0.8);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-}
-
-@keyframes toastFadeOut {
-  from {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-  to {
-    transform: translateY(20px) scale(0.8);
-    opacity: 0;
-  }
-}
 
 @keyframes announcement-modal-fadeIn {
   from {
@@ -236,6 +185,7 @@
 .announcement-modal-input,
 .announcement-modal-select,
 .announcement-modal-textarea {
+height: fit-content;
   width: 100%;
   padding: 10px 16px;
   border: 1px solid #e2e8f0;

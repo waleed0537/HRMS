@@ -3,14 +3,15 @@ import React, { useState, useEffect } from 'react';
 import { Upload } from 'lucide-react';
 import '../assets/css/ApplicantForm.css';
 import API_BASE_URL from '../config/api.js';
+import { useToast } from './common/ToastContent.jsx';
 
 const ApplicantForm = () => {
   const [formFields, setFormFields] = useState([]);
   const [formData, setFormData] = useState({});
   const [resume, setResume] = useState(null);
   const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { success, error: toastError } = useToast();
 
   useEffect(() => {
     fetchFormFields();
@@ -23,7 +24,7 @@ const ApplicantForm = () => {
       const fields = await response.json();
       setFormFields(fields);
     } catch (err) {
-      setError('Failed to load form fields. Please try again later.');
+      toastError('Failed to load form fields. Please try again later.');
     }
   };
 
@@ -38,101 +39,96 @@ const ApplicantForm = () => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setError('File size must be less than 5MB');
+        toastError('File size must be less than 5MB');
         return;
       }
       
       const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
       if (!validTypes.includes(file.type)) {
-        setError('Please upload a PDF or Word document');
+        toastError('Please upload a PDF or Word document');
         return;
       }
 
       setResume(file);
-      setError('');
     }
   };
 
-  // In ApplicantForm.jsx, update the handleSubmit function
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-// In ApplicantForm.jsx
-// In ApplicantForm.jsx, update the handleSubmit function
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setIsLoading(true);
+    try {
+      console.log('Form Data:', formData);
 
-  try {
-    console.log('Form Data:', formData);
+      // Validate required fields
+      const requiredFields = formFields.filter(field => field.required);
+      const missingFields = requiredFields.filter(field => {
+        const value = formData[field.label.toLowerCase().replace(/\s+/g, '')];
+        return !value || value.trim() === '';
+      });
 
-    // Validate required fields
-    const requiredFields = formFields.filter(field => field.required);
-    const missingFields = requiredFields.filter(field => {
-      const value = formData[field.label.toLowerCase().replace(/\s+/g, '')];
-      return !value || value.trim() === '';
-    });
+      if (missingFields.length > 0) {
+        throw new Error(`Please fill in all required fields: ${missingFields.map(f => f.label).join(', ')}`);
+      }
 
-    if (missingFields.length > 0) {
-      throw new Error(`Please fill in all required fields: ${missingFields.map(f => f.label).join(', ')}`);
+      if (!resume) {
+        throw new Error('Please upload your resume');
+      }
+
+      // Prepare form data
+      const submitData = new FormData();
+
+      // Organize personal details
+      const personalDetails = {
+        name: formData.fullname || formData.name || '',
+        email: formData.email || '',
+        phone: formData.phone || formData.contact || '',
+        gender: formData.gender || ''
+      };
+
+      // Organize job details with experience
+      const jobDetails = {
+        branchName: formData.branchname || formData.branch || '',
+        position: formData.position || formData.jobtitle || '',
+        department: formData.department || '',
+        experience: formData.experience || '' // Include experience field
+      };
+
+      console.log('Submitting with data:', {
+        personalDetails,
+        jobDetails
+      });
+
+      submitData.append('personalDetails', JSON.stringify(personalDetails));
+      submitData.append('jobDetails', JSON.stringify(jobDetails));
+      submitData.append('branchName', jobDetails.branchName);
+      submitData.append('experience', formData.experience || ''); // Add experience separately
+      submitData.append('resume', resume);
+
+      const response = await fetch(`${API_BASE_URL}/api/applicants`, {
+        method: 'POST',
+        body: submitData
+      });
+
+      const responseData = await response.json();
+      console.log('Server Response:', responseData);
+
+      if (!response.ok) {
+        throw new Error(responseData.message || 'Failed to submit application');
+      }
+
+      success('Application submitted successfully!');
+      setSubmitted(true);
+      setFormData({});
+      setResume(null);
+
+    } catch (err) {
+      console.error('Form submission error:', err);
+      toastError(err.message);
+    } finally {
+      setIsLoading(false);
     }
-
-    if (!resume) {
-      throw new Error('Please upload your resume');
-    }
-
-    // Prepare form data
-    const submitData = new FormData();
-
-    // Organize personal details
-    const personalDetails = {
-      name: formData.fullname || formData.name || '',
-      email: formData.email || '',
-      phone: formData.phone || formData.contact || '',
-      gender: formData.gender || ''
-    };
-
-    // Organize job details with experience
-    const jobDetails = {
-      branchName: formData.branchname || formData.branch || '',
-      position: formData.position || formData.jobtitle || '',
-      department: formData.department || '',
-      experience: formData.experience || '' // Include experience field
-    };
-
-    console.log('Submitting with data:', {
-      personalDetails,
-      jobDetails
-    });
-
-    submitData.append('personalDetails', JSON.stringify(personalDetails));
-    submitData.append('jobDetails', JSON.stringify(jobDetails));
-    submitData.append('branchName', jobDetails.branchName);
-    submitData.append('experience', formData.experience || ''); // Add experience separately
-    submitData.append('resume', resume);
-
-    const response = await fetch(`${API_BASE_URL}/api/applicants`, {
-      method: 'POST',
-      body: submitData
-    });
-
-    const responseData = await response.json();
-    console.log('Server Response:', responseData);
-
-    if (!response.ok) {
-      throw new Error(responseData.message || 'Failed to submit application');
-    }
-
-    setSubmitted(true);
-    setFormData({});
-    setResume(null);
-
-  } catch (err) {
-    console.error('Form submission error:', err);
-    setError(err.message);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   if (submitted) {
     return (
@@ -154,10 +150,6 @@ const handleSubmit = async (e) => {
         <h2>Job Application Form</h2>
         <p>Join our team! Please fill out the form below.</p>
       </div>
-
-      {error && (
-        <div className="error-message">{error}</div>
-      )}
 
       <form onSubmit={handleSubmit} className="application-form">
         <div className="form-section">

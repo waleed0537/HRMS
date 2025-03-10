@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { User, Lock, Mail, Building, Phone, MapPin } from 'lucide-react';
 import '../assets/css/signin.css';
 import API_BASE_URL from '../config/api.js';
@@ -15,15 +15,12 @@ const SignIn = ({ onLogin }) => {
   const [role, setRole] = useState('employee');
   const [branch, setBranch] = useState('');
   const [department, setDepartment] = useState('');
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showInfoModal, setShowInfoModal] = useState(false);
   const navigate = useNavigate();
   const { success, error: toastError } = useToast();
 
   const handleSignIn = async (e) => {
     e.preventDefault();
-    setError('');
     setIsLoading(true);
 
     try {
@@ -45,13 +42,13 @@ const SignIn = ({ onLogin }) => {
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       
-      // Notify user
+      // Notify user using toast only
       success('Signed in successfully!');
       
       // Call onLogin callback with the user data
       onLogin(data.user);
     } catch (err) {
-      setError(err.message);
+      // Show error using toast only
       toastError(err.message);
     } finally {
       setIsLoading(false);
@@ -60,7 +57,6 @@ const SignIn = ({ onLogin }) => {
 
   const handleSignUp = async (e) => {
     e.preventDefault();
-    setError('');
     setIsLoading(true);
 
     try {
@@ -98,11 +94,11 @@ const SignIn = ({ onLogin }) => {
         throw new Error(data.message || 'Failed to sign up');
       }
 
-      // Show success message and switch to sign in
+      // Show success message using toast only and switch to sign in
       success('Account created! Please wait for admin approval before signing in.');
       setIsSignIn(true);
     } catch (err) {
-      setError(err.message);
+      // Show error using toast only
       toastError(err.message);
     } finally {
       setIsLoading(false);
@@ -117,8 +113,6 @@ const SignIn = ({ onLogin }) => {
         </div>
 
         <form className="auth-form" onSubmit={isSignIn ? handleSignIn : handleSignUp}>
-          {error && <div className="error-message">{error}</div>}
-
           <div className="form-section">
             <h3>Account Details</h3>
             <div className="form-field">
@@ -271,33 +265,6 @@ const SignIn = ({ onLogin }) => {
           </button>
         </div>
       </div>
-
-      {showInfoModal && (
-        <div className="info-modal" onClick={() => setShowInfoModal(false)}>
-          <div className="info-content" onClick={e => e.stopPropagation()}>
-            <h3>Apply for a Position</h3>
-            <p>
-              Submit your resume and apply for available positions in our company.
-              Our HR team will contact you if your profile matches our requirements.
-            </p>
-            <button 
-              className="apply-now-button"
-              onClick={() => {
-                setShowInfoModal(false);
-                navigate('/apply');
-              }}
-            >
-              Apply Now
-            </button>
-            <button 
-              className="close-button"
-              onClick={() => setShowInfoModal(false)}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

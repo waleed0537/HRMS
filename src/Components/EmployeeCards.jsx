@@ -189,14 +189,14 @@ const EmployeeCards = () => {
     }
     
     return (
-      <div className={className}>
-        <img 
-          src={`/src/avatars/avatar-${profilePicNum}.jpg`}
-          alt={employee.personalDetails.name}
-          style={{ width: '100%', height: '100%', borderRadius, objectFit: 'cover' }}
-          onError={() => handleAvatarError(employeeId)}
-        />
-      </div>
+        <div className={className}>
+          <img 
+            src={`/src/assets/avatars/avatar-${profilePicNum}.jpg`}
+            alt={employee.personalDetails.name}
+            style={{ width: '100%', height: '100%', borderRadius, objectFit: 'cover' }}
+            onError={() => handleAvatarError(employeeId)}
+          />
+        </div>
     );
   };
 

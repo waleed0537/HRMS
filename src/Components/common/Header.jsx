@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Bell, ChevronDown, LogOut, Settings, User } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import '../../assets/css/header.css';
@@ -8,7 +8,28 @@ const Header = ({ user, onLogout }) => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [avatarSrc, setAvatarSrc] = useState(null);
   const location = useLocation();
+  
+  // Load avatar dynamically based on user profile pic
+  useEffect(() => {
+    const loadAvatar = async () => {
+      if (user?.profilePic) {
+        try {
+          // Use dynamic import to get the avatar
+          const avatarModule = await import(`../../assets/avatars/avatar-${user.profilePic}.jpg`);
+          setAvatarSrc(avatarModule.default);
+        } catch (error) {
+          console.error('Failed to load avatar:', error);
+          setAvatarSrc(null);
+        }
+      } else {
+        setAvatarSrc(null);
+      }
+    };
+    
+    loadAvatar();
+  }, [user?.profilePic]);
 
   // Get page title from current route
   const getPageTitle = () => {
@@ -44,12 +65,12 @@ const Header = ({ user, onLogout }) => {
     // Get first initial for fallback
     const initial = userName.charAt(0).toUpperCase();
     
-    // If user has a profilePic number, try to use the avatar image
-    if (user?.profilePic) {
+    // If we have successfully loaded the avatar image
+    if (avatarSrc) {
       return (
         <div className="app-header__profile-avatar">
           <img 
-            src={`/src/avatars/avatar-${user.profilePic}.jpg`} 
+            src={avatarSrc} 
             alt="Profile Avatar" 
             style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }}
             onError={(e) => {

@@ -209,17 +209,7 @@ const FormFieldManager = ({ isOpen, onClose }) => {
         return typeMap[type] || type;
     };
 
-    const getSectionLabel = (section) => {
-        const sectionMap = {
-            'personal': 'Personal Information',
-            'professional': 'Professional Information',
-            'education': 'Education',
-            'experience': 'Work Experience',
-            'additional': 'Additional Information'
-        };
-        
-        return sectionMap[section] || section;
-    };
+    
 
     if (!isOpen) return null;
 
@@ -298,7 +288,7 @@ const FormFieldManager = ({ isOpen, onClose }) => {
                                         <span className="field-label">{field.label}</span>
                                         <div className="field-metadata">
                                             <span className="field-type">{getFieldTypeLabel(field.type)}</span>
-                                            <span className="field-section">{getSectionLabel(field.section)}</span>
+                                          
                                             {field.required && (
                                                 <span className="required-badge">Required</span>
                                             )}

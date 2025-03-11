@@ -854,6 +854,7 @@ app.get('/api/pending-requests', authenticateToken, async (req, res) => {
 });
 
 // Approve/Reject Request (Admin Only)
+// Approve/Reject Request (Admin or HR Manager)
 app.put('/api/requests/:userId/status', authenticateToken, async (req, res) => {
   try {
     const currentUser = await User.findById(req.user.id);
@@ -868,8 +869,8 @@ app.put('/api/requests/:userId/status', authenticateToken, async (req, res) => {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
-    // For HR managers, check if the request belongs to their branch
-    if (currentUser.role === 'hr_manager') {
+    // For HR managers who are not admins, check if the request belongs to their branch
+    if (currentUser.role === 'hr_manager' && !currentUser.isAdmin) {
       // Get the request to be updated
       const requestToUpdate = await User.findById(req.params.userId);
       if (!requestToUpdate) {
@@ -889,11 +890,11 @@ app.put('/api/requests/:userId/status', authenticateToken, async (req, res) => {
       { new: true }
     ).select('-password');
 
-    // Rest of your existing code...
-
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+    
+    // Create notification
     const notification = new Notification({
       userId: req.params.userId,
       title: 'Account Status Update',
@@ -945,7 +946,6 @@ app.put('/api/requests/:userId/status', authenticateToken, async (req, res) => {
     });
   }
 });
-
 // In server.js, keep just one handler:
 // Add this endpoint to server.js
 app.get('/api/leaves/filter/:employeeId', authenticateToken, async (req, res) => {

@@ -51,6 +51,7 @@ const StaffRequests = () => {
       }
 
       const data = await response.json();
+      console.log('Current user data:', data);
       setCurrentUser(data);
       return data;
     } catch (err) {
@@ -68,9 +69,6 @@ const StaffRequests = () => {
         throw new Error('No authentication token found');
       }
 
-      // Ensure we have current user info
-      const user = currentUser || await fetchCurrentUser();
-
       const response = await fetch(`${API_BASE_URL}/api/pending-requests`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -84,20 +82,9 @@ const StaffRequests = () => {
 
       const data = await response.json();
       
-      // Filter requests based on user role and branch
-      let filteredData = data;
-      if (user && user.role === 'hr_manager') {
-        // HR managers can only see requests from their branch
-        const userBranch = user.professionalDetails?.branch;
-        if (userBranch) {
-          filteredData = data.filter(request => 
-            request.branchName.toLowerCase() === userBranch.toLowerCase()
-          );
-        }
-      }
-      
-      setRequests(filteredData);
-      setFilteredRequests(filteredData);
+      // No filtering - show all requests
+      setRequests(data);
+      setFilteredRequests(data);
       setError('');
       
       // Only show toast when explicitly refreshing
@@ -148,18 +135,10 @@ const StaffRequests = () => {
         throw new Error('No authentication token found');
       }
 
-      // Verify the user has permission to approve/reject this request
+      // Find the request being updated
       const requestToUpdate = requests.find(req => req._id === userId);
       if (!requestToUpdate) {
         throw new Error('Request not found');
-      }
-
-      // Check if HR manager is trying to approve/reject a request from a different branch
-      if (currentUser && 
-          currentUser.role === 'hr_manager' && 
-          currentUser.professionalDetails?.branch &&
-          requestToUpdate.branchName.toLowerCase() !== currentUser.professionalDetails.branch.toLowerCase()) {
-        throw new Error('You can only manage requests from your branch');
       }
 
       const response = await fetch(`${API_BASE_URL}/api/requests/${userId}/status`, {
@@ -351,216 +330,150 @@ const StaffRequests = () => {
     });
   };
 
-  // Check if the current user (HR manager) can manage this request
-  const canManageRequest = (request) => {
-    // Admin users can manage all requests
-    if (currentUser && currentUser.isAdmin) {
-      return true;
-    }
-    
-    // HR managers can only manage requests from their branch
-    if (currentUser && 
-        currentUser.role === 'hr_manager' && 
-        currentUser.professionalDetails?.branch) {
-      return request.branchName.toLowerCase() === currentUser.professionalDetails.branch.toLowerCase();
-    }
-    
-    // For any other role, default to admin-only permission
-    return currentUser && currentUser.isAdmin;
+  // Simplified - All authorized users (admin, HR) can manage requests
+  const canManageRequest = () => {
+    // Anyone who can access this page can manage requests
+    return true;
   };
 
   const renderGridView = () => (
     <div className="staff-requests-grid">
-      {filteredRequests.map((request) => {
-        const canManage = canManageRequest(request);
-        
-        return (
-          <div key={request._id} className="staff-request-card">
-            {renderAvatar(request)}
+      {filteredRequests.map((request) => (
+        <div key={request._id} className="staff-request-card">
+          {renderAvatar(request)}
+          
+          <div className="staff-request-content">
+            <h3 className="staff-request-email">{getDisplayName(request)}</h3>
+            <div className="staff-request-email" style={{fontSize: '12px', marginTop: '-8px', marginBottom: '8px', color: '#64748b'}}>
+              {request.email}
+            </div>
             
-            <div className="staff-request-content">
-              <h3 className="staff-request-email">{getDisplayName(request)}</h3>
-              <div className="staff-request-email" style={{fontSize: '12px', marginTop: '-8px', marginBottom: '8px', color: '#64748b'}}>
-                {request.email}
+            <div className="staff-request-details">
+              <div className="staff-request-detail">
+                <Briefcase size={16} className="staff-request-icon" />
+                <span>{formatRole(request.role)}</span>
               </div>
               
-              <div className="staff-request-details">
-                <div className="staff-request-detail">
-                  <Briefcase size={16} className="staff-request-icon" />
-                  <span>{formatRole(request.role)}</span>
-                </div>
-                
-                <div className="staff-request-detail">
-                  <Building size={16} className="staff-request-icon" />
-                  <span>{request.branchName}</span>
-                </div>
-                
-                <div className="staff-request-detail">
-                  <Calendar size={16} className="staff-request-icon" />
-                  <span>{formatDate(request.createdAt)}</span>
-                </div>
+              <div className="staff-request-detail">
+                <Building size={16} className="staff-request-icon" />
+                <span>{request.branchName}</span>
+              </div>
+              
+              <div className="staff-request-detail">
+                <Calendar size={16} className="staff-request-icon" />
+                <span>{formatDate(request.createdAt)}</span>
               </div>
             </div>
-            
-            <div className="staff-request-actions">
-              {canManage ? (
-                <>
-                  <button
-                    onClick={() => handleStatusUpdate(request._id, 'approved')}
-                    className="staff-request-approve-btn"
-                    aria-label="Approve request"
-                    disabled={processingId === request._id}
-                  >
-                    <UserCheck size={18} />
-                    <span>Approve</span>
-                  </button>
-                  <button
-                    onClick={() => handleStatusUpdate(request._id, 'rejected')}
-                    className="staff-request-reject-btn"
-                    aria-label="Reject request"
-                    disabled={processingId === request._id}
-                  >
-                    <UserX size={18} />
-                    <span>Reject</span>
-                  </button>
-                </>
-              ) : (
-                <div className="staff-request-restricted">
-                  <Info size={16} />
-                  <span>Only HR from {request.branchName} branch can process this request</span>
-                </div>
-              )}
-            </div>
           </div>
-        );
-      })}
+          
+          <div className="staff-request-actions">
+            <button
+              onClick={() => handleStatusUpdate(request._id, 'approved')}
+              className="staff-request-approve-btn"
+              aria-label="Approve request"
+              disabled={processingId === request._id}
+            >
+              <UserCheck size={18} />
+              <span>Approve</span>
+            </button>
+            <button
+              onClick={() => handleStatusUpdate(request._id, 'rejected')}
+              className="staff-request-reject-btn"
+              aria-label="Reject request"
+              disabled={processingId === request._id}
+            >
+              <UserX size={18} />
+              <span>Reject</span>
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 
   const renderListView = () => (
     <div className="staff-requests-list">
-      {filteredRequests.map((request) => {
-        const canManage = canManageRequest(request);
-        
-        return (
-          <div key={request._id} className="staff-request-list-item">
-            <div className="staff-request-list-left">
-              {renderListAvatar(request)}
-              
-              <div className="staff-request-list-info">
-                <h3 className="staff-request-list-email">{getDisplayName(request)}</h3>
-                <div className="staff-request-list-meta">
-                  <span className="staff-request-list-email">{request.email}</span>
-                  <span className="staff-request-divider">•</span>
-                  <span className="staff-request-list-role">{formatRole(request.role)}</span>
-                  <span className="staff-request-divider">•</span>
-                  <span className="staff-request-list-branch">{request.branchName}</span>
-                  <span className="staff-request-divider">•</span>
-                  <span className="staff-request-list-date">Requested: {formatDate(request.createdAt)}</span>
-                </div>
+      {filteredRequests.map((request) => (
+        <div key={request._id} className="staff-request-list-item">
+          <div className="staff-request-list-left">
+            {renderListAvatar(request)}
+            
+            <div className="staff-request-list-info">
+              <h3 className="staff-request-list-email">{getDisplayName(request)}</h3>
+              <div className="staff-request-list-meta">
+                <span className="staff-request-list-email">{request.email}</span>
+                <span className="staff-request-divider">•</span>
+                <span className="staff-request-list-role">{formatRole(request.role)}</span>
+                <span className="staff-request-divider">•</span>
+                <span className="staff-request-list-branch">{request.branchName}</span>
+                <span className="staff-request-divider">•</span>
+                <span className="staff-request-list-date">Requested: {formatDate(request.createdAt)}</span>
               </div>
             </div>
-            
-            <div className="staff-request-list-actions">
-              {canManage ? (
-                <>
-                  <button
-                    onClick={() => handleStatusUpdate(request._id, 'approved')}
-                    className="staff-request-list-approve-btn"
-                    aria-label="Approve request"
-                    disabled={processingId === request._id}
-                  >
-                    <UserCheck size={18} />
-                    <span>Approve</span>
-                  </button>
-                  <button
-                    onClick={() => handleStatusUpdate(request._id, 'rejected')}
-                    className="staff-request-list-reject-btn"
-                    aria-label="Reject request"
-                    disabled={processingId === request._id}
-                  >
-                    <UserX size={18} />
-                    <span>Reject</span>
-                  </button>
-                </>
-              ) : (
-                <div className="staff-request-list-restricted">
-                  <Info size={16} />
-                  <span>Only HR from {request.branchName} can process</span>
-                </div>
-              )}
-            </div>
           </div>
-        );
-      })}
+          
+          <div className="staff-request-list-actions">
+            <button
+              onClick={() => handleStatusUpdate(request._id, 'approved')}
+              className="staff-request-list-approve-btn"
+              aria-label="Approve request"
+              disabled={processingId === request._id}
+            >
+              <UserCheck size={18} />
+              <span>Approve</span>
+            </button>
+            <button
+              onClick={() => handleStatusUpdate(request._id, 'rejected')}
+              className="staff-request-list-reject-btn"
+              aria-label="Reject request"
+              disabled={processingId === request._id}
+            >
+              <UserX size={18} />
+              <span>Reject</span>
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 
   const renderCompactView = () => (
     <div className="staff-requests-compact">
-      {filteredRequests.map((request) => {
-        const canManage = canManageRequest(request);
-        
-        return (
-          <div key={request._id} className="staff-request-compact-item">
-            {renderCompactAvatar(request)}
-            
-            <div className="staff-request-compact-content">
-              <h3 className="staff-request-compact-email">{getDisplayName(request)}</h3>
-              <p className="staff-request-compact-email" style={{fontSize: '11px', margin: '0 0 4px'}}>{request.email}</p>
-              <p className="staff-request-compact-role">{formatRole(request.role)}</p>
-              <p className="staff-request-compact-branch">{request.branchName}</p>
-            </div>
-            
-            <div className="staff-request-compact-actions">
-              {canManage ? (
-                <>
-                  <button
-                    onClick={() => handleStatusUpdate(request._id, 'approved')}
-                    className="staff-request-compact-approve-btn"
-                    aria-label="Approve request"
-                    title="Approve"
-                    disabled={processingId === request._id}
-                  >
-                    <CheckCircle size={20} />
-                  </button>
-                  <button
-                    onClick={() => handleStatusUpdate(request._id, 'rejected')}
-                    className="staff-request-compact-reject-btn"
-                    aria-label="Reject request"
-                    title="Reject"
-                    disabled={processingId === request._id}
-                  >
-                    <XCircle size={20} />
-                  </button>
-                </>
-              ) : (
-                <div className="staff-request-compact-restricted" title={`Only HR from ${request.branchName} branch can process this request`}>
-                  <Info size={16} />
-                </div>
-              )}
-            </div>
+      {filteredRequests.map((request) => (
+        <div key={request._id} className="staff-request-compact-item">
+          {renderCompactAvatar(request)}
+          
+          <div className="staff-request-compact-content">
+            <h3 className="staff-request-compact-email">{getDisplayName(request)}</h3>
+            <p className="staff-request-compact-email" style={{fontSize: '11px', margin: '0 0 4px'}}>{request.email}</p>
+            <p className="staff-request-compact-role">{formatRole(request.role)}</p>
+            <p className="staff-request-compact-branch">{request.branchName}</p>
           </div>
-        );
-      })}
+          
+          <div className="staff-request-compact-actions">
+            <button
+              onClick={() => handleStatusUpdate(request._id, 'approved')}
+              className="staff-request-compact-approve-btn"
+              aria-label="Approve request"
+              title="Approve"
+              disabled={processingId === request._id}
+            >
+              <CheckCircle size={20} />
+            </button>
+            <button
+              onClick={() => handleStatusUpdate(request._id, 'rejected')}
+              className="staff-request-compact-reject-btn"
+              aria-label="Reject request"
+              title="Reject"
+              disabled={processingId === request._id}
+            >
+              <XCircle size={20} />
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
-
-  // Render notification for HR managers
-  const renderHrBranchNotification = () => {
-    if (!currentUser || !currentUser.role === 'hr_manager' || !currentUser.professionalDetails?.branch) {
-      return null;
-    }
-    
-    return (
-      <div className="staff-requests-branch-notice">
-        <Info size={16} />
-        <span>
-          As HR Manager, you can only approve or reject requests from {currentUser.professionalDetails.branch} branch.
-        </span>
-      </div>
-    );
-  };
 
   return (
     <div className="staff-requests-container">
@@ -569,12 +482,6 @@ const StaffRequests = () => {
         <p className="staff-requests-description">
           Review and manage new staff account requests
         </p>
-        {currentUser && currentUser.role === 'hr_manager' && currentUser.professionalDetails?.branch && (
-          <div className="staff-requests-branch-notification">
-            <Info size={16} />
-            <span>You are viewing requests for {currentUser.professionalDetails.branch} branch only</span>
-          </div>
-        )}
       </div>
       
       <div className="staff-requests-controls">
@@ -653,10 +560,7 @@ const StaffRequests = () => {
             </div>
             <h3>No pending requests</h3>
             <p>
-              {searchTerm ? 'No results match your search criteria' : 
-              (currentUser && currentUser.role === 'hr_manager' ? 
-                `No pending requests for ${currentUser.professionalDetails?.branch || 'your'} branch` : 
-                'All staff requests have been processed')}
+              {searchTerm ? 'No results match your search criteria' : 'All staff requests have been processed'}
             </p>
             {searchTerm && (
               <button className="staff-requests-clear-btn" onClick={() => setSearchTerm('')}>

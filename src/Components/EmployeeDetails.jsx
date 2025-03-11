@@ -203,18 +203,18 @@ const EmployeeDetails = ({ employee, onClose }) => {
       
       <div className="employee-detail-content">
         <div className="employee-profile-card">
-          <div className="employee-avatar">
-            {!avatarError ? (
-              <img 
-                src={`/src/avatars/avatar-${getProfilePicNumber()}.jpg`}
-                alt={employeeName}
-                style={{ width: '100%', height: '100%', borderRadius: '12px', objectFit: 'cover' }}
-                onError={handleAvatarError}
-              />
-            ) : (
-              <span>{getInitials(employeeName)}</span>
-            )}
-          </div>
+        <div className="employee-avatar">
+  {!avatarError ? (
+    <img 
+      src={new URL(`../assets/avatars/avatar-${getProfilePicNumber()}.jpg`, import.meta.url).href}
+      alt={employeeName}
+      style={{ width: '100%', height: '100%', borderRadius: '12px', objectFit: 'cover' }}
+      onError={handleAvatarError}
+    />
+  ) : (
+    <span>{getInitials(employeeName)}</span>
+  )}
+</div>
           <div className="employee-profile-info">
             <h2>{employeeName}</h2>
             <p className="employee-role">

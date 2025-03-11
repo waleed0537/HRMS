@@ -188,16 +188,16 @@ const StaffRequests = () => {
     return (
       <div className="staff-request-avatar">
         <img 
-          src={`/src/avatars/avatar-${profilePicNum}.jpg`}
-          alt={getDisplayName(request)}
-          style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }}
-          onError={(e) => {
-            // If image fails to load, replace with initial
-            e.target.style.display = 'none';
-            e.target.parentNode.classList.add('initial-avatar');
-            e.target.parentNode.innerText = initial;
-          }}
-        />
+  src={new URL(`../assets/avatars/avatar-${profilePicNum}.jpg`, import.meta.url).href}
+  alt={getDisplayName(request)}
+  style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }}
+  onError={(e) => {
+    // If image fails to load, replace with initial
+    e.target.style.display = 'none';
+    e.target.parentNode.classList.add('initial-avatar');
+    e.target.parentNode.innerText = initial;
+  }}
+/>
       </div>
     );
   };

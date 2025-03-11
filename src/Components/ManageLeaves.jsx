@@ -400,21 +400,21 @@ const ManageLeaves = () => {
     return (
       <div className="manage-employee-avatar">
         <img 
-          src={`/src/avatars/avatar-${profilePicNum}.jpg`}
-          alt={name || "Employee"}
-          style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-          onError={(e) => {
-            // If image fails to load, replace with initial
-            e.target.style.display = 'none';
-            e.target.parentNode.style.display = 'flex';
-            e.target.parentNode.style.alignItems = 'center';
-            e.target.parentNode.style.justifyContent = 'center';
-            e.target.parentNode.style.backgroundColor = '#474787';
-            e.target.parentNode.style.color = 'white';
-            e.target.parentNode.style.fontWeight = 'bold';
-            e.target.parentNode.innerText = initial;
-          }}
-        />
+  src={new URL(`../assets/avatars/avatar-${profilePicNum}.jpg`, import.meta.url).href}
+  alt={name || "Employee"}
+  style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+  onError={(e) => {
+    // If image fails to load, replace with initial
+    e.target.style.display = 'none';
+    e.target.parentNode.style.display = 'flex';
+    e.target.parentNode.style.alignItems = 'center';
+    e.target.parentNode.style.justifyContent = 'center';
+    e.target.parentNode.style.backgroundColor = '#474787';
+    e.target.parentNode.style.color = 'white';
+    e.target.parentNode.style.fontWeight = 'bold';
+    e.target.parentNode.innerText = initial;
+  }}
+/>
       </div>
     );
   };

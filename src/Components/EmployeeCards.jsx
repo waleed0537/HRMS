@@ -189,14 +189,15 @@ const EmployeeCards = () => {
     }
     
     return (
-        <div className={className}>
-          <img 
-            src={`/src/assets/avatars/avatar-${profilePicNum}.jpg`}
-            alt={employee.personalDetails.name}
-            style={{ width: '100%', height: '100%', borderRadius, objectFit: 'cover' }}
-            onError={() => handleAvatarError(employeeId)}
-          />
-        </div>
+      <div className={className}>
+      {/* Use require for create-react-app or import.meta.url for Vite */}
+      <img 
+        src={new URL(`../assets/avatars/avatar-${profilePicNum}.jpg`, import.meta.url).href}
+        alt={employee.personalDetails.name}
+        style={{ width: '100%', height: '100%', borderRadius, objectFit: 'cover' }}
+        onError={() => handleAvatarError(employeeId)}
+      />
+    </div>
     );
   };
 

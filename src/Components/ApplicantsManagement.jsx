@@ -126,7 +126,7 @@ const ApplicantsManagement = () => {
         return (
             <div className={sizeClass}>
               <img
-  src={new URL(`../../assets/avatars/avatar-${profilePicNum}.jpg`, import.meta.url).href}
+  src={new URL(`../assets/avatars/avatar-${profilePicNum}.jpg`, import.meta.url).href}
   alt={name}
   style={{
     width: '100%',

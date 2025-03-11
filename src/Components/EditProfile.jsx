@@ -572,6 +572,46 @@ const EditProfile = () => {
       .toUpperCase() || 'U';
   };
 
+  // Function to render either an avatar image or a text-based avatar with user's initial
+  // Function to render either an avatar image or a text-based avatar with user's initial
+const renderAvatar = () => {
+  if (!selectedEmployee) return null;
+  
+  // Get name for display and initials
+  const name = selectedEmployee?.personalDetails?.name || 'User';
+  const initial = getInitials(name);
+  
+  // Check if user has a profilePic (from user or employee object)
+  const profilePic = selectedEmployee?.user?.profilePic || selectedEmployee?.profilePic || 
+                    Math.floor(Math.random() * 11) + 1; // Fallback to random avatar 1-11
+  
+  return (
+    <div className="profile-avatar">
+      <img 
+        src={new URL(`../assets/avatars/avatar-${profilePic}.jpg`, import.meta.url).href}
+        alt={name}
+        style={{ 
+          width: '100%', 
+          height: '100%', 
+          borderRadius: '50%', 
+          objectFit: 'cover' 
+        }}
+        onError={(e) => {
+          // If image fails to load, replace with initial
+          e.target.style.display = 'none';
+          e.target.parentNode.style.display = 'flex';
+          e.target.parentNode.style.alignItems = 'center';
+          e.target.parentNode.style.justifyContent = 'center';
+          e.target.parentNode.style.backgroundColor = '#474787';
+          e.target.parentNode.style.color = 'white';
+          e.target.parentNode.style.fontWeight = 'bold';
+          e.target.parentNode.innerText = initial;
+        }}
+      />
+    </div>
+  );
+}
+
   if (loading && !selectedEmployee) {
     return (
       <div className="edit-profiles-container">
@@ -714,9 +754,7 @@ const EditProfile = () => {
           
           <div className="profile-sidebar">
             <div className="profile-info">
-              <div className="profile-avatar">
-                {getInitials(selectedEmployee?.personalDetails?.name || '')}
-              </div>
+              {renderAvatar()}
               <h3 className="profile-name">{selectedEmployee?.personalDetails?.name || 'Unknown'}</h3>
               <p className="profile-role">{formatRole(selectedEmployee?.professionalDetails?.role) || 'Employee'}</p>
               {renderStatusBadge()}
@@ -1240,4 +1278,4 @@ const EditProfile = () => {
   );
 };
 
-export default EditProfile;
+export default EditProfile; 

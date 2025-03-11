@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   User, Mail, Phone, MapPin, Building, Briefcase, 
   Save, Upload, X, FileText, Clock, Award, Calendar, AlertCircle,
-  Menu, ChevronDown, ChevronUp
+  Menu, ChevronDown, ChevronUp, Info
 } from 'lucide-react';
 import { useToast } from './common/ToastContent.jsx';
 import '../assets/css/EditProfile.css';
@@ -19,6 +19,8 @@ const EditProfile = () => {
   const [documentError, setDocumentError] = useState(null);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [debugInfo, setDebugInfo] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
   
   // Add milestone tracking
   const [showMilestoneForm, setShowMilestoneForm] = useState(false);
@@ -65,23 +67,55 @@ const EditProfile = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch employees on component mount
+  // Fetch current user data first
   useEffect(() => {
-    const loadEmployees = async () => {
+    const fetchCurrentUser = async () => {
       try {
-        await fetchEmployees();
+        setLoadingUser(true);
+        const response = await fetch(`${API_BASE_URL}/api/profile`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch current user profile');
+        }
+
+        const userData = await response.json();
+        setCurrentUser(userData);
+        console.log("Current user loaded:", userData);
       } catch (err) {
-        console.error("Error in useEffect loading employees:", err);
+        console.error("Error fetching current user:", err);
+        error("Failed to load your profile information");
+      } finally {
+        setLoadingUser(false);
       }
     };
-    
-    loadEmployees();
+
+    fetchCurrentUser();
   }, []);
+
+  // Fetch employees after current user is loaded
+  useEffect(() => {
+    if (!loadingUser && currentUser) {
+      fetchEmployees();
+    }
+  }, [currentUser, loadingUser]);
 
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/employees`, {
+      let endpoint = `${API_BASE_URL}/api/employees`;
+      
+      // If user is an HR manager, use HR-specific endpoint or filter
+      if (currentUser && currentUser.professionalDetails?.role === 'hr_manager') {
+        // You could use a specific HR endpoint if available:
+        // endpoint = `${API_BASE_URL}/api/hr/employees`;
+        console.log(`HR Manager detected for branch: ${currentUser.professionalDetails.branch}`);
+      }
+
+      const response = await fetch(endpoint, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -91,17 +125,35 @@ const EditProfile = () => {
         throw new Error('Failed to fetch employees');
       }
 
-      const data = await response.json();
+      let data = await response.json();
+      
+      // For HR managers, filter employees by their branch on the client side
+      if (currentUser && 
+          currentUser.professionalDetails?.role === 'hr_manager' && 
+          currentUser.professionalDetails?.branch) {
+        
+        const hrBranch = currentUser.professionalDetails.branch;
+        console.log(`Filtering employees for branch: ${hrBranch}`);
+        
+        // Filter employees to only include those from HR's branch
+        data = data.filter(employee => 
+          employee.professionalDetails?.branch === hrBranch
+        );
+        
+        console.log(`Filtered to ${data.length} employees in branch ${hrBranch}`);
+      }
       
       if (Array.isArray(data)) {
         setEmployees(data);
       } else {
         console.error("Employees data is not an array:", data);
+        setEmployees([]);
       }
       
       setLoading(false);
     } catch (err) {
       console.error("Error fetching employees:", err);
+      error(`Failed to fetch employees: ${err.message}`);
       setLoading(false);
     }
   };
@@ -119,7 +171,14 @@ const EditProfile = () => {
       
       const employee = employees.find(emp => emp._id === employeeId);
       
+      // Check if employee exists and is from the HR's branch if user is HR
       if (employee) {
+        if (currentUser && 
+            currentUser.professionalDetails?.role === 'hr_manager' && 
+            employee.professionalDetails?.branch !== currentUser.professionalDetails?.branch) {
+          throw new Error(`You don't have permission to edit employees from other branches`);
+        }
+        
         setSelectedEmployee(employee);
         
         try {
@@ -162,11 +221,13 @@ const EditProfile = () => {
         setMobileNavOpen(false);
       } else {
         console.error("Employee not found in the list");
+        error("Employee not found");
       }
       
       setLoading(false);
     } catch (err) {
       console.error("Error in handleEmployeeSelect:", err);
+      error(err.message);
       setLoading(false);
     }
   };
@@ -202,6 +263,13 @@ const EditProfile = () => {
   };
 
   const handleInputChange = (section, field, value) => {
+    // For HR managers, restrict branch changes to their own branch
+    if (section === 'professionalDetails' && field === 'branch' && 
+        currentUser?.professionalDetails?.role === 'hr_manager') {
+      // Force branch to be HR's branch
+      value = currentUser.professionalDetails.branch;
+    }
+    
     setFormData(prev => ({
       ...prev,
       [section]: {
@@ -261,8 +329,10 @@ const EditProfile = () => {
       }
 
       setDocuments(prev => prev.filter(doc => doc._id !== documentId));
+      success('Document deleted successfully');
     } catch (err) {
       console.error('Error deleting document:', err);
+      error(`Failed to delete document: ${err.message}`);
     }
   };
 
@@ -313,6 +383,11 @@ const EditProfile = () => {
 
   // Handle milestone form changes
   const handleMilestoneChange = (field, value) => {
+    // If user is HR manager and the field is branch, force it to HR's branch
+    if (field === 'branch' && currentUser?.professionalDetails?.role === 'hr_manager') {
+      value = currentUser.professionalDetails.branch;
+    }
+    
     setMilestone(prev => ({
       ...prev,
       [field]: value
@@ -413,6 +488,11 @@ const EditProfile = () => {
       return;
     }
     
+    // For HR managers, ensure branch stays as their branch
+    if (currentUser?.professionalDetails?.role === 'hr_manager') {
+      formData.professionalDetails.branch = currentUser.professionalDetails.branch;
+    }
+    
     try {
       setLoading(true);
       
@@ -483,7 +563,6 @@ const EditProfile = () => {
         }
       };
 
-      
       // Always include milestones array to ensure it's processed
       sanitizedFormData.milestones = allMilestones;
       
@@ -573,44 +652,74 @@ const EditProfile = () => {
   };
 
   // Function to render either an avatar image or a text-based avatar with user's initial
-  // Function to render either an avatar image or a text-based avatar with user's initial
-const renderAvatar = () => {
-  if (!selectedEmployee) return null;
-  
-  // Get name for display and initials
-  const name = selectedEmployee?.personalDetails?.name || 'User';
-  const initial = getInitials(name);
-  
-  // Check if user has a profilePic (from user or employee object)
-  const profilePic = selectedEmployee?.user?.profilePic || selectedEmployee?.profilePic || 
-                    Math.floor(Math.random() * 11) + 1; // Fallback to random avatar 1-11
-  
-  return (
-    <div className="profile-avatar">
-      <img 
-        src={new URL(`../assets/avatars/avatar-${profilePic}.jpg`, import.meta.url).href}
-        alt={name}
-        style={{ 
-          width: '100%', 
-          height: '100%', 
-          borderRadius: '50%', 
-          objectFit: 'cover' 
-        }}
-        onError={(e) => {
-          // If image fails to load, replace with initial
-          e.target.style.display = 'none';
-          e.target.parentNode.style.display = 'flex';
-          e.target.parentNode.style.alignItems = 'center';
-          e.target.parentNode.style.justifyContent = 'center';
-          e.target.parentNode.style.backgroundColor = '#474787';
-          e.target.parentNode.style.color = 'white';
-          e.target.parentNode.style.fontWeight = 'bold';
-          e.target.parentNode.innerText = initial;
-        }}
-      />
-    </div>
-  );
-}
+  const renderAvatar = () => {
+    if (!selectedEmployee) return null;
+    
+    // Get name for display and initials
+    const name = selectedEmployee?.personalDetails?.name || 'User';
+    const initial = getInitials(name);
+    
+    // Check if user has a profilePic (from user or employee object)
+    const profilePic = selectedEmployee?.user?.profilePic || selectedEmployee?.profilePic;
+    
+    if (profilePic) {
+      return (
+        <div className="profile-avatar">
+          <img 
+            src={new URL(`../assets/avatars/avatar-${profilePic}.jpg`, import.meta.url).href}
+            alt={name}
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              borderRadius: '50%', 
+              objectFit: 'cover' 
+            }}
+            onError={(e) => {
+              // If image fails to load, replace with initial
+              e.target.style.display = 'none';
+              e.target.parentNode.classList.add('initial-avatar');
+              e.target.parentNode.innerText = initial;
+            }}
+          />
+        </div>
+      );
+    }
+    
+    // Fallback to initial-based avatar
+    return (
+      <div className="profile-avatar initial-avatar">
+        {initial}
+      </div>
+    );
+  };
+
+  // Render HR branch restriction notice
+  const renderBranchRestrictionNotice = () => {
+    if (currentUser?.professionalDetails?.role !== 'hr_manager') {
+      return null;
+    }
+    
+    return (
+      <div className="branch-restriction-notice">
+        <Info size={18} />
+        <p>
+          As an HR manager, you can only view and edit profiles of employees in the
+          <strong> {currentUser.professionalDetails.branch}</strong> branch.
+        </p>
+      </div>
+    );
+  };
+
+  if (loadingUser) {
+    return (
+      <div className="edit-profiles-container">
+        <div className="loading-indicator">
+          <div className="spinner"></div>
+          <p>Loading user profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading && !selectedEmployee) {
     return (
@@ -728,8 +837,17 @@ const renderAvatar = () => {
           <p className="page-description">Update employee information, status, and documents</p>
         </div>
         
+        {renderBranchRestrictionNotice()}
+        
         <div className="employee-selector">
-          <label htmlFor="employee-select">Select Employee</label>
+          <label htmlFor="employee-select">
+            Select Employee 
+            {currentUser?.professionalDetails?.role === 'hr_manager' && (
+              <span className="branch-filter-label">
+                (From {currentUser.professionalDetails.branch} branch)
+              </span>
+            )}
+          </label>
           <select 
             id="employee-select"
             className="employee-select"
@@ -737,11 +855,17 @@ const renderAvatar = () => {
             onChange={(e) => handleEmployeeSelect(e.target.value)}
           >
             <option value="">Select an employee</option>
-            {employees && employees.map(emp => (
-              <option key={emp._id} value={emp._id}>
-                {emp.personalDetails?.name || 'Unknown'} - {formatRole(emp.professionalDetails?.role) || 'Employee'}
+            {employees && employees.length > 0 ? (
+              employees.map(emp => (
+                <option key={emp._id} value={emp._id}>
+                  {emp.personalDetails?.name || 'Unknown'} - {formatRole(emp.professionalDetails?.role) || 'Employee'}
+                </option>
+              ))
+            ) : (
+              <option value="" disabled>
+                {employees.length === 0 ? 'No employees available in your branch' : 'Loading employees...'}
               </option>
-            ))}
+            )}
           </select>
         </div>
       </div>
@@ -913,7 +1037,12 @@ const renderAvatar = () => {
                     </div>
                     
                     <div className="form-field">
-                      <label htmlFor="branch">Branch</label>
+                      <label htmlFor="branch">
+                        Branch
+                        {currentUser?.professionalDetails?.role === 'hr_manager' && (
+                          <span className="field-restriction"> (Restricted to your branch)</span>
+                        )}
+                      </label>
                       <div className="input-icon-wrapper">
                         <Building size={18} className="field-icon" />
                         <input
@@ -922,6 +1051,8 @@ const renderAvatar = () => {
                           className="form-input"
                           value={formData.professionalDetails.branch}
                           onChange={(e) => handleInputChange('professionalDetails', 'branch', e.target.value)}
+                          readOnly={currentUser?.professionalDetails?.role === 'hr_manager'}
+                          disabled={currentUser?.professionalDetails?.role === 'hr_manager'}
                           required
                         />
                       </div>
@@ -1002,7 +1133,8 @@ const renderAvatar = () => {
                     </div>
                   )}
                   
-                  {selectedEmployee.professionalDetails?.branch !== formData.professionalDetails.branch && (
+                  {currentUser?.professionalDetails?.role !== 'hr_manager' && 
+                   selectedEmployee.professionalDetails?.branch !== formData.professionalDetails.branch && (
                     <div className="branch-change-alert">
                       <Building size={18} />
                       <p>
@@ -1075,15 +1207,24 @@ const renderAvatar = () => {
                         </div>
                         
                         <div className="form-field">
-                          <label htmlFor="milestone-branch">Branch</label>
+                          <label htmlFor="milestone-branch">
+                            Branch
+                            {currentUser?.professionalDetails?.role === 'hr_manager' && (
+                              <span className="field-restriction"> (Set to your branch)</span>
+                            )}
+                          </label>
                           <div className="input-icon-wrapper">
                             <Building size={18} className="field-icon" />
                             <input
                               id="milestone-branch"
                               type="text"
                               className="form-input"
-                              value={milestone.branch || formData.professionalDetails.branch}
+                              value={currentUser?.professionalDetails?.role === 'hr_manager' 
+                                ? currentUser.professionalDetails.branch 
+                                : (milestone.branch || formData.professionalDetails.branch)}
                               onChange={(e) => handleMilestoneChange('branch', e.target.value)}
+                              readOnly={currentUser?.professionalDetails?.role === 'hr_manager'}
+                              disabled={currentUser?.professionalDetails?.role === 'hr_manager'}
                               placeholder="Default is current branch"
                             />
                           </div>
@@ -1278,4 +1419,4 @@ const renderAvatar = () => {
   );
 };
 
-export default EditProfile; 
+export default EditProfile;

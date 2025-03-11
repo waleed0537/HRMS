@@ -78,36 +78,39 @@ const Sidebar = ({ user }) => {
             </>
           )}
 
-          {(isAdmin || user?.role === 'hr_manager') && (
-            <>
-              <div className="section-divider">Administration</div>
-              {isAdmin && (
-                <>
-                  <NavLink to="/staff-requests" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                    <UserPlus className="h-5 w-5" />
-                    <span>Staff Requests</span>
-                  </NavLink>
-                
-                  <NavLink to="/branch-management" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                    <Building className="h-5 w-5" />
-                    <span>Branch Management</span>
-                  </NavLink>
-                </>
-              )}
-              <NavLink to="/attendance" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <Clock className="h-5 w-5" />
-                <span>Attendance</span>
-              </NavLink>
-              <NavLink to="/edit-profiles" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <FileText className="h-5 w-5" />
-                <span>Edit Profiles</span>
-              </NavLink>
-              <NavLink to="/manage-leaves" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <FileText className="h-5 w-5" />
-                <span>Manage Leaves</span>
-              </NavLink>
-            </>
-          )}
+{(isAdmin || user?.role === 'hr_manager') && (
+  <>
+    <div className="section-divider">Administration</div>
+    {(isAdmin || user?.role === 'hr_manager') && (
+      <NavLink to="/staff-requests" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+        <UserPlus className="h-5 w-5" />
+        <span>Staff Requests</span>
+      </NavLink>
+    )}
+    
+    {isAdmin && (
+      <NavLink to="/branch-management" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+        <Building className="h-5 w-5" />
+        <span>Branch Management</span>
+      </NavLink>
+    )}
+    
+    <NavLink to="/attendance" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+      <Clock className="h-5 w-5" />
+      <span>Attendance</span>
+    </NavLink>
+    
+    <NavLink to="/edit-profiles" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+      <FileText className="h-5 w-5" />
+      <span>Edit Profiles</span>
+    </NavLink>
+    
+    <NavLink to="/manage-leaves" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+      <FileText className="h-5 w-5" />
+      <span>Manage Leaves</span>
+    </NavLink>
+  </>
+)}
 
           {isAdmin && (
             <NavLink to="/leave-history" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>

@@ -8,7 +8,7 @@ const formFieldSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['text', 'email', 'tel', 'select', 'textarea', 'file'],
+    enum: ['text', 'email', 'tel', 'select', 'textarea', 'file', 'number'],
     required: true
   },
   required: {

@@ -841,9 +841,7 @@ app.delete('/api/employees/:id', authenticateToken, async (req, res) => {
 // Get Pending Requests (Admin Only)
 app.get('/api/pending-requests', authenticateToken, async (req, res) => {
   try {
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
+    
 
     const pendingRequests = await User.find({ status: 'pending' })
       .select('-password')
@@ -858,13 +856,30 @@ app.get('/api/pending-requests', authenticateToken, async (req, res) => {
 // Approve/Reject Request (Admin Only)
 app.put('/api/requests/:userId/status', authenticateToken, async (req, res) => {
   try {
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: 'Admin access required' });
+    const currentUser = await User.findById(req.user.id);
+    
+    // Check if user is admin or HR manager
+    if (!(currentUser.isAdmin || currentUser.role === 'hr_manager')) {
+      return res.status(403).json({ message: 'Admin or HR Manager access required' });
     }
 
     const { status } = req.body;
     if (!['approved', 'rejected'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    // For HR managers, check if the request belongs to their branch
+    if (currentUser.role === 'hr_manager') {
+      // Get the request to be updated
+      const requestToUpdate = await User.findById(req.params.userId);
+      if (!requestToUpdate) {
+        return res.status(404).json({ message: 'User request not found' });
+      }
+      
+      // Check if the request's branch matches the HR manager's branch
+      if (requestToUpdate.branchName.toLowerCase() !== currentUser.branchName.toLowerCase()) {
+        return res.status(403).json({ message: 'You can only manage requests from your branch' });
+      }
     }
 
     // Update user status
@@ -873,6 +888,8 @@ app.put('/api/requests/:userId/status', authenticateToken, async (req, res) => {
       { status },
       { new: true }
     ).select('-password');
+
+    // Rest of your existing code...
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -1797,13 +1814,43 @@ if (!fs.existsSync('./uploads/resumes')) {
 
 // In server.js, update the applicant submission route
 // In server.js, update the POST /api/applicants route
+// Update this section of your server.js file where the application is being processed
+// (around line 1808-1813 where the error is occurring)
+
 app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
   try {
     console.log('Starting application submission');
+    console.log('Request body personal details:', req.body.personalDetails);
+    console.log('Request body job details:', req.body.jobDetails);
+    
     const personalDetails = JSON.parse(req.body.personalDetails);
     const jobDetails = JSON.parse(req.body.jobDetails);
-    const branchName = jobDetails.branchName || jobDetails.branch;
-
+    
+    console.log('Parsed personal details:', personalDetails);
+    console.log('Parsed job details:', jobDetails);
+    
+    // Inspect position field specifically
+    console.log('Job details position field direct access:', jobDetails.position);
+    
+    // Check all possible locations for position field (case-insensitive)
+    const possiblePositionKeys = Object.keys(jobDetails).filter(key => 
+      key.toLowerCase().includes('position') || 
+      key.toLowerCase().includes('title') || 
+      key.toLowerCase() === 'role' ||
+      key.toLowerCase() === 'job'
+    );
+    
+    console.log('Possible position keys found:', possiblePositionKeys);
+    console.log('Values for possible position keys:', possiblePositionKeys.map(key => `${key}: ${jobDetails[key]}`));
+    
+    // CRITICAL FIX: Extract branch name consistently, checking all possible locations
+    const branchName = 
+      req.body.branchName || 
+      jobDetails.branch || 
+      jobDetails.branchName || 
+      personalDetails.branch || 
+      personalDetails.branchName;
+    
     console.log('Application received for branch:', branchName);
 
     // Find branch
@@ -1812,16 +1859,22 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
     });
 
     if (!branch) {
-      throw new Error('Invalid branch specified');
+      throw new Error(`Invalid branch specified: ${branchName}`);
     }
 
     console.log('Found branch:', branch);
 
-    // Save applicant data
+    // CRITICAL FIX: Ensure both branch and branchName are stored in jobDetails
+    if (jobDetails) {
+      jobDetails.branch = branch.name;
+      jobDetails.branchName = branch.name;
+    }
+
+    // Save applicant data with standardized branchName
     const applicantData = {
       personalDetails: new Map(Object.entries(personalDetails)),
       jobDetails: new Map(Object.entries(jobDetails)),
-      branchName: branch.name,
+      branchName: branch.name, // Store at top level for HR filtering
       status: 'pending'
     };
 
@@ -1836,12 +1889,11 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
     const applicant = new Applicant(applicantData);
     await applicant.save();
 
-    // After saving, create notifications
     // Find users to notify (admins, HR managers, and T1 members)
     const [hrManagers, authorizedUsers] = await Promise.all([
       User.find({
         role: 'hr_manager',
-        branchName: { $regex: new RegExp('^' + branchName + '$', 'i') }
+        branchName: { $regex: new RegExp('^' + branch.name + '$', 'i') }
       }),
       User.find({
         $or: [
@@ -1850,6 +1902,39 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
         ]
       })
     ]);
+
+    console.log(`Found ${hrManagers.length} HR managers for branch ${branch.name}`);
+
+    // Extract applicant name with fallbacks
+    const applicantName = 
+      personalDetails.name || 
+      personalDetails.fullname || 
+      personalDetails.fullName || 
+      'Applicant';
+
+    // Improved position extraction with case-insensitive searching
+    let jobPosition = 'a position';
+    // Try to find any field containing "position" in its name, case-insensitive
+    for (const key of Object.keys(jobDetails)) {
+      if (key.toLowerCase().includes('position') && jobDetails[key]) {
+        jobPosition = jobDetails[key];
+        break;
+      }
+    }
+    
+    // If that fails, try other common field names
+    if (jobPosition === 'a position') {
+      jobPosition = 
+        jobDetails.title || 
+        jobDetails.job_title || 
+        jobDetails.jobTitle || 
+        jobDetails.role || 
+        jobDetails.job || 
+        'a position';
+    }
+
+    console.log('Extracted name:', applicantName);
+    console.log('Extracted position:', jobPosition);
 
     // Create notifications
     const notificationPromises = [];
@@ -1860,7 +1945,7 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
         new Notification({
           userId: user._id,
           title: 'New Job Application',
-          message: `New application received from ${personalDetails.name} for ${jobDetails.position} position in ${branch.name} branch`,
+          message: `New application received from ${applicantName} for ${jobPosition} in ${branch.name} branch`,
           type: 'application',
           metadata: {
             branchId: branch._id,
@@ -1876,7 +1961,7 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
         new Notification({
           userId: hr._id,
           title: 'New Job Application',
-          message: `New application received from ${personalDetails.name} for ${jobDetails.position} position`,
+          message: `New application received from ${applicantName} for ${jobPosition}`,
           type: 'application',
           metadata: {
             branchId: branch._id,
@@ -1884,40 +1969,65 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
           }
         }).save()
       );
-
-      // Send email to HR manager
-      const emailContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #474787;">New Job Application Received</h2>
-          <p>A new application has been received for <strong>${branch.name}</strong> branch.</p>
-          
-          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
-            <h3 style="color: #333;">Applicant Details:</h3>
-            <ul style="list-style: none; padding-left: 0;">
-              <li style="margin-bottom: 10px;"><strong>Name:</strong> ${personalDetails.name}</li>
-              <li style="margin-bottom: 10px;"><strong>Email:</strong> ${personalDetails.email}</li>
-              <li style="margin-bottom: 10px;"><strong>Phone:</strong> ${personalDetails.phone}</li>
-              <li style="margin-bottom: 10px;"><strong>Position:</strong> ${jobDetails.position}</li>
-              ${jobDetails.experience ? `<li style="margin-bottom: 10px;"><strong>Experience:</strong> ${jobDetails.experience}</li>` : ''}
-            </ul>
-          </div>
-        </div>
-      `;
-
-      notificationPromises.push(
-        sendEmail(hr.email, 'New Job Application Received', emailContent)
-          .catch(err => console.error(`Failed to send email to ${hr.email}:`, err))
-      );
     });
 
-    // Wait for all notifications and emails to be sent
+    // Wait for all notifications
     await Promise.all(notificationPromises);
+    
+    // Send email notifications to HR managers
+    const emailPromises = [];
+    
+    for (const hr of hrManagers) {
+      try {
+        // Create email subject and content
+        const subject = `New Job Application for ${branch.name} Branch`;
+        
+        // Create a nice email template with basic application details
+        const emailContent = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <h2 style="color: #474787;">New Job Application Received</h2>
+            
+            <p>Hello ${hr.email.split('@')[0]},</p>
+            
+            <p>A new job application has been submitted for the ${branch.name} branch.</p>
+            
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 6px; margin: 15px 0;">
+              <h3 style="margin-top: 0; color: #4b5563;">Applicant Details:</h3>
+              <p><strong>Name:</strong> ${applicantName}</p>
+              <p><strong>Email:</strong> ${personalDetails.email || 'Not provided'}</p>
+              <p><strong>Position:</strong> ${jobPosition}</p>
+              <p><strong>Application Date:</strong> ${new Date().toLocaleDateString()}</p>
+            </div>
+            
+            <p>To review this application, please log in to the HR Management System and check the Applicants section.</p>
+            
+            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
+              <p>This is an automated notification from the HR Management System.</p>
+            </div>
+          </div>
+        `;
+        
+        // Send the email notification
+        emailPromises.push(sendEmail(hr.email, subject, emailContent));
+        console.log(`Email notification queued for HR manager: ${hr.email}`);
+      } catch (emailError) {
+        console.error(`Failed to prepare email for HR manager ${hr.email}:`, emailError);
+        // Continue the loop even if one email fails
+      }
+    }
+    
+    // Send all emails in parallel but don't wait for them to complete
+    Promise.allSettled(emailPromises).then(results => {
+      const sentCount = results.filter(r => r.status === 'fulfilled' && r.value === true).length;
+      console.log(`Sent ${sentCount}/${emailPromises.length} email notifications to HR managers`);
+    });
 
     res.status(201).json({
       success: true,
       message: 'Application submitted successfully',
       notifications: notificationPromises.length,
-      hrManagersNotified: hrManagers.length
+      hrManagersNotified: hrManagers.length,
+      emailsQueued: emailPromises.length
     });
 
   } catch (error) {
@@ -1928,8 +2038,6 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
     });
   }
 });
-
-
 // Add a route to get applicant data for admin/HR
 // Get all applications (Admin only)
 // In your server.js, update the GET /api/applicants endpoint
@@ -2479,29 +2587,26 @@ app.get('/api/hr/applicants', authenticateToken, async (req, res) => {
 
     console.log('HR Manager Branch:', user.branchName);
 
-    // Fetch all applicants
-    const allApplicants = await Applicant.find();
-    console.log(`Total applicants found: ${allApplicants.length}`);
-
-    let applicantsToShow = allApplicants;
-
-    // If HR manager (not admin), filter by branch
+    // Build a more robust filter that checks multiple branch fields
+    const filter = {};
+    
+    // For HR managers (not admin), filter by branch
     if (user.role === 'hr_manager') {
-      applicantsToShow = allApplicants.filter(applicant => {
-        // Get branch name from various possible locations
-        const branchName = applicant.branchName ||
-          (applicant.jobDetails instanceof Map ?
-            applicant.jobDetails.get('branchName') ||
-            applicant.jobDetails.get('branch') :
-            applicant.jobDetails?.branchName ||
-            applicant.jobDetails?.branch);
-
-        return branchName && branchName.toLowerCase() === user.branchName.toLowerCase();
-      });
+      filter.$or = [
+        { branchName: { $regex: new RegExp('^' + user.branchName + '$', 'i') } },
+        { 'jobDetails.branch': { $regex: new RegExp('^' + user.branchName + '$', 'i') } },
+        { 'jobDetails.branchName': { $regex: new RegExp('^' + user.branchName + '$', 'i') } }
+      ];
     }
 
+    console.log('Using filter:', JSON.stringify(filter));
+
+    // Fetch all applicants matching the filter
+    const applicants = await Applicant.find(filter);
+    console.log(`Found ${applicants.length} applicants${user.role === 'hr_manager' ? ' for branch ' + user.branchName : ''}`);
+
     // Transform the data to match admin view
-    const transformedApplicants = applicantsToShow.map(applicant => {
+    const transformedApplicants = applicants.map(applicant => {
       // Get personal details
       let personalDetails = {};
       if (applicant.personalDetails instanceof Map) {
@@ -2518,15 +2623,14 @@ app.get('/api/hr/applicants', authenticateToken, async (req, res) => {
         jobDetails = applicant.jobDetails;
       }
 
-      // Log raw data for debugging
-      console.log('Raw applicant data:', {
-        personalDetails: applicant.personalDetails instanceof Map ?
-          Object.fromEntries(applicant.personalDetails) :
-          applicant.personalDetails,
-        jobDetails: applicant.jobDetails instanceof Map ?
-          Object.fromEntries(applicant.jobDetails) :
-          applicant.jobDetails
-      });
+      // CRITICAL FIX: Extract branch name from all possible locations
+      const branchName = 
+        applicant.branchName || 
+        jobDetails.branch || 
+        jobDetails.branchName || 
+        personalDetails.branch || 
+        personalDetails.branchName || 
+        'Not specified';
 
       return {
         _id: applicant._id,
@@ -2539,12 +2643,13 @@ app.get('/api/hr/applicants', authenticateToken, async (req, res) => {
         },
         jobDetails: {
           position: jobDetails.position || 'Not specified',
-          branchName: applicant.branchName ||
-            jobDetails.branchName ||
-            jobDetails.branch ||
-            'Not specified',
+          // Ensure branch is available in both locations for consistency
+          branch: branchName,
+          branchName: branchName,
           ...jobDetails
         },
+        // Ensure branch name at top level too
+        branchName: branchName,
         status: applicant.status || 'pending',
         resume: applicant.resume || null,
         createdAt: applicant.createdAt
@@ -2766,6 +2871,28 @@ app.delete('/api/branches/:id', authenticateToken, isAdmin, async (req, res) => 
     res.status(500).json({ 
       success: false,
       message: 'Failed to delete branch',
+      error: error.message 
+    });
+  }
+});
+
+// Add this to your server.js file - a new public endpoint for branches
+
+// Public endpoint for getting branches (unprotected)
+app.get('/api/public/branches', async (req, res) => {
+  try {
+    const branches = await Branch.find()
+      .select('name') // Only return branch names for security
+      .lean();
+    
+    res.json(branches.map(branch => ({
+      id: branch._id,
+      name: branch.name
+    })));
+  } catch (error) {
+    console.error('Error fetching public branches:', error);
+    res.status(500).json({ 
+      message: 'Failed to load branches. Please try again later.',
       error: error.message 
     });
   }

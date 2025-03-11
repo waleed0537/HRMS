@@ -359,6 +359,146 @@
   background: #fee2e2;
   color: #dc2626;
 }
+/* Add these styles to FormFieldManager.css to support the new section field */
+
+.field-section {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-right: 4px;
+}
+
+/* Make sure the options textarea is properly styled */
+.editor-field textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  transition: all 0.2s ease;
+  resize: vertical;
+}
+
+.editor-field textarea:focus {
+  outline: none;
+  border-color: #A389D4;
+  box-shadow: 0 0 0 3px rgba(163, 137, 212, 0.1);
+}
+
+/* Improve validation error styling */
+.error-message {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+/* Success message animation */
+.success-message {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Make field type more distinct */
+.field-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-type {
+  color: #64748b;
+  font-size: 12px;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: normal;
+}
+/* Add these styles to FormFieldManager.css to support the new section field and phone validation */
+
+.field-help-text {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.field-section {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-right: 4px;
+}
+
+/* Make sure the options textarea is properly styled */
+.editor-field textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  transition: all 0.2s ease;
+  resize: vertical;
+}
+
+.editor-field textarea:focus {
+  outline: none;
+  border-color: #A389D4;
+  box-shadow: 0 0 0 3px rgba(163, 137, 212, 0.1);
+}
+
+/* Improve validation error styling */
+.error-message {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+/* Success message animation */
+.success-message {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Make field type more distinct */
+.field-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-type {
+  color: #64748b;
+  font-size: 12px;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: normal;
+}
 
 .field-editor {
   padding: 24px;

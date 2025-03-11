@@ -289,7 +289,7 @@ const LandingPage = () => {
           >
             Login <i className="fas fa-lock ms-1"></i>
           </button>
-          <a href="/signup" 
+          {/* <a href="/signup" 
             className="theme-btn" 
             style={{
               padding: '10px 20px',
@@ -316,7 +316,7 @@ const LandingPage = () => {
             }}
           >
             Sign Up <i className="fas fa-arrow-right ms-1"></i>
-          </a>
+          </a> */}
         </div>
       </div>
 

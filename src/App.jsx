@@ -46,7 +46,7 @@ function App() {
   const handleLogin = (userData) => {
     setUser(userData);
     setIsAuthenticated(true);
-    
+
     if (userData.isAdmin) {
       navigate('/admin-dashboard');
     } else if (userData.role === 'hr_manager') {
@@ -92,17 +92,17 @@ function App() {
             <main className="p-6 pt-20 ml-64 min-h-screen bg-gray-50">
               <Routes>
                 <Route path="/" element={
-                  user?.isAdmin 
-                    ? <Navigate to="/admin-dashboard" replace /> 
-                    : (user?.role === 'hr_manager' 
-                        ? <Navigate to="/hr-dashboard" replace />
-                        : <Navigate to="/dashboard" replace />)
+                  user?.isAdmin
+                    ? <Navigate to="/admin-dashboard" replace />
+                    : (user?.role === 'hr_manager'
+                      ? <Navigate to="/hr-dashboard" replace />
+                      : <Navigate to="/dashboard" replace />)
                 } />
                 <Route path="/dashboard" element={
                   !user?.isAdmin && user?.role !== 'hr_manager' ? (
                     <EmployeeDashboard />
                   ) : (
-                    user?.isAdmin 
+                    user?.isAdmin
                       ? <Navigate to="/admin-dashboard" replace />
                       : <Navigate to="/hr-dashboard" replace />
                   )
@@ -132,7 +132,7 @@ function App() {
                 <Route path="/leave-request" element={<LeaveRequest />} />
                 <Route path="/profile" element={<EmployeeProfile />} />
                 <Route path="/staff-requests" element={
-                  user?.isAdmin ? (
+                  user?.isAdmin || user?.role === 'hr_manager' ? (
                     <StaffRequests />
                   ) : (
                     <Navigate to="/dashboard" replace />

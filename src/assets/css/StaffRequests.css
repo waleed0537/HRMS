@@ -90,6 +90,77 @@
   color: white !important;
   font-weight: bold !important;
 }
+/* Add these styles to your StaffRequests.css file */
+
+/* Branch notification for HR managers */
+.staff-requests-branch-notification {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background-color: #f0f7ff;
+  border-radius: 8px;
+  border-left: 4px solid #2563eb;
+  margin-top: 12px;
+  font-size: 14px;
+  color: #1e40af;
+}
+
+/* Restricted action message styles for each view */
+.staff-request-restricted {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #f3f4f6;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+  width: 100%;
+}
+
+.staff-request-list-restricted {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #f3f4f6;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.staff-request-compact-restricted {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
+  padding: 8px;
+  border-radius: 4px;
+  color: #6b7280;
+  width: 32px;
+  height: 32px;
+}
+
+/* Branch tag in compact view */
+.staff-request-compact-branch {
+  font-size: 11px;
+  color: #64748b;
+  background-color: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
+  display: inline-block;
+}
+
+/* Empty state for branch-specific views */
+.staff-requests-empty h3 + p {
+  max-width: 300px;
+  margin-left: auto;
+  margin-right: auto;
+}
 
 /* Fix any avatar hover effects for consistency */
 .staff-request-avatar img,

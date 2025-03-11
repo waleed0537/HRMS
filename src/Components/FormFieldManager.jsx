@@ -8,12 +8,10 @@ import '../assets/css/FormFieldManager.css';
 import { useToast } from './common/ToastContent.jsx';
 
 const FormFieldManager = ({ isOpen, onClose }) => {
-    const { success: showSuccess, error: showError, info: showInfo } = useToast();
+    const toast = useToast();
     
     const [formFields, setFormFields] = useState([]);
     const [editingField, setEditingField] = useState(null);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(true);
     const [draggingId, setDraggingId] = useState(null);
     const [user, setUser] = useState(null);
@@ -28,6 +26,8 @@ const FormFieldManager = ({ isOpen, onClose }) => {
             }
         }
     }, [isOpen]);
+
+    // Remove the conversion function that changes number to text
 
     const fetchFormFields = async () => {
         try {
@@ -44,19 +44,48 @@ const FormFieldManager = ({ isOpen, onClose }) => {
             }
 
             const data = await response.json();
+            
+            // Use the fields as they are without conversion
             setFormFields(data.sort((a, b) => a.order - b.order));
             setLoading(false);
         } catch (err) {
-            setError('Failed to load form fields. Please try again.');
+            console.error('Failed to load form fields:', err);
             setLoading(false);
-            showError('Failed to load form fields');
+        }
+    };
+
+    const validateField = (field) => {
+        if (!field.label.trim()) {
+            toast.error('Field label is required');
+            return false;
+        }
+
+        if (field.type === 'select' && (!field.options || field.options.length === 0)) {
+            toast.error('Dropdown fields must have at least one option');
+            return false;
+        }
+
+        if (!field.section) {
+            toast.error('Section is required');
+            return false;
+        }
+
+        return true;
+    };
+    
+    // Add validation pattern for phone field
+    const getPatternForFieldType = (type) => {
+        switch(type) {
+            case 'tel':
+                return "[0-9\\+\\-\\(\\)\\s]+"; // Basic phone number pattern
+            default:
+                return null;
         }
     };
 
     const handleSaveField = async () => {
         try {
-            if (!editingField.label.trim()) {
-                setError('Field label is required');
+            if (!validateField(editingField)) {
                 return;
             }
 
@@ -66,17 +95,48 @@ const FormFieldManager = ({ isOpen, onClose }) => {
                 ? `${API_BASE_URL}/api/admin/form-fields/${editingField._id}`
                 : `${API_BASE_URL}/api/admin/form-fields`;
 
+            // Set default pattern for phone fields if not provided
+            let fieldToSave = {
+                ...editingField,
+                // Ensure options is either the existing array or an empty array
+                // Filter out any empty options before saving
+                options: (editingField.options || []).filter(Boolean)
+            };
+            
+            // Add pattern for number validation if not already set
+            if (fieldToSave.type === 'number' && !fieldToSave.pattern) {
+                fieldToSave.pattern = '[0-9]+';
+            }
+            
+            // Add pattern for phone field type if not already set
+            if (fieldToSave.type === 'tel' && !fieldToSave.pattern) {
+                fieldToSave.pattern = "[0-9\\+\\-\\(\\)\\s]+";
+            }
+            
+            // Validate field type against allowed types
+            const allowedTypes = ['text', 'email', 'tel', 'select', 'textarea', 'file', 'number'];
+            if (!allowedTypes.includes(fieldToSave.type)) {
+                throw new Error(`Invalid field type: ${fieldToSave.type}. Allowed types are: ${allowedTypes.join(', ')}`);
+            }
+            
+            // Validate section against allowed sections
+            const allowedSections = ['personal', 'professional', 'additional'];
+            if (!allowedSections.includes(fieldToSave.section)) {
+                throw new Error(`Invalid section: ${fieldToSave.section}. Allowed sections are: ${allowedSections.join(', ')}`);
+            }
+            
             const response = await fetch(url, {
                 method,
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(editingField)
+                body: JSON.stringify(fieldToSave)
             });
 
             if (!response.ok) {
-                throw new Error('Failed to save field');
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to save field');
             }
 
             const savedField = await response.json();
@@ -85,21 +145,19 @@ const FormFieldManager = ({ isOpen, onClose }) => {
                 setFormFields(formFields.map(f => 
                     f._id === savedField._id ? savedField : f
                 ));
-                showSuccess('Field updated successfully');
+                toast.success('Field updated successfully');
             } else {
                 setFormFields([...formFields, savedField]);
-                showSuccess('New field added successfully');
+                toast.success('New field added successfully');
             }
 
             setEditingField(null);
-            setSuccess('Field saved successfully');
-            setError('');
             
             // Refresh the list to get the latest order
             fetchFormFields();
         } catch (err) {
-            setError('Failed to save field. Please try again.');
-            showError('Failed to save field');
+            console.error("Error saving field:", err);
+            toast.error(`Failed to save field: ${err.message}`);
         }
     };
 
@@ -120,16 +178,14 @@ const FormFieldManager = ({ isOpen, onClose }) => {
             }
 
             setFormFields(formFields.filter(f => f._id !== fieldId));
-            setSuccess('Field deleted successfully');
-            showSuccess('Field deleted successfully');
+            toast.success('Field removed successfully');
             
             // Clear any editing field if it was the one deleted
             if (editingField && editingField._id === fieldId) {
                 setEditingField(null);
             }
         } catch (err) {
-            setError('Failed to delete field. Please try again.');
-            showError('Failed to delete field');
+            toast.error('Failed to delete field');
         }
     };
 
@@ -184,10 +240,9 @@ const FormFieldManager = ({ isOpen, onClose }) => {
                 throw new Error('Failed to update field order');
             }
             
-            showInfo('Field order updated');
+            // No toast for reordering
         } catch (err) {
-            setError('Failed to update field order');
-            showError('Failed to update field order');
+            console.error('Failed to update field order:', err);
             // Refresh the fields to get the original order
             fetchFormFields();
         }
@@ -196,20 +251,26 @@ const FormFieldManager = ({ isOpen, onClose }) => {
     const getFieldTypeLabel = (type) => {
         const typeMap = {
             'text': 'Text Input',
+            'number': 'Number Input',
             'email': 'Email Input',
             'tel': 'Phone Input',
             'select': 'Dropdown',
             'textarea': 'Text Area',
-            'date': 'Date Picker',
-            'checkbox': 'Checkbox',
-            'radio': 'Radio Buttons',
             'file': 'File Upload'
         };
         
         return typeMap[type] || type;
     };
 
-    
+    const getSectionLabel = (section) => {
+        const sectionMap = {
+            'personal': 'Personal Information',
+            'professional': 'Professional Information',
+            'additional': 'Additional Information'
+        };
+        
+        return sectionMap[section] || section;
+    };
 
     if (!isOpen) return null;
 
@@ -225,20 +286,6 @@ const FormFieldManager = ({ isOpen, onClose }) => {
                         <X size={20} />
                     </button>
                 </div>
-
-                {error && (
-                    <div className="error-message">
-                        <AlertCircle size={20} />
-                        <span>{error}</span>
-                    </div>
-                )}
-
-                {success && (
-                    <div className="success-message">
-                        <CheckCircle size={20} />
-                        <span>{success}</span>
-                    </div>
-                )}
 
                 <div className="fields-container">
                     <div className="fields-header">
@@ -288,7 +335,7 @@ const FormFieldManager = ({ isOpen, onClose }) => {
                                         <span className="field-label">{field.label}</span>
                                         <div className="field-metadata">
                                             <span className="field-type">{getFieldTypeLabel(field.type)}</span>
-                                          
+                                            <span className="field-section">{getSectionLabel(field.section)}</span>
                                             {field.required && (
                                                 <span className="required-badge">Required</span>
                                             )}
@@ -350,29 +397,45 @@ const FormFieldManager = ({ isOpen, onClose }) => {
                                 <label>Field Type <span className="required-text">*</span></label>
                                 <select
                                     value={editingField.type}
-                                    onChange={(e) => setEditingField({
-                                        ...editingField,
-                                        type: e.target.value,
-                                        // Reset options when changing to/from select
-                                        options: e.target.value === 'select' ? 
-                                            (editingField.options?.length ? editingField.options : ['']) : 
-                                            []
-                                    })}
+                                    onChange={(e) => {
+                                        const newType = e.target.value;
+                                        const updatedField = {
+                                            ...editingField,
+                                            type: newType,
+                                            // Reset options when changing to/from select
+                                            options: newType === 'select' ? 
+                                                (editingField.options?.length ? editingField.options : ['']) : 
+                                                []
+                                        };
+                                        
+                                        // Add a pattern for number type
+                                        if (newType === 'number') {
+                                            updatedField.pattern = '[0-9]+';
+                                        }
+                                        
+                                        setEditingField(updatedField);
+                                    }}
                                 >
                                     <option value="text">Text Input</option>
+                                    <option value="number">Number Input</option>
                                     <option value="email">Email Input</option>
                                     <option value="tel">Phone Input</option>
                                     <option value="select">Dropdown</option>
                                     <option value="textarea">Text Area</option>
-                                    <option value="date">Date Picker</option>
-                                    <option value="checkbox">Checkbox</option>
+                                    <option value="file">File Upload</option>
                                 </select>
+                                
+                                {editingField.type === 'number' && (
+                                    <small className="field-help-text">
+                                        Number input fields will include numeric validation.
+                                    </small>
+                                )}
                             </div>
-
+                            
                             <div className="editor-field">
                                 <label>Section <span className="required-text">*</span></label>
                                 <select
-                                    value={editingField.section}
+                                    value={editingField.section || 'personal'}
                                     onChange={(e) => setEditingField({
                                         ...editingField,
                                         section: e.target.value
@@ -380,12 +443,10 @@ const FormFieldManager = ({ isOpen, onClose }) => {
                                 >
                                     <option value="personal">Personal Information</option>
                                     <option value="professional">Professional Information</option>
-                                    <option value="education">Education</option>
-                                    <option value="experience">Work Experience</option>
                                     <option value="additional">Additional Information</option>
                                 </select>
                             </div>
-                            
+
                             <div className="editor-field">
                                 <label>Field Order</label>
                                 <input
@@ -418,10 +479,21 @@ const FormFieldManager = ({ isOpen, onClose }) => {
                                     <label>Options (one per line) <span className="required-text">*</span></label>
                                     <textarea
                                         value={(editingField.options || []).join('\n')}
-                                        onChange={(e) => setEditingField({
-                                            ...editingField,
-                                            options: e.target.value.split('\n').filter(Boolean)
-                                        })}
+                                        onChange={(e) => {
+                                            // Keep all lines, including empty ones for editing
+                                            const lines = e.target.value.split('\n');
+                                            setEditingField({
+                                                ...editingField,
+                                                options: lines
+                                            });
+                                        }}
+                                        onBlur={(e) => {
+                                            // Only filter out empty lines when the field loses focus
+                                            setEditingField({
+                                                ...editingField,
+                                                options: (editingField.options || []).filter(Boolean)
+                                            });
+                                        }}
                                         placeholder="Enter options (one per line)..."
                                         rows={4}
                                     />
@@ -440,13 +512,36 @@ const FormFieldManager = ({ isOpen, onClose }) => {
                                     placeholder="Enter placeholder text (optional)"
                                 />
                             </div>
+                            
+                            {(editingField.type === 'tel' || editingField.type === 'text' || editingField.type === 'number') && (
+                                <div className="editor-field full-width">
+                                    <label>Validation Pattern</label>
+                                    <input
+                                        type="text"
+                                        value={editingField.pattern || ""}
+                                        onChange={(e) => setEditingField({
+                                            ...editingField,
+                                            pattern: e.target.value
+                                        })}
+                                        placeholder={editingField.type === 'tel' ? 
+                                            "[0-9\\+\\-\\(\\)\\s]+" : 
+                                            "Optional regex pattern"}
+                                    />
+                                    <small className="field-help-text">
+                                        {editingField.type === 'tel' ? 
+                                            "This pattern enforces that only valid phone numbers can be entered. Default pattern allows digits, +, -, (), and spaces." :
+                                         editingField.type === 'number' ?
+                                            "This pattern ensures only numbers can be entered. The default [0-9]+ allows whole numbers only." :
+                                            "For numeric inputs, try [0-9]+ to restrict to numbers only."}
+                                    </small>
+                                </div>
+                            )}
                         </div>
 
                         <div className="editor-actions">
                             <button 
                                 onClick={() => {
                                     setEditingField(null);
-                                    setError('');
                                 }}
                                 className="cancel-btn"
                             >

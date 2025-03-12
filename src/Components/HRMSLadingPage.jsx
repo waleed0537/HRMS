@@ -1180,7 +1180,7 @@ const LandingPage = () => {
                           </li>
                           <li>
                             <i className="fas fa-envelope"></i>
-                            <a href="support@hrrive.com">info@example.com</a>
+                            <a href="support@hrrive.com">support@hrrive.com</a>
                           </li>
                           {/* <li>
                             <i className="fas fa-phone"></i>

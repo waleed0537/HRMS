@@ -1176,16 +1176,16 @@ const LandingPage = () => {
                         <ul className="list-style-three">
                           <li>
                             <i className="fas fa-map-marker-alt"></i>
-                            <span>123 Street Name, City, Country</span>
+                            <span>Bay Square, Dubai, UAE</span>
                           </li>
                           <li>
                             <i className="fas fa-envelope"></i>
-                            <a href="mailto:info@example.com">info@example.com</a>
+                            <a href="support@hrrive.com">info@example.com</a>
                           </li>
-                          <li>
+                          {/* <li>
                             <i className="fas fa-phone"></i>
                             <a href="tel:+1234567890">+123 456 7890</a>
-                          </li>
+                          </li> */}
                         </ul>
                       </div>
                     </div>

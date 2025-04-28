@@ -22,11 +22,13 @@ import AnnouncementModal from './AnnouncementModal';
 import AnnouncementsList from './AnnouncementsList';
 import '../assets/css/AdminDashboard.css';
 import API_BASE_URL from '../config/api.js';
+import LeaderboardModal from './EnhancedLeaderboardModal';
+import EnhancedLeaderboardModal from './EnhancedLeaderboardModal.jsx';
 
 // Enhanced color palette with more vibrant options
 const COLORS = [
-  '#6366f1', '#ec4899', '#8b5cf6', '#10b981', '#f59e0b',
-  '#3b82f6', '#ef4444', '#0ea5e9', '#f97316', '#14b8a6'
+  '#6dbfb8', '#be95be', '#71a3c1', '#75ba75', '#b3be62', 
+  '#fec76f', '#f5945c', '#f15bb5', '#00b4d8', '#0077b6'
 ];
 
 // Enhanced gradient colors for charts
@@ -43,14 +45,14 @@ const GRADIENT_COLORS = {
 
 // Avatar backgrounds for activities
 const AVATAR_COLORS = [
-  'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-  'linear-gradient(135deg, #ec4899 0%, #c026d3 100%)',
-  'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-  'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-  'linear-gradient(135deg, #06b6d4 0%, #0284c7 100%)',
-  'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
-  'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
-  'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+  'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%)',
+  'linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%)',
+  'linear-gradient(to right, #ffecd2 0%, #fcb69f 100%)',
+  'linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%)',
+  'linear-gradient(to top, #fbc2eb 0%, #a6c1ee 100%)',
+  'linear-gradient(120deg, #d4fc79 0%, #96e6a1 100%)',
+  'linear-gradient(to right, #6a11cb 0%, #2575fc 100%)',
+  'linear-gradient(to top, #c471f5 0%, #fa71cd 100%)'
 ];
 
 // Mock data for CRM features
@@ -80,6 +82,42 @@ const MOCK_SALES_METRICS = {
     growth: 16.8
   }
 };
+
+// Monthly Revenue by Team
+const REVENUE_BY_TEAM = [
+  { month: 'Jan', 'UI/UX Team': 45000, 'Development': 35000, 'QA Team': 30000, 'Web Team': 40000, total: 150000 },
+  { month: 'Feb', 'UI/UX Team': 25000, 'Development': 20000, 'QA Team': 18000, 'Web Team': 22000, total: 85000 },
+  { month: 'Mar', 'UI/UX Team': 35000, 'Development': 15000, 'QA Team': 30000, 'Web Team': 20000, total: 100000 },
+  { month: 'Apr', 'UI/UX Team': 25000, 'Development': 20000, 'QA Team': 10000, 'Web Team': 15000, total: 70000 },
+  { month: 'May', 'UI/UX Team': 20000, 'Development': 20000, 'QA Team': 15000, 'Web Team': 25000, total: 80000 },
+  { month: 'Jun', 'UI/UX Team': 35000, 'Development': 25000, 'QA Team': 40000, 'Web Team': 30000, total: 130000 },
+  { month: 'Jul', 'UI/UX Team': 30000, 'Development': 30000, 'QA Team': 25000, 'Web Team': 20000, total: 105000 },
+  { month: 'Aug', 'UI/UX Team': 25000, 'Development': 25000, 'QA Team': 15000, 'Web Team': 15000, total: 80000 },
+  { month: 'Sep', 'UI/UX Team': 20000, 'Development': 15000, 'QA Team': 20000, 'Web Team': 15000, total: 70000 },
+  { month: 'Oct', 'UI/UX Team': 60000, 'Development': 20000, 'QA Team': 35000, 'Web Team': 25000, total: 140000 },
+  { month: 'Nov', 'UI/UX Team': 35000, 'Development': 30000, 'QA Team': 20000, 'Web Team': 25000, total: 110000 },
+  { month: 'Dec', 'UI/UX Team': 30000, 'Development': 25000, 'QA Team': 25000, 'Web Team': 20000, total: 100000 }
+];
+
+// Project Status Data
+const PROJECT_STATUS = {
+  totalProjects: 48,
+  ongoing: 32,
+  completed: 16,
+  totalRevenue: 1250000,
+  monthlyRevenue: 120000,
+  weeklyRevenue: 28000
+};
+
+// Top Performers Data - Updated to match attachment-2
+const TOP_PERFORMERS = [
+  { name: 'Luke Short', username: '@Short', performance: 80, branch: 'Lahore', avatar: 'LS' },
+  { name: 'John Hard', username: '@rdace', performance: 70, branch: 'Karachi', avatar: 'JH' },
+  { name: 'Paul Rees', username: '@Rees', performance: 77, branch: 'Islamabad', avatar: 'PR' },
+  { name: 'Rachel Parr', username: '@Parr', performance: 85, branch: 'Lahore', avatar: 'RP' },
+  { name: 'Eric Reid', username: '@Eric', performance: 95, branch: 'Karachi', avatar: 'ER' },
+  { name: 'Jan Ince', username: '@Ince', performance: 97, branch: 'Islamabad', avatar: 'JI' }
+];
 
 // Mock data for sales distribution by product
 const MOCK_SALES_DISTRIBUTION = [
@@ -111,18 +149,18 @@ const MOCK_TOP_PERFORMERS = {
 // Monthly Sales Trend (expanded with more detailed breakdown)
 const MOCK_SALES_TREND = {
   monthly: [
-    { month: 'Jan', year: '2024', employeeSales: 380000, branchSales: 420000, target: 400000, leads: 750, conversions: 128 },
-    { month: 'Feb', year: '2024', employeeSales: 400000, branchSales: 450000, target: 410000, leads: 780, conversions: 135 },
-    { month: 'Mar', year: '2024', employeeSales: 450000, branchSales: 490000, target: 425000, leads: 820, conversions: 146 },
-    { month: 'Apr', year: '2024', employeeSales: 470000, branchSales: 520000, target: 450000, leads: 880, conversions: 158 },
-    { month: 'May', year: '2024', employeeSales: 450000, branchSales: 510000, target: 465000, leads: 850, conversions: 152 },
-    { month: 'Jun', year: '2024', employeeSales: 480000, branchSales: 550000, target: 475000, leads: 900, conversions: 167 },
-    { month: 'Jul', year: '2024', employeeSales: 500000, branchSales: 580000, target: 490000, leads: 950, conversions: 180 },
-    { month: 'Aug', year: '2024', employeeSales: 520000, branchSales: 610000, target: 500000, leads: 980, conversions: 192 },
-    { month: 'Sep', year: '2024', employeeSales: 490000, branchSales: 560000, target: 510000, leads: 920, conversions: 175 },
-    { month: 'Oct', year: '2024', employeeSales: 510000, branchSales: 590000, target: 520000, leads: 940, conversions: 182 },
-    { month: 'Nov', year: '2024', employeeSales: 540000, branchSales: 630000, target: 530000, leads: 980, conversions: 196 },
-    { month: 'Dec', year: '2024', employeeSales: 580000, branchSales: 670000, target: 550000, leads: 1050, conversions: 215 }
+    { month: 'Jan', year: '2023', employeeSales: 380000, branchSales: 420000, target: 400000, leads: 750, conversions: 128 },
+    { month: 'Feb', year: '2023', employeeSales: 400000, branchSales: 450000, target: 410000, leads: 780, conversions: 135 },
+    { month: 'Mar', year: '2023', employeeSales: 450000, branchSales: 490000, target: 425000, leads: 820, conversions: 146 },
+    { month: 'Apr', year: '2023', employeeSales: 470000, branchSales: 520000, target: 450000, leads: 880, conversions: 158 },
+    { month: 'May', year: '2023', employeeSales: 450000, branchSales: 510000, target: 465000, leads: 850, conversions: 152 },
+    { month: 'Jun', year: '2023', employeeSales: 480000, branchSales: 550000, target: 475000, leads: 900, conversions: 167 },
+    { month: 'Jul', year: '2023', employeeSales: 500000, branchSales: 580000, target: 490000, leads: 950, conversions: 180 },
+    { month: 'Aug', year: '2023', employeeSales: 520000, branchSales: 610000, target: 500000, leads: 980, conversions: 192 },
+    { month: 'Sep', year: '2023', employeeSales: 490000, branchSales: 560000, target: 510000, leads: 920, conversions: 175 },
+    { month: 'Oct', year: '2023', employeeSales: 510000, branchSales: 590000, target: 520000, leads: 940, conversions: 182 },
+    { month: 'Nov', year: '2023', employeeSales: 540000, branchSales: 630000, target: 530000, leads: 980, conversions: 196 },
+    { month: 'Dec', year: '2023', employeeSales: 580000, branchSales: 670000, target: 550000, leads: 1050, conversions: 215 }
   ],
   yearly: {
     '2021': 3850000,
@@ -187,6 +225,7 @@ const MOCK_WEEKLY_SALES = [
 ];
 
 const AdminDashboard = () => {
+  const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [notificationType, setNotificationType] = useState('');
@@ -208,27 +247,15 @@ const AdminDashboard = () => {
   const [salesViewMode, setSalesViewMode] = useState('employee');
   const [performanceMetric, setPerformanceMetric] = useState('sales');
   const [showSalesComparisonType, setShowSalesComparisonType] = useState('branches');
+  const [selectedBranchMetrics, setSelectedBranchMetrics] = useState([
+    'sales', 'conversions', 'satisfaction', 'retention', 'growth'
+  ]);
   const [summaryCards, setSummaryCards] = useState([
     { title: 'Total Employees', value: 0, change: 0, icon: Users, color: '#4361ee' },
     { title: 'Pending Leaves', value: 0, change: 0, icon: Calendar, color: '#7209b7' },
     { title: 'This Month Revenue', value: 0, change: 0, icon: DollarSign, color: '#f72585' },
     { title: 'Active Projects', value: 0, change: 0, icon: Briefcase, color: '#4cc9f0' }
   ]);
-
-  // For the branch radar chart - which metrics to display
-  const [selectedBranchMetrics, setSelectedBranchMetrics] = useState([
-    'sales', 'conversions', 'satisfaction', 'retention', 'growth'
-  ]);
-
-  // Format currency values
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
-  };
 
   useEffect(() => {
     if (notificationMessage) {
@@ -584,11 +611,11 @@ const AdminDashboard = () => {
       `Average Sale Value: $${MOCK_SALES_METRICS.month.average.toLocaleString()}`,
       `Target Achievement: ${MOCK_SALES_METRICS.month.achieved}%`,
       '\nTop Performing Branches:',
-      ...MOCK_TOP_PERFORMERS.branches.map(branch =>
-        `${branch.name}: $${branch.sales.toLocaleString()} (${branch.growth > 0 ? '+' : ''}${branch.growth}% growth)`
+      ...MOCK_BRANCH_SALES.slice(0, 3).map(branch =>
+        `${branch.branch}: $${branch.salesMonth.toLocaleString()} (${branch.growth > 0 ? '+' : ''}${branch.growth}% growth)`
       ),
       '\nTop Performing Employees:',
-      ...MOCK_TOP_PERFORMERS.employees.map(emp =>
+      ...MOCK_TOP_PERFORMERS.employees.slice(0, 3).map(emp =>
         `${emp.name}: $${emp.sales.toLocaleString()} (${emp.growth > 0 ? '+' : ''}${emp.growth}% growth)`
       )
     ].join('\n');
@@ -621,6 +648,8 @@ const AdminDashboard = () => {
         throw new Error(data.message || 'Failed to create announcement');
       }
 
+      setNotificationMessage('Announcement created successfully!');
+      setNotificationType('success');
       setIsAnnouncementModalOpen(false);
       setSelectedBranch(announcementData.branchId);
     } catch (error) {
@@ -678,7 +707,7 @@ const AdminDashboard = () => {
             <p key={`item-${index}`} className="tooltip-item" style={{ color: entry.color }}>
               <span className="tooltip-key">{entry.name}: </span>
               <span className="tooltip-value">
-                {entry.name.toLowerCase().includes('sales') ?
+                {entry.name.toLowerCase().includes('sales') || entry.dataKey?.includes('Team') ?
                   `$${entry.value.toLocaleString()}` :
                   entry.unit === '%' ?
                     `${entry.value}%` :
@@ -690,6 +719,17 @@ const AdminDashboard = () => {
       );
     }
     return null;
+  };
+
+  // Toggle metrics visibility in the branch radar chart
+  const toggleBranchMetric = (metric) => {
+    if (selectedBranchMetrics.includes(metric)) {
+      if (selectedBranchMetrics.length > 1) { // Ensure at least one metric is selected
+        setSelectedBranchMetrics(selectedBranchMetrics.filter(m => m !== metric));
+      }
+    } else {
+      setSelectedBranchMetrics([...selectedBranchMetrics, metric]);
+    }
   };
 
   // Filter branch comparison data based on selected metrics
@@ -706,16 +746,9 @@ const AdminDashboard = () => {
     });
   }, [selectedBranchMetrics]);
 
-  // Toggle metrics visibility in the branch radar chart
-  const toggleBranchMetric = (metric) => {
-    if (selectedBranchMetrics.includes(metric)) {
-      if (selectedBranchMetrics.length > 1) { // Ensure at least one metric is selected
-        setSelectedBranchMetrics(selectedBranchMetrics.filter(m => m !== metric));
-      }
-    } else {
-      setSelectedBranchMetrics([...selectedBranchMetrics, metric]);
-    }
-  };
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="zoom-container">
@@ -753,501 +786,6 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Sales Overview Section */}
-        <div className="sales-overview-section">
-          <div className="section-header">
-            <div className="title-area">
-              <h2>Sales Performance Overview</h2>
-              <div className="section-metrics">
-                <div className="metric-highlight">
-                  <span className="metric-title">Total Sales:</span>
-                  <span className="metric-value">{formatCurrency(MOCK_SALES_METRICS[salesMetricPeriod].total)}</span>
-                </div>
-                <div className="metric-highlight">
-                  <span className="metric-title">Target Completion:</span>
-                  <span className="metric-value">{MOCK_SALES_METRICS[salesMetricPeriod].achieved}%</span>
-                </div>
-                <div className="metric-highlight positive">
-                  <span className="metric-title">Growth:</span>
-                  <span className="metric-value">+{MOCK_SALES_METRICS[salesMetricPeriod].growth}%</span>
-                </div>
-              </div>
-            </div>
-            <div className="period-selector">
-              <button
-                className={`period-btn ${salesMetricPeriod === 'today' ? 'active' : ''}`}
-                onClick={() => setSalesMetricPeriod('today')}
-              >
-                Today
-              </button>
-              <button
-                className={`period-btn ${salesMetricPeriod === 'month' ? 'active' : ''}`}
-                onClick={() => setSalesMetricPeriod('month')}
-              >
-                This Month
-              </button>
-              <button
-                className={`period-btn ${salesMetricPeriod === 'year' ? 'active' : ''}`}
-                onClick={() => setSalesMetricPeriod('year')}
-              >
-                This Year
-              </button>
-            </div>
-          </div>
-
-          {/* Main Sales Charts Section - First row */}
-          <div className="sales-charts-grid">
-
-            {/* Revenue Performance Section */}
-            <div className="chart-card sales-trend-chart revenue-performance-card">
-  <div className="admin-card-header revenue-card-header">
-    <div className="header-with-badge">
-      <h2>Revenue Performance</h2>
-      <span className="performance-badge">
-        <TrendingUp size={14} />
-        {salesViewMode === 'employee' ? '+21.6%' : '+26.3%'}
-      </span>
-    </div>
-    <div className="chart-controls">
-      <div className="view-selector">
-        <button
-          className={`view-btn ${salesViewMode === 'employee' ? 'active' : ''}`}
-          onClick={() => setSalesViewMode('employee')}
-        >
-          <Users size={14} />
-          <span>Employees</span>
-        </button>
-        <button
-          className={`view-btn ${salesViewMode === 'branch' ? 'active' : ''}`}
-          onClick={() => setSalesViewMode('branch')}
-        >
-          <Building size={14} />
-          <span>Branches</span>
-        </button>
-      </div>
-    </div>
-  </div>
-  <div className="card-body">
-    {/* Chart on the left side */}
-    <div className="revenue-chart-container">
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={MOCK_SALES_TREND.monthly} margin={{ top: 5, right: 10, bottom: 5, left: 5 }}>
-          <defs>
-            <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#8884d8" stopOpacity={0.9} />
-              <stop offset="90%" stopColor="#82ca9d" stopOpacity={0.2} />
-            </linearGradient>
-            <linearGradient id="colorTarget" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#ff9a8b" stopOpacity={1} />
-              <stop offset="99%" stopColor="#ff6a88" stopOpacity={1} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid vertical={false} stroke="#f0f0f0" />
-          <XAxis
-            dataKey="month"
-            axisLine={false}
-            tickLine={false}
-            tick={{ fill: '#94a3b8', fontSize: 11 }}
-            padding={{ left: 10, right: 10 }}
-          />
-          <YAxis
-            axisLine={false}
-            tickLine={false}
-            tick={{ fill: '#94a3b8', fontSize: 11 }}
-            tickFormatter={(value) => `$${value / 1000}k`}
-            width={40}
-          />
-          <Tooltip
-            content={<CustomTooltip />}
-            cursor={{ stroke: '#8884d8', strokeWidth: 1, strokeDasharray: '3 3' }}
-            wrapperStyle={{
-              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-              borderRadius: '8px',
-              border: 'none'
-            }}
-          />
-          <Area
-            type="monotone"
-            dataKey={salesViewMode === 'employee' ? "employeeSales" : "branchSales"}
-            name={salesViewMode === 'employee' ? "Employee Sales" : "Branch Sales"}
-            fill="url(#colorSales)"
-            stroke="#8884d8"
-            strokeWidth={2}
-            fillOpacity={0.6}
-          />
-          <Line
-            type="monotone"
-            dataKey="target"
-            name="Target"
-            stroke="url(#colorTarget)"
-            strokeWidth={2}
-            dot={{ stroke: '#ff6a88', fill: 'white', strokeWidth: 2, r: 3 }}
-            activeDot={{ r: 6, strokeWidth: 0, fill: '#ff6a88' }}
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
-    
-    {/* Metrics on the right side in two columns */}
-    <div className="revenue-metrics-container">
-      <div className="revenue-metrics">
-        <div className="revenue-metric">
-          <span className="metric-label">Current</span>
-          <span className="metric-value">
-            {formatCurrency(MOCK_SALES_TREND.monthly[11][salesViewMode === 'employee' ? "employeeSales" : "branchSales"])}
-          </span>
-        </div>
-        <div className="revenue-metric">
-          <span className="metric-label">Target</span>
-          <span className="metric-value">
-            {formatCurrency(MOCK_SALES_TREND.monthly[11].target)}
-          </span>
-        </div>
-      </div>
-      
-      {/* Comparison metrics */}
-      <div className="revenue-comparison">
-        <div className="comparison-header">Performance Overview</div>
-        <div className="comparison-row">
-          <span className="comparison-label">{salesViewMode === 'employee' ? 'Employee Sales' : 'Branch Sales'}</span>
-          <span className="comparison-value">
-            {formatCurrency(MOCK_SALES_TREND.monthly[11][salesViewMode === 'employee' ? "employeeSales" : "branchSales"])}
-          </span>
-        </div>
-        <div className="comparison-row">
-          <span className="comparison-label">Target</span>
-          <span className="comparison-value">
-            {formatCurrency(MOCK_SALES_TREND.monthly[11].target)}
-          </span>
-        </div>
-        <div className="comparison-row">
-          <span className="comparison-label">Achievement</span>
-          <span className={`comparison-value ${MOCK_SALES_TREND.monthly[11][salesViewMode === 'employee' ? "employeeSales" : "branchSales"] >= MOCK_SALES_TREND.monthly[11].target ? 'positive' : 'negative'}`}>
-            {Math.round((MOCK_SALES_TREND.monthly[11][salesViewMode === 'employee' ? "employeeSales" : "branchSales"] / MOCK_SALES_TREND.monthly[11].target) * 100)}%
-          </span>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div className="card-footer">
-    <div className="trend-summary">
-      <span className="highlight-text">
-        {salesViewMode === 'employee' ? '+21.6%' : '+26.3%'}
-      </span> growth since last year
-    </div>
-    <div className="chart-action-buttons">
-      <button className="chart-action-btn">
-        <ArrowRight size={14} />
-        <span>Full Report</span>
-      </button>
-      <button className="chart-action-btn">
-        <Download size={14} />
-        <span>Export</span>
-      </button>
-    </div>
-  </div>
-</div>
-          </div>
-
-          {/* Branch Performance Comparison - Second row */}
-          <div className="branch-performance-section">
-            <div className="section-header">
-              <h2>Branch Performance Comparison</h2>
-              <div className="comparison-controls">
-                <button
-                  className={`comparison-btn ${showSalesComparisonType === 'branches' ? 'active' : ''}`}
-                  onClick={() => setShowSalesComparisonType('branches')}
-                >
-                  Branch Overview
-                </button>
-                <button
-                  className={`comparison-btn ${showSalesComparisonType === 'metrics' ? 'active' : ''}`}
-                  onClick={() => setShowSalesComparisonType('metrics')}
-                >
-                  Metrics Breakdown
-                </button>
-              </div>
-            </div>
-
-            <div className="branch-comparison-grid">
-              {/* Branch Comparison Bar Chart */}
-              {showSalesComparisonType === 'branches' && (
-                <div className="chart-card branch-bar-chart">
-                  <div className="admin-card-header">
-                    <h2>Branch Sales Comparison</h2>
-                    <div className="chart-controls">
-                      <div className="metric-selector">
-                        <select
-                          value={performanceMetric}
-                          onChange={(e) => setPerformanceMetric(e.target.value)}
-                          className="metric-select"
-                        >
-                          <option value="sales">Total Sales</option>
-                          <option value="conversions">Conversion Rate</option>
-                          <option value="satisfaction">Customer Satisfaction</option>
-                          <option value="retention">Retention Rate</option>
-                          <option value="growth">Growth Rate</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="card-body">
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart
-                        data={MOCK_BRANCH_COMPARISON}
-                        layout="vertical"
-                        margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-                        <XAxis type="number" domain={[0, 'dataMax + 20']} />
-                        <YAxis
-                          dataKey="branch"
-                          type="category"
-                          scale="band"
-                          axisLine={false}
-                          tickLine={false}
-                        />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend />
-                        <defs>
-                          <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
-                            <stop offset="0%" stopColor={GRADIENT_COLORS.indigo[0]} />
-                            <stop offset="100%" stopColor={GRADIENT_COLORS.indigo[1]} />
-                          </linearGradient>
-                        </defs>
-                        <Bar
-                          dataKey={performanceMetric}
-                          name={
-                            performanceMetric === 'sales' ? 'Sales (thousands)' :
-                              performanceMetric === 'conversions' ? 'Conversion Rate (%)' :
-                                performanceMetric === 'satisfaction' ? 'Customer Satisfaction (%)' :
-                                  performanceMetric === 'retention' ? 'Retention Rate (%)' :
-                                    'Growth Rate (%)'
-                          }
-                          fill="url(#barGradient)"
-                          radius={[0, 4, 4, 0]}
-                          barSize={25}
-                          unit={performanceMetric === 'sales' ? '' : '%'}
-                        />
-                        {performanceMetric === 'sales' && (
-                          <ReferenceLine x={150} stroke="#ef4444" strokeDasharray="3 3" label="Target" />
-                        )}
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              )}
-
-              {/* Radar Chart for Branch Metrics */}
-              {showSalesComparisonType === 'metrics' && (
-                <div className="chart-card branch-radar-chart">
-                  <div className="admin-card-header">
-                    <h2>Branch Metrics Radar</h2>
-                    <div className="chart-controls">
-                      <div className="metric-toggles">
-                        <button
-                          className={`metric-toggle-btn ${selectedBranchMetrics.includes('sales') ? 'active' : ''}`}
-                          onClick={() => toggleBranchMetric('sales')}
-                        >
-                          Sales
-                        </button>
-                        <button
-                          className={`metric-toggle-btn ${selectedBranchMetrics.includes('conversions') ? 'active' : ''}`}
-                          onClick={() => toggleBranchMetric('conversions')}
-                        >
-                          Conversions
-                        </button>
-                        <button
-                          className={`metric-toggle-btn ${selectedBranchMetrics.includes('satisfaction') ? 'active' : ''}`}
-                          onClick={() => toggleBranchMetric('satisfaction')}
-                        >
-                          Satisfaction
-                        </button>
-                        <button
-                          className={`metric-toggle-btn ${selectedBranchMetrics.includes('retention') ? 'active' : ''}`}
-                          onClick={() => toggleBranchMetric('retention')}
-                        >
-                          Retention
-                        </button>
-                        <button
-                          className={`metric-toggle-btn ${selectedBranchMetrics.includes('growth') ? 'active' : ''}`}
-                          onClick={() => toggleBranchMetric('growth')}
-                        >
-                          Growth
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="card-body">
-                    <ResponsiveContainer width="100%" height={380}>
-                      <RadarChart
-                        outerRadius={130}
-                        width={500}
-                        height={350}
-                        data={getFilteredBranchData()}
-                      >
-                        <PolarGrid stroke="#e5e7eb" />
-                        <PolarAngleAxis
-                          dataKey="branch"
-                          tick={{ fill: '#6b7280', fontSize: 12 }}
-                        />
-                        <PolarRadiusAxis angle={90} domain={[0, 'auto']} />
-                        {selectedBranchMetrics.includes('sales') && (
-                          <Radar
-                            name="Sales (thousands)"
-                            dataKey="sales"
-                            stroke={COLORS[0]}
-                            fill={COLORS[0]}
-                            fillOpacity={0.2}
-                          />
-                        )}
-                        {selectedBranchMetrics.includes('conversions') && (
-                          <Radar
-                            name="Conversion Rate (%)"
-                            dataKey="conversions"
-                            stroke={COLORS[1]}
-                            fill={COLORS[1]}
-                            fillOpacity={0.2}
-                          />
-                        )}
-                        {selectedBranchMetrics.includes('satisfaction') && (
-                          <Radar
-                            name="Customer Satisfaction (%)"
-                            dataKey="satisfaction"
-                            stroke={COLORS[2]}
-                            fill={COLORS[2]}
-                            fillOpacity={0.2}
-                          />
-                        )}
-                        {selectedBranchMetrics.includes('retention') && (
-                          <Radar
-                            name="Retention Rate (%)"
-                            dataKey="retention"
-                            stroke={COLORS[3]}
-                            fill={COLORS[3]}
-                            fillOpacity={0.2}
-                          />
-                        )}
-                        {selectedBranchMetrics.includes('growth') && (
-                          <Radar
-                            name="Growth Rate (%)"
-                            dataKey="growth"
-                            stroke={COLORS[4]}
-                            fill={COLORS[4]}
-                            fillOpacity={0.2}
-                          />
-                        )}
-                        <Legend />
-                        <Tooltip content={<CustomTooltip />} />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              )}
-
-              {/* Top Performers Scatter Plot */}
-              <div className="chart-card top-performers-chart">
-                <div className="admin-card-header">
-                  <h2>Top Performers Analysis</h2>
-                  <div className="chart-controls">
-                    <div className="time-toggles">
-                      <button
-                        className={`time-toggle-btn ${performerTimeRange === 'today' ? 'active' : ''}`}
-                        onClick={() => setPerformerTimeRange('today')}
-                      >
-                        Today
-                      </button>
-                      <button
-                        className={`time-toggle-btn ${performerTimeRange === 'week' ? 'active' : ''}`}
-                        onClick={() => setPerformerTimeRange('week')}
-                      >
-                        Week
-                      </button>
-                      <button
-                        className={`time-toggle-btn ${performerTimeRange === 'month' ? 'active' : ''}`}
-                        onClick={() => setPerformerTimeRange('month')}
-                      >
-                        Month
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div className="card-body">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        type="number"
-                        dataKey="sales"
-                        name="Sales"
-                        unit="$"
-                        domain={['dataMin - 5000', 'dataMax + 5000']}
-                        label={{ value: 'Sales Volume ($)', position: 'bottom', style: { textAnchor: 'middle' } }}
-                      />
-                      <YAxis
-                        type="number"
-                        dataKey="conversion"
-                        name="Conversion Rate"
-                        unit="%"
-                        label={{ value: 'Conversion Rate (%)', angle: -90, position: 'left' }}
-                      />
-                      <ZAxis
-                        type="number"
-                        range={[60, 400]}
-                        dataKey="avgDeal"
-                        name="Avg Deal Size"
-                        unit="$"
-                      />
-                      <Tooltip
-                        cursor={{ strokeDasharray: '3 3' }}
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            const data = payload[0].payload;
-                            return (
-                              <div className="custom-tooltip performer-tooltip">
-                                <p className="tooltip-name">{data.name}</p>
-                                <p>Branch: {data.branch}</p>
-                                <p>Sales: ${data.sales.toLocaleString()}</p>
-                                <p>Conversion: {data.conversion}%</p>
-                                <p>Avg Deal: ${data.avgDeal.toLocaleString()}</p>
-                                <p>Growth: {data.growth > 0 ? '+' : ''}{data.growth}%</p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Legend />
-                      <Scatter
-                        name="Employees"
-                        data={MOCK_TOP_PERFORMERS.employees}
-                        fill="#8884d8"
-                        shape="circle"
-                      />
-                    </ScatterChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="card-footer performer-footer">
-                  <div className="performer-legend">
-                    <div className="performer-highlight">
-                      <span className="highlight-label">Top Performer:</span>
-                      <span className="highlight-value">Aisha Khan</span>
-                    </div>
-                    <div className="performer-highlight">
-                      <span className="highlight-label">Highest Growth:</span>
-                      <span className="highlight-value">Sara Malik (+15.3%)</span>
-                    </div>
-                  </div>
-                  <button className="view-all-btn">
-                    Full Performance Report <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Employee Distribution and Leave Management - Traditional Cards */}
         <div className="summary-cards">
           {summaryCards.map((card, index) => (
             <div className="summary-card" key={index}>
@@ -1258,7 +796,7 @@ const AdminDashboard = () => {
                 <h3>{card.title}</h3>
                 <div className="card-value">{formatValue(card.value, card.isCurrency)}</div>
                 <div className={`card-change ${card.change >= 0 ? 'positive' : 'negative'}`}>
-                  {card.change >= 0 ? <TrendingUp size={16} /> : <TrendingUp size={16} className="down" />}
+                  {card.change >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                   {Math.abs(card.change)}% from last {timeRange}
                 </div>
               </div>
@@ -1266,7 +804,6 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* Traditional dashboard grid for HR elements */}
         <div className="admin-dashboard-grid">
           {/* Employee Distribution Chart */}
           <div className="chart-card employee-distribution">
@@ -1477,7 +1014,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* KPI Metrics Chart */}
+          {/* HR KPI Metrics Chart */}
           <div className="chart-card key-metrics">
             <div className="admin-card-header">
               <h2>Key Performance Metrics</h2>
@@ -1587,8 +1124,9 @@ const AdminDashboard = () => {
                 Create
               </button>
             </div>
-            {selectedBranch && <AnnouncementsList branchId={selectedBranch} className="announcements-wrapper" />}
-            {!selectedBranch && (
+            {selectedBranch ? (
+              <AnnouncementsList branchId={selectedBranch} className="announcements-wrapper" />
+            ) : (
               <div className="empty-state">
                 <AlertTriangle size={32} />
                 <p>No branch selected for announcements</p>
@@ -1602,6 +1140,210 @@ const AdminDashboard = () => {
             )}
           </div>
         </div>
+
+        {/* Revenue and Projects Row */}
+        <div className="revenue-projects-row">
+          {/* Team Revenue Chart */}
+          <div className="chart-card revenue-chart">
+            <div className="admin-card-header">
+              <h2>Team Revenue Performance</h2>
+              <div className="chart-controls">
+                <div className="view-selector">
+                  <button
+                    className={`view-btn ${salesViewMode === 'monthly' ? 'active' : ''}`}
+                    onClick={() => setSalesViewMode('monthly')}
+                  >
+                    <Calendar size={14} />
+                    <span>Monthly</span>
+                  </button>
+                  <button
+                    className={`view-btn ${salesViewMode === 'quarterly' ? 'active' : ''}`}
+                    onClick={() => setSalesViewMode('quarterly')}
+                  >
+                    <BarChart2 size={14} />
+                    <span>Quarterly</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="card-body">
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart
+                  data={REVENUE_BY_TEAM}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis
+                    dataKey="month"
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(value) => `$${value / 1000}k`}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend />
+                  <Bar dataKey="UI/UX Team" stackId="a" fill="#be95be" />
+                  <Bar dataKey="Development" stackId="a" fill="#71a3c1" />
+                  <Bar dataKey="QA Team" stackId="a" fill="#75ba75" />
+                  <Bar dataKey="Web Team" stackId="a" fill="#b3be62" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="card-footer">
+              <div className="trend-summary">
+                <span className="highlight-text">+15.4%</span> revenue growth compared to last year
+              </div>
+              <div className="chart-action-buttons">
+                <button className="chart-action-btn">
+                  <ArrowRight size={14} />
+                  <span>Full Report</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Project Stats Container */}
+          <div className="project-stats-container">
+            {/* Projects Card */}
+            <div className="chart-card project-card">
+              <div className="admin-card-header">
+                <h2>Projects Overview</h2>
+              </div>
+              <div className="card-body">
+                <div className="project-metrics">
+                  <div className="metric-item">
+                    <div className="metric-icon">
+                      <Briefcase size={18} />
+                    </div>
+                    <div className="metric-details">
+                      <div className="metric-value">{PROJECT_STATUS.totalProjects}</div>
+                      <div className="metric-label">Total Projects</div>
+                    </div>
+                  </div>
+                  <div className="metric-item">
+                    <div className="metric-icon active-icon">
+                      <Activity size={18} />
+                    </div>
+                    <div className="metric-details">
+                      <div className="metric-value">{PROJECT_STATUS.ongoing}</div>
+                      <div className="metric-label">Ongoing</div>
+                    </div>
+                  </div>
+                  <div className="metric-item">
+                    <div className="metric-icon completed-icon">
+                      <CheckCircle size={18} />
+                    </div>
+                    <div className="metric-details">
+                      <div className="metric-value">{PROJECT_STATUS.completed}</div>
+                      <div className="metric-label">Completed</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Revenue Card */}
+            <div className="chart-card revenue-card">
+              <div className="admin-card-header">
+                <h2>Revenue Generation</h2>
+              </div>
+              <div className="card-body">
+                <div className="revenue-metrics">
+                  <div className="revenue-metric">
+                    <div className="revenue-value">{formatValue(PROJECT_STATUS.totalRevenue, true)}</div>
+                    <div className="revenue-label">Total Revenue</div>
+                    <div className="revenue-period">Year to Date</div>
+                  </div>
+                  <div className="revenue-metric">
+                    <div className="revenue-value">{formatValue(PROJECT_STATUS.monthlyRevenue, true)}</div>
+                    <div className="revenue-label">Monthly Revenue</div>
+                    <div className="revenue-trend positive">
+                      <TrendingUp size={14} />
+                      <span>+4.7%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Top Performers Section */}
+        <div className="top-performers-section">
+          <div className="top-performers-header">
+            <h2>Top Performers</h2>
+            <div className="performer-filters">
+              <div className="time-filter">
+                <button 
+                  className={`time-filter-btn ${performerTimeRange === 'month' ? 'active' : ''}`}
+                  onClick={() => setPerformerTimeRange('month')}
+                >
+                  Month
+                </button>
+                <button 
+                  className={`time-filter-btn ${performerTimeRange === 'quarter' ? 'active' : ''}`}
+                  onClick={() => setPerformerTimeRange('quarter')}
+                >
+                  Quarter
+                </button>
+                <button 
+                  className={`time-filter-btn ${performerTimeRange === 'year' ? 'active' : ''}`}
+                  onClick={() => setPerformerTimeRange('year')}
+                >
+                  Year
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="performer-cards">
+            {TOP_PERFORMERS.map((performer, index) => (
+              <div className="performer-card" key={index}>
+                <div className="performer-avatar" style={{ backgroundColor: COLORS[index % COLORS.length] }}>
+                  {performer.avatar}
+                </div>
+                <div className="performer-info">
+                  <div className="performer-name">{performer.name}</div>
+                  <div className="performer-username">{performer.username}</div>
+                  <div className="performer-branch">{performer.branch}</div>
+                  <div className="performer-progress-container">
+                    <div className="performer-progress-bar">
+                      <div 
+                        className="performer-progress-fill" 
+                        style={{ 
+                          width: `${performer.performance}%`,
+                          backgroundColor: COLORS[index % COLORS.length]
+                        }}
+                      ></div>
+                    </div>
+                    <div className="performer-progress-value">{performer.performance}%</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Add the View Details button */}
+          <div className="view-details-container">
+            <button 
+              className="view-details-button"
+              onClick={() => setIsLeaderboardModalOpen(true)}
+            >
+              View Leaderboard
+            </button>
+          </div>
+        </div>
+
+        {/* All other existing content... */}
+        
+        {/* Add the LeaderboardModal component */}
+        <EnhancedLeaderboardModal 
+          isOpen={isLeaderboardModalOpen} 
+          onClose={() => setIsLeaderboardModalOpen(false)} 
+        />
 
         <AnnouncementModal
           isOpen={isAnnouncementModalOpen}

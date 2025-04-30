@@ -1,0 +1,205 @@
+.loading-container, .error-container, .no-status-container, .status-container {
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+  }
+  
+  .loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff;
+  }
+  
+  .loading-icon {
+    animation: spin 1s linear infinite;
+    color: #9ca3af;
+    margin-right: 0.5rem;
+  }
+  
+  .loading-text {
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+  
+  .error-container {
+    background-color: #fef2f2;
+    border-color: #fef2f2;
+    display: flex;
+    align-items: center;
+  }
+  
+  .error-icon {
+    color: #f56565;
+    margin-right: 0.5rem;
+  }
+  
+  .error-text {
+    color: #b91c1c;
+    font-size: 0.875rem;
+  }
+  
+  .no-status-container {
+    background-color: #f9fafb;
+    display: flex;
+    align-items: center;
+  }
+  
+  .no-status-icon {
+    color: #9ca3af;
+    margin-right: 0.5rem;
+  }
+  
+  .no-status-text {
+    color: #9ca3af;
+    font-size: 0.875rem;
+  }
+  
+  .status-container {
+    margin-bottom: 1rem;
+  }
+  
+  .status-container.success {
+    color: #10b981;
+    background-color: #f0fdf4;
+    border-color: #d1fae5;
+  }
+  
+  .status-container.failed {
+    color: #eab308;
+    background-color: #fef9c3;
+    border-color: #fef9c3;
+  }
+  
+  .success-icon {
+    color: #10b981;
+  }
+  
+  .failed-icon {
+    color: #eab308;
+  }
+  
+  .status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .status-icon-container {
+    display: flex;
+    align-items: center;
+  }
+  
+  .status-title {
+    font-weight: 500;
+    margin-left: 0.5rem;
+    color: #1f2937;
+  }
+  
+  .status-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .refresh-button {
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.3s;
+  }
+  
+  .refresh-button:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .refresh-icon {
+    color: #4b5563;
+  }
+  
+  .sync-button {
+    background-color: #3b82f6;
+    color: #ffffff;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.3s;
+  }
+  
+  .sync-button:hover {
+    background-color: #2563eb;
+  }
+  
+  .sync-icon {
+    margin-right: 0.25rem;
+  }
+  
+  .status-details {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 0.5rem;
+  }
+  
+  @media (min-width: 768px) {
+    .status-details {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  
+  .status-card {
+    background-color: #ffffff;
+    border-radius: 0.25rem;
+    border: 1px solid #e5e7eb;
+    padding: 0.75rem;
+  }
+  
+  .status-card-header {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+  }
+  
+  .clock-icon {
+    margin-right: 0.25rem;
+  }
+  
+  .status-card-content {
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  
+  .status-message {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: #4b5563;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 0.5rem;
+  }
+  
+  .device-info {
+    margin-top: 0.75rem;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+  }
+  
+  .settings-icon {
+    margin-right: 0.25rem;
+  }
+  
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  

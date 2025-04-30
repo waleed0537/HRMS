@@ -18,6 +18,9 @@ const Applicant = require('../Backend/models/Applicant');
 const Attendance = require('../Backend/models/Attendance');
 const FormField = require('../Backend/models/FormField');
 const nodemailer = require('nodemailer');
+const zktecoService = require('./zktecoService');
+const csv = require('csv-parser');
+const cron = require('node-cron');
 
 
 const app = express();
@@ -26,6 +29,32 @@ const JWT_SECRET = 'your-jwt-secret-key';
 if (!fs.existsSync('./uploads/resumes')) {
   fs.mkdirSync('./uploads/resumes', { recursive: true });
 }
+
+
+const csvStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './uploads/attendance-csv/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, 'attendance-' + Date.now() + path.extname(file.originalname));
+  }
+});
+
+// Check if directory exists, if not create it
+if (!fs.existsSync('./uploads/attendance-csv')) {
+  fs.mkdirSync('./uploads/attendance-csv', { recursive: true });
+}
+
+const csvUpload = multer({
+  storage: csvStorage,
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype === 'text/csv' || file.mimetype === 'application/vnd.ms-excel') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only CSV files are allowed'));
+    }
+  }
+});
 
 // Configure multer for resume uploads
 const resumeStorage = multer.diskStorage({
@@ -2894,6 +2923,160 @@ app.get('/api/public/branches', async (req, res) => {
     res.status(500).json({ 
       message: 'Failed to load branches. Please try again later.',
       error: error.message 
+    });
+  }
+});
+
+app.post('/api/attendance/sync', authenticateToken, async (req, res) => {
+  try {
+    console.log('Manual attendance sync requested');
+    
+    // Get optional custom parameters from request body
+    const options = req.body || {};
+    
+    const result = await zktecoService.syncAttendanceLogs(options);
+    res.json(result);
+  } catch (error) {
+    console.error('Error syncing attendance:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error synchronizing attendance data',
+      error: error.message
+    });
+  }
+});
+app.get('/api/attendance/sync-status', authenticateToken, (req, res) => {
+  try {
+    const status = zktecoService.getSyncStatus();
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error getting sync status',
+      error: error.message
+    });
+  }
+});
+app.post('/api/attendance/auto-sync', authenticateToken, isAdmin, (req, res) => {
+  try {
+    const { action } = req.body;
+    
+    if (action === 'start') {
+      const result = zktecoService.startAutoSync();
+      res.json(result);
+    } else if (action === 'stop') {
+      const result = zktecoService.stopAutoSync();
+      res.json(result);
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid action. Use "start" or "stop"'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error managing automatic sync',
+      error: error.message
+    });
+  }
+});
+// Route to test ZKTeco device connection
+app.get('/api/attendance/test-connection', authenticateToken, async (req, res) => {
+  try {
+    console.log('Testing device connection...');
+    
+    // Get optional custom parameters from query string
+    const options = {};
+    if (req.query.ip) options.ip = req.query.ip;
+    if (req.query.port) options.port = parseInt(req.query.port);
+    if (req.query.timeout) options.timeout = parseInt(req.query.timeout);
+    
+    const result = await zktecoService.testConnection(options);
+    
+    console.log('Connection test result:', result);
+    res.json(result);
+  } catch (error) {
+    console.error('Connection test error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error testing device connection',
+      error: error.message
+    });
+  }
+});
+
+// Existing route to get attendance data
+// Make sure it doesn't cause conflicts with your existing route
+app.get('/api/attendance', authenticateToken, async (req, res) => {
+  try {
+    const { date, employeeNumber, department, startDate, endDate, limit } = req.query;
+    console.log('Fetching attendance records with filters:', req.query);
+
+    const query = {};
+
+    // Filter by date (single day)
+    if (date) {
+      const queryDate = new Date(date);
+      const startOfDay = new Date(queryDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(queryDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      query.date = {
+        $gte: startOfDay,
+        $lte: endOfDay
+      };
+    }
+    
+    // Filter by date range
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      start.setUTCHours(0, 0, 0, 0);
+      const end = new Date(endDate);
+      end.setUTCHours(23, 59, 59, 999);
+      
+      query.date = {
+        $gte: start,
+        $lte: end
+      };
+    }
+
+    // Filter by employee number
+    if (employeeNumber) {
+      query.employeeNumber = employeeNumber;
+    }
+
+    // Filter by department
+    if (department) {
+      query.department = department;
+    }
+
+    // Get total count for pagination
+    const totalCount = await Attendance.countDocuments(query);
+    
+    // Apply limit if provided
+    const limitValue = limit ? parseInt(limit) : 500;
+
+    // Get attendance records
+    const attendanceRecords = await Attendance.find(query)
+      .sort({ date: -1 }) // Sort by date descending (newest first)
+      .limit(limitValue)
+      .lean();
+
+    res.json({
+      success: true,
+      count: attendanceRecords.length,
+      totalRecords: totalCount,
+      filters: req.query,
+      data: attendanceRecords
+    });
+  } catch (error) {
+    console.error('Error fetching attendance records:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching attendance records',
+      error: error.message
     });
   }
 });

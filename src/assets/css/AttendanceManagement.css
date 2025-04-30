@@ -1,230 +1,755 @@
-.attendance-container {
-    padding: 24px;
-    margin: 45px 0 0 16rem;
-    background-color: #f5f5f5;
-    min-height: calc(100vh - 64px);
-    z-index: 40;
+/* Updated ZKTeco Attendance Management CSS */
+
+.zk-attendance-container {
+  padding: 24px;
+  margin: 45px 0 0 16rem;
+  background-color: #f5f5f5;
+  min-height: calc(100vh - 64px);
+}
+
+.zk-attendance-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.zk-card-header {
+  padding: 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.zk-card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.zk-card-title h2 {
+  font-size: 24px;
+  font-weight: 400;
+  color: #1e293b;
+  margin: 0;
+}
+
+.zk-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.zk-search-box {
+  position: relative;
+  min-width: 250px;
+}
+
+.zk-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: #64748b;
+}
+
+.zk-search-box input {
+  height: fit-content;
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.zk-department-select {
+  height: fit-content;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  min-width: 150px;
+}
+
+.zk-date-input {
+  height: fit-content;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.zk-export-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zk-export-button:hover {
+  background: #373769;
+}
+
+/* New styles for sync button */
+.zk-sync-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zk-sync-button:hover {
+  background: #069e7f;
+}
+
+.zk-sync-button.syncing {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.zk-sync-button .zk-icon.spinning {
+  animation: zk-spin 1s linear infinite;
+}
+
+/* Test connection button */
+.zk-test-button {
+  padding: 8px 16px;
+  background: linear-gradient(-135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zk-test-button:hover {
+  background: #b45309;
+}
+
+@keyframes zk-spin {
+  from {
+    transform: rotate(0deg);
   }
-  
-  .attendance-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+  to {
+    transform: rotate(360deg);
   }
-  
-  .card-header {
-    padding: 24px;
-    border-bottom: 1px solid #e2e8f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-  
-  .card-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  .card-title h2 {
-    font-size: 24px;
-    font-weight: 400;
-    color: #1e293b;
-    margin: 0;
-  }
-  
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-  
-  .search-box {
-    position: relative;
-    min-width: 250px;
-  }
-  
-  .search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 16px;
-    height: 16px;
-    color: #64748b;
-  }
-  
-  .search-box input {
-    height: fit-content;
-    width: 100%;
-    padding: 8px 12px 8px 36px;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    font-size: 14px;
-  }
-  
-  .department-select {
-    height: fit-content;
-    padding: 8px 12px;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    font-size: 14px;
-    min-width: 150px;
-  }
-  
-  .date-input {
-    height: fit-content;
-    padding: 8px 12px;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    font-size: 14px;
-  }
-  
-  .export-button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  
-  .export-button:hover {
-    background: #373769;
-  }
-  
-  .card-content {
-    padding: 24px;
-  }
-  
-  .table-container {
-    overflow-x: auto;
-  }
-  
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 800px;
-  }
-  
-  th, td {
+}
+
+/* Connection status message */
+.zk-connection-message {
+  padding: 12px 24px;
+  margin: 0;
+  font-size: 14px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.zk-connection-message.success {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.zk-connection-message.error {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.zk-connection-message.testing {
+  background-color: #fff7ed;
+  color: #c2410c;
+}
+
+.zk-device-info {
+  font-weight: 500;
+}
+
+/* Sync message styles */
+.zk-sync-message {
+  padding: 12px 24px;
+  margin: 0;
+  font-size: 14px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.zk-sync-message.success {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.zk-sync-message.error {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.zk-sync-message.info {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+/* CSV Upload Styles */
+.zk-csv-upload-section {
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 16px 24px;
+}
+
+.zk-csv-upload-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.zk-csv-upload-header h3 {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+  color: #1e293b;
+}
+
+.zk-close-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zk-close-button:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
+  border-color: #fecaca;
+}
+
+.zk-csv-upload-content {
+  padding: 16px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.zk-csv-upload-content p {
+  margin: 0 0 16px 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.zk-csv-upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.zk-file-input {
+  padding: 8px;
+  background-color: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+}
+
+.zk-selected-file {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #e0f2fe;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #0369a1;
+}
+
+.zk-remove-file {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zk-remove-file:hover {
+  background-color: #bae6fd;
+  color: #0284c7;
+}
+
+.zk-upload-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(-135deg, #6366f1 0%, #4f46e5 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.zk-upload-button:hover {
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+.zk-upload-button:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.zk-upload-button.uploading {
+  background: #cbd5e1;
+  cursor: progress;
+}
+
+/* Date Range Filter */
+.zk-date-range-section {
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 16px 24px;
+}
+
+.zk-date-range-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.zk-date-range-header h3 {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+  color: #1e293b;
+}
+
+.zk-date-range-inputs {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.zk-date-range-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zk-date-range-field label {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.zk-apply-date-range {
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.zk-apply-date-range:hover {
+  background: #2563eb;
+}
+
+.zk-apply-date-range:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.zk-clear-date-range {
+  padding: 8px 16px;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.zk-clear-date-range:hover {
+  background: #e2e8f0;
+}
+
+/* Loading animation */
+.zk-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 64px);
+  gap: 16px;
+}
+
+.zk-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: #3b82f6;
+  animation: zk-spin 1s ease-in-out infinite;
+}
+
+.zk-loading-text {
+  font-size: 18px;
+  color: #64748b;
+}
+
+.zk-card-content {
+  padding: 24px;
+}
+
+.zk-table-container {
+  overflow-x: auto;
+}
+
+.zk-table-info {
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #64748b;
+  text-align: right;
+}
+
+.zk-attendance-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+.zk-attendance-table th, 
+.zk-attendance-table td {
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.zk-attendance-table th {
+  background-color: #f8fafc;
+  font-weight: 600;
+  color: #475569;
+}
+
+.zk-employee-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.zk-employee-name {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.zk-employee-number {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.zk-time-info, .zk-location-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zk-time-in {
+  color: #22c55e;
+}
+
+.zk-time-out {
+  color: #ef4444;
+}
+
+.zk-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.zk-verify-method {
+  display: inline-block;
+  padding: 4px 12px;
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Status badge styles */
+.zk-status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.zk-status-badge.present {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.zk-status-badge.late {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.zk-status-badge.half-day {
+  background-color: #ede9fe;
+  color: #6d28d9;
+}
+
+.zk-status-badge.adjusted {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.zk-error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 16px;
+  background-color: #fef2f2;
+  border-radius: 8px;
+  gap: 16px;
+}
+
+.zk-error-message {
+  color: #dc2626;
+  font-size: 16px;
+}
+
+.zk-retry-button {
+  padding: 8px 16px;
+  background-color: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zk-retry-button:hover {
+  background-color: #b91c1c;
+}
+
+.zk-no-records {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  gap: 16px;
+  text-align: center;
+}
+
+.zk-no-records p {
+  color: #64748b;
+  margin: 0;
+}
+
+.zk-no-records ul {
+  color: #64748b;
+  text-align: left;
+  padding-left: 20px;
+}
+
+.zk-reset-button {
+  padding: 8px 16px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zk-reset-button:hover {
+  background-color: #2563eb;
+}
+
+.zk-sync-suggestion {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: #e0f2fe;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.zk-action-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.zk-sync-now-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #0284c7;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.zk-sync-now-button:hover {
+  background: #0369a1;
+}
+
+.zk-csv-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.zk-csv-button:hover {
+  background: #4f46e5;
+}
+
+/* Pagination styles */
+.zk-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.zk-pagination-btn {
+  padding: 6px 12px;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  color: #1e293b;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zk-pagination-btn:hover:not(:disabled) {
+  background-color: #e2e8f0;
+}
+
+.zk-pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.zk-pagination-info {
+  padding: 6px 12px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+@media (max-width: 1024px) {
+  .zk-attendance-container {
+    margin-left: 0;
     padding: 16px;
-    text-align: left;
-    border-bottom: 1px solid #e2e8f0;
   }
-  
-  th {
-    background-color: #f8fafc;
-    font-weight: 600;
-    color: #475569;
+
+  .zk-card-header {
+    flex-direction: column;
+    align-items: stretch;
   }
-  
-  .employee-info {
-    display: flex;
+
+  .zk-header-actions {
     flex-direction: column;
   }
-  
-  .employee-name {
-    font-weight: 500;
-    color: #1e293b;
+
+  .zk-search-box {
+    width: 100%;
   }
   
-  .employee-number {
-    font-size: 12px;
-    color: #64748b;
-    margin-top: 4px;
+  .zk-date-range-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
   
-  .time-info, .location-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .zk-date-range-inputs {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
   }
   
-  .time-in {
-    color: #22c55e;
+  .zk-action-buttons {
+    flex-direction: column;
+    width: 100%;
   }
   
-  .time-out {
-    color: #ef4444;
+  .zk-csv-upload-form {
+    flex-direction: column;
   }
-  
-  .icon {
-    width: 16px;
-    height: 16px;
-  }
-  
-  .verify-method {
-    display: inline-block;
-    padding: 4px 12px;
-    background-color: #e0f2fe;
-    color: #0369a1;
-    border-radius: 9999px;
-    font-size: 12px;
-    font-weight: 500;
-  }
-  
-  .loading-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: calc(100vh - 64px);
-  }
-  
-  .loading-text {
-    font-size: 18px;
-    color: #64748b;
-  }
-  
-  .error-container {
+}
+
+@media (max-width: 640px) {
+  .zk-card-header {
     padding: 16px;
-    background-color: #fef2f2;
-    border-radius: 8px;
-    margin: 24px;
+  }
+
+  .zk-card-content {
+    padding: 16px;
+  }
+
+  .zk-attendance-table th, 
+  .zk-attendance-table td {
+    padding: 12px;
   }
   
-  .error-message {
-    color: #dc2626;
+  .zk-csv-upload-section {
+    padding: 12px 16px;
   }
-  
-  @media (max-width: 1024px) {
-    .attendance-container {
-      margin-left: 0;
-      padding: 16px;
-    }
-  
-    .card-header {
-      flex-direction: column;
-      align-items: stretch;
-    }
-  
-    .header-actions {
-      flex-direction: column;
-    }
-  
-    .search-box {
-      width: 100%;
-    }
-  }
-  
-  @media (max-width: 640px) {
-    .card-header {
-      padding: 16px;
-    }
-  
-    .card-content {
-      padding: 16px;
-    }
-  
-    th, td {
-      padding: 12px;
-    }
-  }
+}

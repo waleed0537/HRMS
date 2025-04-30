@@ -1,18 +1,20 @@
-// zktecoService.js - Enhanced with better error handling and automatic sync
+// zktecoService.js - Optimized with proper user ID handling like Python script
 const ZKLib = require('zklib');
 const Attendance = require('./models/Attendance');
-const cron = require('node-cron');
 const Notification = require('./models/Notification');
 const User = require('./models/Users');
+const { exec } = require('child_process');
+const os = require('os');
 
-// Configuration with fallback options
+// Configuration with updated options for faster sync
 const CONFIG = {
   ip: process.env.ZKTECO_IP || '192.168.100.35',
   port: parseInt(process.env.ZKTECO_PORT || '4370'),
-  timeout: parseInt(process.env.ZKTECO_TIMEOUT || '10000'), // Increased timeout
-  retry: parseInt(process.env.ZKTECO_RETRY || '3'),
-  syncInterval: process.env.ZKTECO_SYNC_INTERVAL || '*/10 * * * *', // Every 10 minutes by default
-  attendanceParser: process.env.ZKTECO_PARSER || 'v6.60'
+  timeout: parseInt(process.env.ZKTECO_TIMEOUT || '5000'), // Reduced timeout for faster sync
+  retry: parseInt(process.env.ZKTECO_RETRY || '2'),
+  syncInterval: process.env.ZKTECO_SYNC_INTERVAL || '*/5 * * * * *', // Every 5 seconds
+  attendanceParser: process.env.ZKTECO_PARSER || 'v6.60',
+  autoSync: process.env.ZKTECO_AUTO_SYNC === 'true'
 };
 
 // Store last sync status
@@ -21,6 +23,13 @@ let lastSyncStatus = {
   timestamp: null,
   message: 'No sync attempted yet',
   recordsProcessed: 0
+};
+
+// Cache for user data to avoid frequent lookups
+let userCache = {
+  timestamp: null,
+  data: null,
+  TTL: 5 * 60 * 1000 // 5 minutes cache TTL
 };
 
 // Initialize automatic sync scheduler
@@ -37,93 +46,175 @@ function createZkInstance(options = {}) {
   });
 }
 
-// Test connection function with retry
+// Native ping implementation without external dependencies
+const pingDevice = (host) => {
+  return new Promise((resolve) => {
+    const platform = os.platform();
+    const pingCmd = platform === 'win32' 
+      ? `ping -n 1 -w 2000 ${host}` 
+      : `ping -c 1 -W 2 ${host}`;
+    
+    exec(pingCmd, (error, stdout, stderr) => {
+      // Check for successful ping response
+      const isAlive = !error && 
+        (platform === 'win32' 
+          ? stdout.includes('Reply from') 
+          : stdout.includes(' 0% packet loss'));
+      
+      resolve({
+        host,
+        alive: isAlive,
+        time: new Date()
+      });
+    });
+  });
+};
+
+// Test connection function that uses ping first for speed
 const testConnection = async (options = {}) => {
+  const deviceIp = options.ip || CONFIG.ip;
+  console.log(`Testing connection to ZKTeco device at ${deviceIp}`);
+  
+  // First try ping for quick connection test
+  try {
+    console.log(`Pinging ${deviceIp}...`);
+    const pingResult = await pingDevice(deviceIp);
+    
+    if (!pingResult.alive) {
+      console.log('Ping failed, device appears to be offline');
+      return {
+        success: false,
+        message: `Device at ${deviceIp} is unreachable (ping failed)`,
+        pingResult
+      };
+    }
+    
+    console.log('Ping successful! Trying ZK connection...');
+  } catch (pingError) {
+    console.warn('Ping check failed:', pingError.message);
+    // Continue with ZK connection test even if ping fails
+  }
+  
+  // Then try actual ZK connection and get user data to verify full functionality
+  try {
+    // Get users to verify proper connection
+    const users = await getUsersFromDevice(options);
+    console.log(`Retrieved ${users.length} users from device - test successful!`);
+    
+    return {
+      success: true,
+      message: 'Successfully connected and retrieved data from device',
+      userCount: users.length
+    };
+  } catch (err) {
+    console.error('Failed to get user data from device:', err.message);
+    return {
+      success: false,
+      message: `Connected but failed to retrieve user data: ${err.message}`,
+      error: err.message
+    };
+  }
+};
+
+// Get users data from device - Implementation similar to Python example
+const getUsersFromDevice = async (options = {}) => {
+  // Check cache first
+  const now = new Date();
+  if (userCache.data && userCache.timestamp && 
+      (now - userCache.timestamp) < userCache.TTL) {
+    console.log('Using cached user data');
+    return userCache.data;
+  }
+  
+  console.log('Fetching user data from device...');
   const maxRetries = options.retry || CONFIG.retry;
   let attempt = 0;
   let lastError = null;
   
-  console.log(`Testing connection to ZKTeco device at ${options.ip || CONFIG.ip}:${options.port || CONFIG.port}...`);
-  
   while (attempt < maxRetries) {
     attempt++;
-    console.log(`Connection attempt ${attempt}/${maxRetries}`);
     
     try {
-      const result = await testConnectionAttempt(options);
-      console.log('Connection successful!');
-      return result;
+      const users = await getUsersAttempt(options);
+      
+      // Transform users to a more usable format and cache
+      const transformedUsers = users.map(user => ({
+        id: user.uid, // This is the actual device user ID
+        name: user.name || `User ${user.uid}`,
+        role: user.role || 0,
+        password: user.password || '',
+        cardno: user.cardno || ''
+      }));
+      
+      // Update cache
+      userCache = {
+        timestamp: now,
+        data: transformedUsers,
+        TTL: userCache.TTL
+      };
+      
+      return transformedUsers;
     } catch (err) {
       lastError = err;
-      console.error(`Connection attempt ${attempt} failed:`, err.message);
+      console.error(`User fetch attempt ${attempt} failed:`, err.message);
       
-      // Wait before retrying (exponential backoff)
       if (attempt < maxRetries) {
-        const delay = 1000 * Math.pow(2, attempt - 1); // 1s, 2s, 4s, 8s...
-        console.log(`Waiting ${delay}ms before next attempt...`);
+        const delay = 500;
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
   
-  // All attempts failed
-  console.error(`All ${maxRetries} connection attempts failed.`);
-  return {
-    success: false,
-    message: `Failed to connect after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`,
-    retryCount: attempt
-  };
+  throw new Error(`Failed to get users after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
 };
 
-// Single connection test attempt
-const testConnectionAttempt = (options = {}) => {
+// Single user fetch attempt
+const getUsersAttempt = (options = {}) => {
   return new Promise((resolve, reject) => {
-    // Create a new ZK instance for this operation
     const zk = createZkInstance(options);
     
-    // Handle connection timeout manually for more control
+    console.log('Connecting to ZKTeco device for user data...');
+    
+    // Timeout handler
     const timeoutId = setTimeout(() => {
-      console.log('Connection attempt timed out');
-      zk.disconnect();
-      reject(new Error('Connection timeout'));
+      console.log('User data fetch timed out');
+      try { zk.disconnect(); } catch (e) {}
+      reject(new Error('Operation timeout while fetching users'));
     }, options.timeout || CONFIG.timeout);
     
     zk.connect((err) => {
-      clearTimeout(timeoutId);
-      
       if (err) {
-        console.error('ZK connect error:', err);
-        zk.disconnect();
-        reject(err);
-      } else {
-        console.log('Connected to device, getting info...');
-        
-        // Get device information
-        zk.getInfo((infoErr, info) => {
-          zk.disconnect();
-          
-          if (infoErr) {
-            console.error('Error getting device info:', infoErr);
-            resolve({
-              success: true,
-              message: 'Connected to device but failed to get info',
-              error: infoErr.message
-            });
-          } else {
-            console.log('Device info:', info);
-            resolve({
-              success: true,
-              message: 'Connected successfully',
-              deviceInfo: info || { status: 'unknown' }
-            });
-          }
-        });
+        clearTimeout(timeoutId);
+        try { zk.disconnect(); } catch (e) {}
+        console.error('Connection error when getting users:', err);
+        return reject(err);
       }
+      
+      console.log('Connected, getting user data...');
+      
+      zk.getUser((userErr, users) => {
+        clearTimeout(timeoutId);
+        
+        // Always disconnect
+        try { zk.disconnect(); } catch (e) {}
+        
+        if (userErr) {
+          console.error('Error getting users:', userErr);
+          return reject(userErr);
+        }
+        
+        if (!users || !Array.isArray(users)) {
+          return reject(new Error('Invalid user data format received from device'));
+        }
+        
+        console.log(`Got ${users.length} user records`);
+        resolve(users);
+      });
     });
   });
 };
 
-// Get attendance data with retry
+// Get attendance data with retry - optimized for speed
 const getAttendanceData = async (options = {}) => {
   const maxRetries = options.retry || CONFIG.retry;
   let attempt = 0;
@@ -131,7 +222,6 @@ const getAttendanceData = async (options = {}) => {
   
   while (attempt < maxRetries) {
     attempt++;
-    console.log(`Fetching attendance data: attempt ${attempt}/${maxRetries}`);
     
     try {
       const data = await getAttendanceDataAttempt(options);
@@ -141,7 +231,7 @@ const getAttendanceData = async (options = {}) => {
       console.error(`Attendance fetch attempt ${attempt} failed:`, err.message);
       
       if (attempt < maxRetries) {
-        const delay = 1000 * Math.pow(2, attempt - 1);
+        const delay = 500; // Shorter delay for faster sync
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -150,14 +240,12 @@ const getAttendanceData = async (options = {}) => {
   throw new Error(`Failed to get attendance data after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
 };
 
-// Single attendance data fetch attempt
+// Single attendance data fetch attempt - optimized
 const getAttendanceDataAttempt = (options = {}) => {
   return new Promise((resolve, reject) => {
     const zk = createZkInstance(options);
     
-    console.log('Connecting to ZKTeco device for attendance data...');
-    
-    // Timeout handler
+    // Timeout handler - shorter timeout for faster response
     const timeoutId = setTimeout(() => {
       console.log('Attendance data fetch timed out');
       try { zk.disconnect(); } catch (e) {}
@@ -171,8 +259,6 @@ const getAttendanceDataAttempt = (options = {}) => {
         console.error('Connection error when getting attendance:', err);
         return reject(err);
       }
-      
-      console.log('Connected, getting attendance data...');
       
       zk.getAttendance((dataErr, data) => {
         clearTimeout(timeoutId);
@@ -196,12 +282,24 @@ const getAttendanceDataAttempt = (options = {}) => {
   });
 };
 
-// Sync attendance data to MongoDB
+// Optimized sync attendance data to MongoDB with user info - Python approach implementation
 const syncAttendanceLogs = async (options = {}) => {
   console.log('Starting attendance synchronization...');
+  const startTime = Date.now();
   
   try {
-    // Get attendance data
+    // 1) First, get all users from the device (like Python script)
+    const users = await getUsersFromDevice(options);
+    console.log(`Retrieved ${users.length} users from device`);
+    
+    // 2) Build user_id → user.name mapping (like Python script)
+    const nameMap = {};
+    users.forEach(user => {
+      nameMap[user.id] = user.name;
+    });
+    console.log('Created user ID to name mapping');
+    
+    // 3) Get attendance logs (like Python script)
     const logs = await getAttendanceData(options);
     
     if (!logs || logs.length === 0) {
@@ -226,6 +324,10 @@ const syncAttendanceLogs = async (options = {}) => {
     let errors = 0;
     let newEmployees = new Set();
     
+    // Use bulk operations for better performance
+    const bulkOps = [];
+    
+    // 4) Process attendance records with user names (like Python script)
     for (const log of logs) {
       try {
         // Format the data
@@ -238,62 +340,78 @@ const syncAttendanceLogs = async (options = {}) => {
           continue;
         }
         
+        // Get user ID and name exactly like Python script
+        const uid = log.uid || log.id; // Ensure we get the correct user ID field
+        const name = nameMap[uid] || 'Unknown';
+        
+        console.log(`Processing record: ${uid}\t${name}\t${recordDate}`);
+        
         // Generate a record
         const record = {
-          employeeName: log.name || 'Unknown',
-          employeeNumber: log.id.toString(),
+          employeeName: name,
+          employeeNumber: uid.toString(), // Store as string for compatibility
+          deviceUserId: uid, // Important: store the actual device ID
           department: log.department || 'General', // Default department
           date: recordDate,
           timeIn: recordDate,
           location: options.ip || CONFIG.ip,
-          verifyMethod: log.type?.toString() || '0',
-          deviceUserId: log.id
+          verifyMethod: log.type?.toString() || '0'
         };
         
-        // Check if record exists
-        const existingRecord = await Attendance.findOne({
-          employeeNumber: record.employeeNumber,
-          date: {
-            $gte: new Date(new Date(record.date).setHours(0, 0, 0, 0)),
-            $lt: new Date(new Date(record.date).setHours(23, 59, 59, 999))
+        // Check if record exists (without database query for speed)
+        const dateStart = new Date(recordDate);
+        dateStart.setHours(0, 0, 0, 0);
+        const dateEnd = new Date(recordDate);
+        dateEnd.setHours(23, 59, 59, 999);
+        
+        // Prepare upsert operation
+        bulkOps.push({
+          updateOne: {
+            filter: {
+              deviceUserId: record.deviceUserId,
+              date: {
+                $gte: dateStart,
+                $lt: dateEnd
+              }
+            },
+            update: {
+              $setOnInsert: {
+                employeeNumber: record.employeeNumber,
+                department: record.department,
+                date: record.date,
+                timeIn: record.timeIn,
+                location: record.location,
+                verifyMethod: record.verifyMethod,
+                status: 'present',
+                createdAt: new Date()
+              },
+              $set: {
+                deviceUserId: record.deviceUserId, // Always store actual device ID
+                employeeName: record.employeeName, // Always update name if available
+                updatedAt: new Date()
+              }
+            },
+            upsert: true
           }
         });
         
-        if (!existingRecord) {
-          // Create new record
-          const newAttendance = new Attendance(record);
-          await newAttendance.save();
-          added++;
-          newEmployees.add(record.employeeNumber);
-        } else {
-          // Check if needs update
-          let isChanged = false;
-          
-          if (!existingRecord.employeeName && record.employeeName) {
-            existingRecord.employeeName = record.employeeName;
-            isChanged = true;
-          }
-          
-          // Update time out if this is a newer record for the same day
-          if (record.timeIn > existingRecord.timeIn) {
-            existingRecord.timeOut = record.timeIn;
-            isChanged = true;
-          }
-          
-          if (isChanged) {
-            await existingRecord.save();
-            updated++;
-          } else {
-            unchanged++;
-          }
-        }
+        newEmployees.add(record.employeeNumber);
       } catch (recordError) {
         console.error('Error processing attendance record:', recordError);
         errors++;
       }
     }
     
-    console.log(`Sync completed: ${added} new records, ${updated} updated, ${unchanged} unchanged, ${errors} errors`);
+    // Execute bulk operations if any
+    if (bulkOps.length > 0) {
+      const bulkResult = await Attendance.bulkWrite(bulkOps);
+      added = bulkResult.upsertedCount || 0;
+      updated = bulkResult.modifiedCount || 0;
+      unchanged = logs.length - added - updated - errors;
+    }
+    
+    const syncTime = Date.now() - startTime;
+    console.log(`Sync completed in ${syncTime}ms: ${added} new records, ${updated} updated, ${unchanged} unchanged, ${errors} errors`);
     
     // If any new attendance records, notify HR and admins
     if (added > 0) {
@@ -302,12 +420,13 @@ const syncAttendanceLogs = async (options = {}) => {
     
     const result = {
       success: true,
-      message: `Sync completed: ${added} new records, ${updated} updated`,
+      message: `Sync completed in ${syncTime}ms: ${added} new records, ${updated} updated`,
       count: added + updated,
       added,
       updated,
       unchanged,
-      errors
+      errors,
+      syncTime
     };
     
     lastSyncStatus = {
@@ -394,18 +513,19 @@ const startAutoSync = () => {
   }
   
   try {
-    syncScheduler = cron.schedule(CONFIG.syncInterval, async () => {
+    // Use a simple setInterval for 5-second sync instead of cron
+    syncScheduler = setInterval(async () => {
       console.log(`Running scheduled attendance sync at ${new Date().toISOString()}`);
       try {
         await syncAttendanceLogs();
       } catch (error) {
         console.error('Scheduled sync error:', error);
       }
-    });
+    }, 5000); // Every 5 seconds
     
     return {
       success: true,
-      message: `Automatic sync started with schedule: ${CONFIG.syncInterval}`
+      message: `Automatic sync started with 5-second interval`
     };
   } catch (error) {
     console.error('Error starting automatic sync:', error);
@@ -425,7 +545,7 @@ const stopAutoSync = () => {
     };
   }
   
-  syncScheduler.stop();
+  clearInterval(syncScheduler);
   syncScheduler = null;
   
   return {
@@ -434,7 +554,7 @@ const stopAutoSync = () => {
   };
 };
 
-// Initialize module - start automatic sync
+// Initialize module - start automatic sync if configured
 const initialize = () => {
   console.log('Initializing ZKTeco service...');
   // Test connection first
@@ -465,6 +585,7 @@ initialize();
 module.exports = {
   testConnection,
   getAttendanceData,
+  getUsersFromDevice,
   syncAttendanceLogs,
   getSyncStatus,
   startAutoSync,

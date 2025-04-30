@@ -1,41 +1,107 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Download, Calendar, Users, RefreshCw, AlertTriangle, Upload, X, Settings, Clock, CheckCircle, XCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { RefreshCw, AlertTriangle, Check, X, Upload, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import API_BASE_URL from '../config/api.js';
 import '../assets/css/AttendanceManagement.css';
-import AttendanceSyncStatus from './AttendanceSyncStatus';
 
 const AttendanceManagement = () => {
   const [attendanceData, setAttendanceData] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [syncing, setSyncing] = useState(false);
-  const [syncMessage, setSyncMessage] = useState(null);
+  const [syncStatus, setSyncStatus] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState(null);
-  const [showCsvUpload, setShowCsvUpload] = useState(false);
-  const [csvFile, setCsvFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null);
-  const [departments, setDepartments] = useState([]);
+  const autoSyncIntervalRef = useRef(null);
+  const isMountedRef = useRef(true);
   
-  // Filters
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [department, setDepartment] = useState('');
-  const [dateRange, setDateRange] = useState({ start: null, end: null });
-  
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalRecords, setTotalRecords] = useState(0);
-  const [recordsPerPage, setRecordsPerPage] = useState(50);
+  // Date filter
+  const today = new Date();
+  const [selectedDate, setSelectedDate] = useState(today);
+  const formattedSelectedDate = selectedDate.toISOString().split('T')[0];
 
+  // Start auto-sync on component mount
   useEffect(() => {
-    fetchAttendanceData();
-  }, [currentPage, selectedDate, dateRange]);
+    // Set ref to track if component is mounted
+    isMountedRef.current = true;
+    
+    // Initial data fetch and connection test
+    testDeviceConnection();
+    fetchAttendanceData(formattedSelectedDate);
+    
+    // Start auto-sync interval (every 5 seconds)
+    autoSyncIntervalRef.current = setInterval(() => {
+      if (isMountedRef.current) {
+        console.log('Auto-sync triggered');
+        syncAttendanceData(true); // true = silent mode
+      }
+    }, 5000);
+    
+    // Cleanup on unmount
+    return () => {
+      isMountedRef.current = false;
+      if (autoSyncIntervalRef.current) {
+        clearInterval(autoSyncIntervalRef.current);
+      }
+    };
+  }, []);
 
-  const fetchAttendanceData = async () => {
+  // Function to test device connection by trying to get data
+  const testDeviceConnection = async () => {
+    try {
+      setConnectionStatus({ status: 'testing', message: 'Testing connection...' });
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      // Try to get actual data from the device to test connection
+      const response = await fetch(`${API_BASE_URL}/api/attendance/test-connection`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to test connection. Status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Only show success if we actually got user data from the device
+      if (result.success && result.userCount > 0) {
+        setConnectionStatus({ 
+          status: 'success', 
+          message: `Connected successfully! Retrieved ${result.userCount} users.`,
+          info: result.deviceInfo 
+        });
+      } else {
+        setConnectionStatus({ 
+          status: 'error', 
+          message: result.success ? 'Connected but no user data retrieved' : (result.message || 'Failed to connect to device')
+        });
+      }
+    } catch (error) {
+      console.error('Error testing device connection:', error);
+      setConnectionStatus({ 
+        status: 'error', 
+        message: `Connection test failed: ${error.message}` 
+      });
+    }
+    
+    // Clear connection status after 3 seconds if successful
+    setTimeout(() => {
+      if (isMountedRef.current) {
+        setConnectionStatus(prev => prev?.status === 'success' ? null : prev);
+      }
+    }, 3000);
+  };
+
+  // Function to fetch attendance data for specific date
+  const fetchAttendanceData = async (date) => {
+    if (!isMountedRef.current) return;
+    
     try {
       setLoading(true);
       setError(null);
@@ -44,23 +110,9 @@ const AttendanceManagement = () => {
       if (!token) {
         throw new Error('No authentication token found');
       }
-
-      // Build query parameters
-      const params = new URLSearchParams();
       
-      // Date filtering
-      if (selectedDate) {
-        params.append('date', format(new Date(selectedDate), 'yyyy-MM-dd'));
-      } else if (dateRange.start && dateRange.end) {
-        params.append('startDate', format(new Date(dateRange.start), 'yyyy-MM-dd'));
-        params.append('endDate', format(new Date(dateRange.end), 'yyyy-MM-dd'));
-      }
-      
-      // Pagination
-      params.append('page', currentPage);
-      params.append('limit', recordsPerPage);
-
-      const response = await fetch(`${API_BASE_URL}/api/attendance?${params.toString()}`, {
+      // Get attendance data for the selected date
+      const response = await fetch(`${API_BASE_URL}/api/attendance?date=${date}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -82,91 +134,33 @@ const AttendanceManagement = () => {
         attendanceArray = responseData;
       }
       
-      console.log(`Loaded ${attendanceArray.length} attendance records`);
+      console.log(`Loaded ${attendanceArray.length} attendance records for ${date}`);
       setAttendanceData(attendanceArray);
       
-      // Set pagination information
-      if (responseData.totalRecords) {
-        setTotalRecords(responseData.totalRecords);
-        setTotalPages(Math.ceil(responseData.totalRecords / recordsPerPage));
-      }
-      
-      // Extract unique departments
-      const uniqueDepartments = [...new Set(
-        attendanceArray
-          .filter(record => record.department)
-          .map(record => record.department)
-      )];
-      
-      setDepartments(uniqueDepartments);
-      setFilteredData(attendanceArray);
     } catch (error) {
       console.error('Error in fetchAttendanceData:', error);
       setError(`Failed to load attendance data: ${error.message}`);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
-  // Function to test device connection
-  const testDeviceConnection = async () => {
-    try {
-      setConnectionStatus({ status: 'testing', message: 'Testing connection...' });
-      
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/api/attendance/test-connection`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to test connection. Status: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setConnectionStatus({ 
-          status: 'success', 
-          message: 'Device connected successfully',
-          info: result.deviceInfo 
-        });
-      } else {
-        setConnectionStatus({ 
-          status: 'error', 
-          message: result.message || 'Failed to connect to device'
-        });
-        // If connection fails, show CSV upload option
-        setShowCsvUpload(true);
-      }
-    } catch (error) {
-      console.error('Error testing device connection:', error);
-      setConnectionStatus({ 
-        status: 'error', 
-        message: `Connection test failed: ${error.message}` 
-      });
-      // If connection test fails, show CSV upload option
-      setShowCsvUpload(true);
-    }
-    
-    // Clear connection status after 5 seconds if successful
-    setTimeout(() => {
-      setConnectionStatus(prev => prev?.status === 'success' ? null : prev);
-    }, 5000);
-  };
+  // Update attendance data when date changes
+  useEffect(() => {
+    fetchAttendanceData(formattedSelectedDate);
+  }, [selectedDate]);
 
   // Function to manually sync attendance data from ZKTeco device
-  const syncAttendanceData = async () => {
+  const syncAttendanceData = async (silent = false) => {
+    if (syncing || !isMountedRef.current) return;
+    
     try {
       setSyncing(true);
-      setSyncMessage({ type: 'info', text: 'Syncing attendance data from device...' });
+      if (!silent) {
+        setSyncStatus({ type: 'info', text: 'Syncing attendance data...' });
+      }
       
       const token = localStorage.getItem('token');
       if (!token) {
@@ -189,278 +183,130 @@ const AttendanceManagement = () => {
       const result = await response.json();
       
       if (result.success) {
-        setSyncMessage({ 
-          type: 'success', 
-          text: result.message || `Sync completed successfully. ${result.count} records processed.` 
-        });
+        if (!silent) {
+          setSyncStatus({ 
+            type: 'success', 
+            text: result.message || `Sync completed successfully. ${result.count} records processed.` 
+          });
+        }
         
-        // Refresh attendance data
-        await fetchAttendanceData();
+        // Refresh attendance data for the currently selected date
+        await fetchAttendanceData(formattedSelectedDate);
       } else {
-        setSyncMessage({ 
-          type: 'error', 
-          text: result.message || 'Sync failed. Please try again.' 
-        });
-        // If sync fails, show CSV upload option
-        setShowCsvUpload(true);
+        if (!silent) {
+          setSyncStatus({ 
+            type: 'error', 
+            text: result.message || 'Sync failed. Please try again.' 
+          });
+        }
       }
     } catch (error) {
       console.error('Error syncing attendance data:', error);
-      setSyncMessage({ 
-        type: 'error', 
-        text: `Error: ${error.message}` 
-      });
-      // If sync fails, show CSV upload option
-      setShowCsvUpload(true);
-    } finally {
-      setSyncing(false);
-      
-      // Clear success message after 5 seconds
-      setTimeout(() => {
-        setSyncMessage(prevMessage => 
-          prevMessage && prevMessage.type === 'success' ? null : prevMessage
-        );
-      }, 5000);
-    }
-  };
-
-  // Handle CSV file selection
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file && (file.type === 'text/csv' || file.type === 'application/vnd.ms-excel')) {
-      setCsvFile(file);
-    } else {
-      alert('Please select a valid CSV file');
-      setCsvFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-
-  // Upload CSV file
-  const uploadCsvFile = async () => {
-    if (!csvFile) {
-      setSyncMessage({ type: 'error', text: 'Please select a CSV file first' });
-      return;
-    }
-
-    try {
-      setUploading(true);
-      setSyncMessage({ type: 'info', text: 'Uploading CSV attendance data...' });
-
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const formData = new FormData();
-      formData.append('csv', csvFile);
-
-      const response = await fetch(`${API_BASE_URL}/api/attendance/import-csv`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error(`CSV upload failed. Status: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      if (result.success) {
-        setSyncMessage({
-          type: 'success',
-          text: `CSV imported successfully: ${result.added} added, ${result.updated} updated`
+      if (!silent) {
+        setSyncStatus({ 
+          type: 'error', 
+          text: `Error: ${error.message}` 
         });
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setSyncing(false);
         
-        // Refresh attendance data
-        await fetchAttendanceData();
-        
-        // Reset file input
-        setCsvFile(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+        // Clear success message after 3 seconds
+        if (!silent) {
+          setTimeout(() => {
+            if (isMountedRef.current) {
+              setSyncStatus(prevMessage => 
+                prevMessage && prevMessage.type === 'success' ? null : prevMessage
+              );
+            }
+          }, 3000);
         }
-      } else {
-        setSyncMessage({
-          type: 'error',
-          text: result.message || 'CSV import failed. Please check the file format.'
-        });
       }
-    } catch (error) {
-      console.error('Error uploading CSV:', error);
-      setSyncMessage({
-        type: 'error',
-        text: `CSV upload error: ${error.message}`
-      });
-    } finally {
-      setUploading(false);
     }
   };
 
   const formatDateTime = (dateString) => {
     if (!dateString) return 'N/A';
     try {
-      return new Date(dateString).toLocaleString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
+      return new Date(dateString).toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
-        second: '2-digit',
-        hour12: false
+        hour12: true
       });
     } catch {
-      return 'Invalid Date';
+      return 'Invalid Time';
     }
   };
 
-  const exportToCSV = () => {
-    try {
-      const headers = ['Department', 'Name', 'No.', 'Date/Time', 'Location ID', 'VerifyCode'];
-      const csvData = filteredData.map(record => [
-        record.department || 'N/A',
-        record.employeeName || 'N/A',
-        record.employeeNumber || 'N/A',
-        formatDateTime(record.date || record.timeIn),
-        record.location || 'N/A',
-        record.verifyMethod || 'N/A'
-      ]);
-
-      const csvContent = [
-        headers.join(','),
-        ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
-      ].join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `attendance_${format(new Date(), 'yyyy-MM-dd')}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-    } catch (error) {
-      console.error('Error in exportToCSV:', error);
-      alert('Failed to export CSV. Please check the console for details.');
-    }
+  // Date navigation functions
+  const goToPreviousDay = () => {
+    const prevDay = new Date(selectedDate);
+    prevDay.setDate(prevDay.getDate() - 1);
+    setSelectedDate(prevDay);
   };
 
-  // Filtering function
-  const applyFilters = () => {
-    let result = [...attendanceData];
-
-    // Filter by search term (name or employee number)
-    if (searchTerm) {
-      const searchTermLower = searchTerm.toLowerCase();
-      result = result.filter(record => 
-        (record.employeeName && record.employeeName.toLowerCase().includes(searchTermLower)) ||
-        (record.employeeNumber && record.employeeNumber.toString().includes(searchTermLower))
-      );
-    }
-
-    // Filter by department
-    if (department) {
-      result = result.filter(record => record.department === department);
-    }
-
-    setFilteredData(result);
+  const goToNextDay = () => {
+    const nextDay = new Date(selectedDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    setSelectedDate(nextDay);
   };
 
-  // Apply filters whenever dependencies change
-  useEffect(() => {
-    applyFilters();
-  }, [searchTerm, department, attendanceData]);
+  const goToToday = () => {
+    setSelectedDate(new Date());
+  };
+
+  const formatDateForDisplay = (date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
 
   if (loading && attendanceData.length === 0) {
     return (
-      <div className="zk-loading-container">
-        <div className="zk-loading-spinner"></div>
-        <div className="zk-loading-text">Loading attendance data...</div>
+      <div className="attendance-loading-container">
+        <div className="attendance-loading-spinner"></div>
+        <div className="attendance-loading-text">Loading attendance data...</div>
       </div>
     );
   }
 
   return (
-    <div className="zk-attendance-container">
-      <div className="zk-attendance-card">
-        <div className="zk-card-header">
-          <div className="zk-card-title">
-            <Users className="zk-icon" />
+    <div className="attendance-container">
+      <div className="attendance-card">
+        <div className="attendance-card-header">
+          <div className="attendance-card-title">
+            <Clock className="attendance-icon" />
             <h2>Attendance Management</h2>
           </div>
-          <div className="zk-header-actions">
-            <div className="zk-search-box">
-              <Search className="zk-search-icon" />
-              <input
-                type="text"
-                placeholder="Search by name or ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <select
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              className="zk-department-select"
-            >
-              <option value="">All Departments</option>
-              {departments.map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
-            <input
-              type="date"
-              value={selectedDate ? format(new Date(selectedDate), 'yyyy-MM-dd') : ''}
-              onChange={(e) => {
-                const newDate = e.target.value ? new Date(e.target.value) : null;
-                setSelectedDate(newDate);
-                // Clear date range if single date is selected
-                if (newDate) {
-                  setDateRange({ start: null, end: null });
-                }
-              }}
-              className="zk-date-input"
-              placeholder="Select Date"
-            />
+          <div className="attendance-header-actions">
             <button 
               onClick={testDeviceConnection}
-              className="zk-test-button"
-              disabled={syncing || uploading}
+              className="attendance-test-button"
+              disabled={syncing}
             >
               Test Connection
             </button>
             <button 
-              onClick={syncAttendanceData} 
-              className={`zk-sync-button ${syncing ? 'syncing' : ''}`}
-              disabled={syncing || uploading}
+              onClick={() => syncAttendanceData(false)}
+              className={`attendance-sync-button ${syncing ? 'syncing' : ''}`}
+              disabled={syncing}
             >
-              <RefreshCw className={`zk-icon ${syncing ? 'spinning' : ''}`} />
+              <RefreshCw className={`attendance-icon ${syncing ? 'spinning' : ''}`} />
               {syncing ? 'Syncing...' : 'Sync Now'}
-            </button>
-            <button onClick={exportToCSV} className="zk-export-button">
-              <Download className="zk-icon" />
-              Export
             </button>
           </div>
         </div>
         
-        {/* Sync Status Component */}
-        <AttendanceSyncStatus onManualSync={syncAttendanceData} />
-        
         {/* Connection Status Message */}
         {connectionStatus && (
-          <div className={`zk-connection-message ${connectionStatus.status}`}>
+          <div className={`attendance-connection-message ${connectionStatus.status}`}>
             {connectionStatus.message}
             {connectionStatus.info && (
-              <span className="zk-device-info">
+              <span className="attendance-device-info">
                 Device: {connectionStatus.info.deviceName || 'ZKTeco Device'}
               </span>
             )}
@@ -468,263 +314,110 @@ const AttendanceManagement = () => {
         )}
         
         {/* Sync Message */}
-        {syncMessage && (
-          <div className={`zk-sync-message ${syncMessage.type}`}>
-            {syncMessage.text}
+        {syncStatus && (
+          <div className={`attendance-sync-message ${syncStatus.type}`}>
+            {syncStatus.text}
           </div>
         )}
         
-        {/* CSV Upload Section */}
-        {showCsvUpload && (
-          <div className="zk-csv-upload-section">
-            <div className="zk-csv-upload-header">
-              <h3>Upload Attendance CSV from ZKTeco Device</h3>
-              <button 
-                className="zk-close-button" 
-                onClick={() => setShowCsvUpload(false)}
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div className="zk-csv-upload-content">
-              <p>
-                If direct connection to the device isn't working, you can export the attendance 
-                data from the ZKTeco software to CSV and upload it here.
-              </p>
-              <div className="zk-csv-upload-form">
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={handleFileChange}
-                  className="zk-file-input"
-                  ref={fileInputRef}
-                  disabled={uploading}
-                />
-                {csvFile && (
-                  <div className="zk-selected-file">
-                    <span>Selected: {csvFile.name}</span>
-                    <button 
-                      className="zk-remove-file" 
-                      onClick={() => {
-                        setCsvFile(null);
-                        if (fileInputRef.current) {
-                          fileInputRef.current.value = '';
-                        }
-                      }}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                )}
-                <button 
-                  className={`zk-upload-button ${uploading ? 'uploading' : ''}`}
-                  onClick={uploadCsvFile}
-                  disabled={!csvFile || uploading}
-                >
-                  <Upload className={`zk-icon ${uploading ? 'spinning' : ''}`} />
-                  {uploading ? 'Uploading...' : 'Upload CSV'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Date Range Filter */}
-        <div className="zk-date-range-section">
-          <div className="zk-date-range-header">
-            <h3>Date Range Filter</h3>
-            <div className="zk-date-range-inputs">
-              <div className="zk-date-range-field">
-                <label>Start Date:</label>
-                <input 
-                  type="date"
-                  value={dateRange.start ? format(new Date(dateRange.start), 'yyyy-MM-dd') : ''}
-                  onChange={(e) => {
-                    const newStart = e.target.value ? new Date(e.target.value) : null;
-                    setDateRange({...dateRange, start: newStart});
-                    // Clear single date if range is used
-                    if (newStart) {
-                      setSelectedDate(null);
-                    }
-                  }}
-                  className="zk-date-input"
-                />
-              </div>
-              <div className="zk-date-range-field">
-                <label>End Date:</label>
-                <input 
-                  type="date"
-                  value={dateRange.end ? format(new Date(dateRange.end), 'yyyy-MM-dd') : ''}
-                  onChange={(e) => {
-                    const newEnd = e.target.value ? new Date(e.target.value) : null;
-                    setDateRange({...dateRange, end: newEnd});
-                    // Clear single date if range is used
-                    if (newEnd) {
-                      setSelectedDate(null);
-                    }
-                  }}
-                  className="zk-date-input"
-                />
-              </div>
-              <button 
-                className="zk-apply-date-range"
-                onClick={fetchAttendanceData}
-                disabled={!dateRange.start || !dateRange.end}
-              >
-                Apply
-              </button>
-              <button 
-                className="zk-clear-date-range"
-                onClick={() => {
-                  setDateRange({ start: null, end: null });
-                  setSelectedDate(null);
-                  fetchAttendanceData();
-                }}
-              >
-                Clear
-              </button>
-            </div>
-          </div>
+        {/* Auto-sync status indicator */}
+        <div className="attendance-auto-sync-indicator">
+          <div className={`sync-pulse ${syncing ? 'active' : ''}`}></div>
+          <span>Auto-sync: Active (every 5 seconds)</span>
         </div>
         
-        <div className="zk-card-content">
-          <div className="zk-table-container">
+        {/* Date navigation */}
+        <div className="attendance-date-navigation">
+          <button 
+            onClick={goToPreviousDay} 
+            className="attendance-date-nav-button"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          
+          <div className="attendance-date-display">
+            <div className="attendance-selected-date">
+              {formatDateForDisplay(selectedDate)}
+            </div>
+            <input
+              type="date"
+              value={formattedSelectedDate}
+              onChange={(e) => setSelectedDate(new Date(e.target.value))}
+              className="attendance-date-picker"
+            />
+          </div>
+          
+          <button 
+            onClick={goToNextDay} 
+            className="attendance-date-nav-button"
+          >
+            <ChevronRight size={18} />
+          </button>
+          
+          <button 
+            onClick={goToToday}
+            className="attendance-today-button"
+            disabled={
+              selectedDate.getDate() === today.getDate() &&
+              selectedDate.getMonth() === today.getMonth() &&
+              selectedDate.getFullYear() === today.getFullYear()
+            }
+          >
+            Today
+          </button>
+        </div>
+        
+        <div className="attendance-card-content">
+          <div className="attendance-table-container">
             {error ? (
-              <div className="zk-error-container">
+              <div className="attendance-error-container">
                 <AlertTriangle size={32} />
-                <div className="zk-error-message">{error}</div>
-                <button onClick={fetchAttendanceData} className="zk-retry-button">
+                <div className="attendance-error-message">{error}</div>
+                <button onClick={() => fetchAttendanceData(formattedSelectedDate)} className="attendance-retry-button">
                   Retry
                 </button>
               </div>
-            ) : filteredData.length === 0 ? (
-              <div className="zk-no-records">
-                <p>No records found. Try adjusting your filters or sync attendance data.</p>
-                <p>Total Records: {attendanceData.length}</p>
-                {(searchTerm || department || selectedDate || (dateRange.start && dateRange.end)) && (
-                  <>
-                    <p>Current Filters:</p>
-                    <ul>
-                      {searchTerm && <li>Search Term: {searchTerm}</li>}
-                      {department && <li>Department: {department}</li>}
-                      {selectedDate && <li>Date: {format(new Date(selectedDate), 'dd/MM/yyyy')}</li>}
-                      {dateRange.start && dateRange.end && (
-                        <li>Date Range: {format(new Date(dateRange.start), 'dd/MM/yyyy')} to {format(new Date(dateRange.end), 'dd/MM/yyyy')}</li>
-                      )}
-                    </ul>
-                    <button onClick={() => {
-                      setSearchTerm('');
-                      setDepartment('');
-                      setSelectedDate(null);
-                      setDateRange({ start: null, end: null });
-                      fetchAttendanceData();
-                    }} className="zk-reset-button">
-                      Reset Filters
-                    </button>
-                  </>
-                )}
-                
-                {attendanceData.length === 0 && (
-                  <div className="zk-sync-suggestion">
-                    <p>No attendance records in database. Click "Sync Now" to retrieve records from device.</p>
-                    <div className="zk-action-buttons">
-                      <button 
-                        onClick={syncAttendanceData} 
-                        className="zk-sync-now-button"
-                        disabled={syncing}
-                      >
-                        <RefreshCw className="zk-icon" />
-                        {syncing ? 'Syncing...' : 'Sync Now'}
-                      </button>
-                      <button 
-                        onClick={() => setShowCsvUpload(true)} 
-                        className="zk-csv-button"
-                      >
-                        <Upload className="zk-icon" />
-                        Upload CSV Instead
-                      </button>
-                    </div>
+            ) : attendanceData.length === 0 ? (
+              <div className="attendance-no-records">
+                <p>No attendance records found for {formatDateForDisplay(selectedDate)}.</p>
+                {selectedDate.toDateString() === today.toDateString() && (
+                  <div className="attendance-sync-indicator">
+                    <RefreshCw className="spinning" size={24} />
+                    <p>Sync in progress...</p>
                   </div>
                 )}
               </div>
             ) : (
               <>
-                <div className="zk-table-info">
-                  Showing {filteredData.length} of {totalRecords} records
+                <div className="attendance-table-info">
+                  Showing {attendanceData.length} records for {formatDateForDisplay(selectedDate)}
                 </div>
-                <table className="zk-attendance-table">
+                <table className="attendance-table">
                   <thead>
                     <tr>
-                      <th>Department</th>
+                      <th>User ID</th>
                       <th>Name</th>
-                      <th>No.</th>
-                      <th>Date/Time</th>
-                      <th>Status</th>
-                      <th>Location ID</th>
-                      <th>VerifyCode</th>
+                      <th>Present</th>
+                      <th>Company</th>
+                      <th>Time</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredData.map((record, index) => (
+                    {attendanceData.map((record, index) => (
                       <tr key={record._id || index}>
-                        <td>{record.department || 'N/A'}</td>
+                        <td>{record.deviceUserId || record.employeeNumber || 'N/A'}</td>
+                        <td>{record.employeeName || 'Unknown'}</td>
                         <td>
-                          <div className="zk-employee-info">
-                            <div className="zk-employee-name">{record.employeeName || 'Unknown'}</div>
-                          </div>
-                        </td>
-                        <td>{record.employeeNumber || 'N/A'}</td>
-                        <td>{formatDateTime(record.date || record.timeIn)}</td>
-                        <td>
-                          <span className={`zk-status-badge ${record.status || 'present'}`}>
-                            {record.status || 'Present'}
+                          <span className="attendance-present-badge">
+                            <Check size={16} className="attendance-present-icon" />
                           </span>
                         </td>
-                        <td>{record.location || 'N/A'}</td>
-                        <td>
-                          <span className="zk-verify-method">{record.verifyMethod || 'N/A'}</span>
-                        </td>
+                        <td>Company</td>
+                        <td>{formatDateTime(record.date || record.timeIn)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <div className="zk-pagination">
-                    <button
-                      className="zk-pagination-btn"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(1)}
-                    >
-                      First
-                    </button>
-                    <button
-                      className="zk-pagination-btn"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    >
-                      Previous
-                    </button>
-                    <span className="zk-pagination-info">
-                      Page {currentPage} of {totalPages}
-                    </span>
-                    <button
-                      className="zk-pagination-btn"
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    >
-                      Next
-                    </button>
-                    <button
-                      className="zk-pagination-btn"
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage(totalPages)}
-                    >
-                      Last
-                    </button>
-                  </div>
-                )}
               </>
             )}
           </div>

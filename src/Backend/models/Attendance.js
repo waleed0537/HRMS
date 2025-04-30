@@ -76,9 +76,8 @@ const attendanceSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Create compound indexes for faster lookups
-attendanceSchema.index({ employeeNumber: 1, date: 1 });
 // Create unique index to prevent duplicate records per day
+// REMOVED duplicate index definition to fix warning
 attendanceSchema.index({ employeeNumber: 1, date: 1 }, { unique: true, partialFilterExpression: { date: { $exists: true } } });
 
 // Add a timestamp accuracy check method

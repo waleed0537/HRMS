@@ -17,7 +17,7 @@ const CONFIG = {
     connectionTries: parseInt(process.env.CONNECTION_TRIES || '5'),
     connectionDelay: parseInt(process.env.CONNECTION_DELAY || '2000')
   },
-  
+
   // MongoDB connection
   database: {
     uri: process.env.MONGODB_URI || 'mongodb+srv://hrmsmongo:YWCuBGMkletJv65z@cluster0.hrtxh.mongodb.net/hrms',
@@ -26,14 +26,14 @@ const CONFIG = {
       useUnifiedTopology: true
     }
   },
-  
+
   // Sync settings
   sync: {
     interval: parseInt(process.env.SYNC_INTERVAL || '5000'), // 5 seconds
     maxRetries: parseInt(process.env.MAX_RETRIES || '3'),
     retryDelay: parseInt(process.env.RETRY_DELAY || '3000')
   },
-  
+
   // Logging settings
   logs: {
     dir: process.env.LOG_DIR || './logs',
@@ -66,14 +66,14 @@ let syncStats = {
 function log(level, message, data = null) {
   const levels = ['error', 'warn', 'info', 'debug'];
   const configLevel = CONFIG.logs.level.toLowerCase();
-  
+
   if (levels.indexOf(level) > levels.indexOf(configLevel)) {
     return; // Skip logging if level is higher than config
   }
-  
+
   const timestamp = new Date().toISOString();
   let logMessage = message;
-  
+
   // Add data as JSON if provided
   if (data) {
     if (typeof data === 'object') {
@@ -86,9 +86,9 @@ function log(level, message, data = null) {
       logMessage += ' ' + data;
     }
   }
-  
+
   const logEntry = `[${timestamp}] [${level.toUpperCase()}] ${logMessage}\n`;
-  
+
   // Log to console with colors
   const colors = {
     error: '\x1b[31m', // Red
@@ -97,9 +97,9 @@ function log(level, message, data = null) {
     debug: '\x1b[90m', // Grey
     reset: '\x1b[0m'   // Reset
   };
-  
+
   console[level === 'debug' ? 'log' : level](`${colors[level]}[${timestamp}] ${logMessage}${colors.reset}`);
-  
+
   // Append to log file
   try {
     fs.appendFileSync(logFile, logEntry);
@@ -167,7 +167,7 @@ const attendanceSchema = new mongoose.Schema({
 
 // Create a unique index to prevent duplicate entries
 attendanceSchema.index(
-  { employeeNumber: 1, date: 1 }, 
+  { employeeNumber: 1, date: 1 },
   { unique: true, partialFilterExpression: { date: { $exists: true } } }
 );
 
@@ -256,20 +256,20 @@ async function connectToDatabase() {
 async function pingDevice(ip) {
   return new Promise((resolve) => {
     const platform = os.platform();
-    const pingCmd = platform === 'win32' 
-      ? `ping -n 1 -w 2000 ${ip}` 
+    const pingCmd = platform === 'win32'
+      ? `ping -n 1 -w 2000 ${ip}`
       : `ping -c 1 -W 2 ${ip}`;
-    
+
     log('debug', `Executing ping command: ${pingCmd}`);
-    
+
     childProcess.exec(pingCmd, (error, stdout) => {
-      const isAlive = !error && 
-        (platform === 'win32' 
-          ? stdout.includes('Reply from') 
+      const isAlive = !error &&
+        (platform === 'win32'
+          ? stdout.includes('Reply from')
           : stdout.includes(' 0% packet loss'));
-      
+
       log(isAlive ? 'debug' : 'warn', `Ping result for ${ip}: ${isAlive ? 'Device reachable' : 'Device unreachable'}`);
-      
+
       resolve({
         alive: isAlive,
         time: new Date()
@@ -283,7 +283,7 @@ function createZkInstance() {
   const zkOptions = {
     ip: CONFIG.device.ip,
     port: CONFIG.device.port,
-    inport: CONFIG.device.port,
+    inport: Math.floor(Math.random() * 10000) + 10000, // Random port between 10000-20000
     timeout: CONFIG.device.timeout,
     attendanceParser: CONFIG.device.attendanceParser
   };
@@ -295,15 +295,15 @@ function createZkInstance() {
 // Multi-try approach to connect to ZKTeco device
 async function connectToDevice(retry = 0) {
   log('info', `Connecting to ZKTeco device (attempt ${retry + 1})...`);
-  
+
   return new Promise((resolve, reject) => {
     const zk = createZkInstance();
-    
+
     // Set connection timeout
     const connectionTimeout = setTimeout(() => {
       log('error', `Connection timed out after ${CONFIG.device.timeout}ms`);
-      try { zk.disconnect(); } catch (e) {} // Make sure to clean up
-      
+      try { zk.disconnect(); } catch (e) { } // Make sure to clean up
+
       if (retry < CONFIG.device.connectionTries - 1) {
         log('info', `Retrying connection (${retry + 1}/${CONFIG.device.connectionTries})`);
         setTimeout(() => {
@@ -315,16 +315,16 @@ async function connectToDevice(retry = 0) {
         reject(new Error(`Connection failed after ${CONFIG.device.connectionTries} attempts`));
       }
     }, CONFIG.device.timeout);
-    
+
     // Try to connect
     try {
       zk.connect((err) => {
         clearTimeout(connectionTimeout);
-        
+
         if (err) {
           log('error', `Connection error: ${err.message}`);
-          try { zk.disconnect(); } catch (e) {} // Clean up
-          
+          try { zk.disconnect(); } catch (e) { } // Clean up
+
           if (retry < CONFIG.device.connectionTries - 1) {
             log('info', `Retrying connection (${retry + 1}/${CONFIG.device.connectionTries})`);
             setTimeout(() => {
@@ -337,14 +337,14 @@ async function connectToDevice(retry = 0) {
           }
           return;
         }
-        
+
         log('info', 'Successfully connected to ZKTeco device!');
         resolve(zk);
       });
     } catch (error) {
       clearTimeout(connectionTimeout);
       log('error', `Connection attempt error: ${error.message}`);
-      
+
       if (retry < CONFIG.device.connectionTries - 1) {
         log('info', `Retrying connection (${retry + 1}/${CONFIG.device.connectionTries})`);
         setTimeout(() => {
@@ -362,35 +362,35 @@ async function connectToDevice(retry = 0) {
 // Get users from ZKTeco device
 async function getUsersFromDevice() {
   log('info', 'Fetching users from ZKTeco device...');
-  
+
   try {
     const zk = await connectToDevice();
-    
+
     return new Promise((resolve, reject) => {
       const operationTimeout = setTimeout(() => {
         log('error', 'User fetch operation timed out');
-        try { zk.disconnect(); } catch (e) {}
+        try { zk.disconnect(); } catch (e) { }
         reject(new Error('User fetch operation timed out'));
       }, CONFIG.device.timeout);
-      
+
       zk.getUser((err, users) => {
         clearTimeout(operationTimeout);
-        
+
         // Always disconnect
-        try { zk.disconnect(); } catch (e) {}
-        
+        try { zk.disconnect(); } catch (e) { }
+
         if (err) {
           log('error', `Error getting users: ${err.message}`);
           return reject(err);
         }
-        
+
         if (!users || !Array.isArray(users)) {
           log('error', 'Invalid user data received');
           return reject(new Error('Invalid user data format'));
         }
-        
+
         log('info', `Retrieved ${users.length} users from device!`);
-        
+
         // Process users for easier mapping
         const processedUsers = users.map(user => ({
           id: user.uid, // The actual device user ID
@@ -398,10 +398,10 @@ async function getUsersFromDevice() {
           role: user.role || 0,
           cardno: user.cardno || ''
         }));
-        
+
         // Save users to cache for future use
         updateUserCache(processedUsers);
-        
+
         resolve(processedUsers);
       });
     });
@@ -414,48 +414,51 @@ async function getUsersFromDevice() {
 // Get attendance data from ZKTeco device
 async function getAttendanceData() {
   log('info', 'Fetching attendance data from ZKTeco device...');
-  
+
   try {
     const zk = await connectToDevice();
-    
+
     return new Promise((resolve, reject) => {
       const operationTimeout = setTimeout(() => {
         log('error', 'Attendance fetch operation timed out');
-        try { zk.disconnect(); } catch (e) {}
+        try { zk.disconnect(); } catch (e) { }
         reject(new Error('Attendance fetch operation timed out'));
       }, CONFIG.device.timeout);
-      
+
       zk.getAttendance((err, data) => {
         clearTimeout(operationTimeout);
-        
+
         // Always disconnect
-        try { zk.disconnect(); } catch (e) {}
-        
+        try { zk.disconnect(); } catch (e) { }
+
         if (err) {
           log('error', `Error getting attendance data: ${err.message}`);
           return reject(err);
         }
-        
+
         if (!data || !Array.isArray(data)) {
           log('error', 'Invalid attendance data received');
           return reject(new Error('Invalid attendance data format'));
         }
-        
+
         log('info', `Retrieved ${data.length} attendance records from device!`);
-        
+
         // Check for today's records
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        const now = new Date();
+        // Adjust for Pakistan Standard Time offset (UTC+5)
+        const pkOffset = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
+        const pkToday = new Date(now.getTime() + pkOffset);
+        pkToday.setUTCHours(0, 0, 0, 0);
+        const pkTomorrow = new Date(pkToday);
+        pkTomorrow.setDate(pkToday.getDate() + 1);
         
         const todayRecords = data.filter(record => {
           const recordDate = new Date(record.timestamp);
-          return recordDate >= today && recordDate < tomorrow;
+          return recordDate >= pkToday && recordDate < pkTomorrow;  // Fixed reference
         });
-        
+
         log('info', `${todayRecords.length} of these records are from today!`);
-        
+
         resolve(data);
       });
     });
@@ -469,10 +472,10 @@ async function getAttendanceData() {
 async function testConnection() {
   try {
     log('info', `Testing connection to ZKTeco device at ${CONFIG.device.ip}...`);
-    
+
     // First try ping for quick check
     const pingResult = await pingDevice(CONFIG.device.ip);
-    
+
     if (!pingResult.alive) {
       log('warn', 'Ping failed, device appears to be offline');
       return {
@@ -480,14 +483,14 @@ async function testConnection() {
         message: 'Device is unreachable (ping failed)'
       };
     }
-    
+
     log('info', 'Ping successful, testing device connection...');
-    
+
     // Try to establish connection and get users
     try {
       const users = await getUsersFromDevice();
       log('info', `Connection test successful! Retrieved ${users.length} users.`);
-      
+
       return {
         success: true,
         message: `Connected successfully. Retrieved ${users.length} users.`,
@@ -516,9 +519,9 @@ async function updateUserCache(users) {
       log('warn', 'No users to update in cache');
       return false;
     }
-    
+
     log('info', `Updating user cache with ${users.length} users...`);
-    
+
     // Prepare bulk operations
     const bulkOps = users.map(user => ({
       updateOne: {
@@ -533,11 +536,11 @@ async function updateUserCache(users) {
         upsert: true
       }
     }));
-    
+
     // Execute bulk update
     const result = await UserCache.bulkWrite(bulkOps);
     log('info', `User cache updated: ${result.upsertedCount} new, ${result.modifiedCount} updated`);
-    
+
     return true;
   } catch (error) {
     log('error', `Failed to update user cache: ${error.message}`);
@@ -549,19 +552,24 @@ async function updateUserCache(users) {
 async function getTodayAttendanceCount() {
   try {
     // Define today's date range
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
+    const now = new Date();
+const pkOffset = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
+const pkToday = new Date(now.getTime() + pkOffset);
+pkToday.setUTCHours(0, 0, 0, 0);
+const pkTomorrow = new Date(pkToday);
+pkTomorrow.setDate(pkToday.getDate() + 1);
+
+// Then update the query:
+const count = await Attendance.countDocuments({
+  date: {
+    $gte: pkToday,
+    $lt: pkTomorrow
+  }
+});
+
     // Query database
-    const count = await Attendance.countDocuments({
-      date: {
-        $gte: today,
-        $lt: tomorrow
-      }
-    });
-    
+
+
     log('info', `Today's attendance count: ${count} records`);
     return count;
   } catch (error) {
@@ -587,90 +595,106 @@ async function syncAttendanceLogs() {
       users: 0
     }
   };
-  
+
   try {
     log('info', '============ Starting attendance synchronization ============');
-    
+
     // Get today's attendance count before sync
     const beforeCount = await getTodayAttendanceCount();
-    
+
     // 1. First, get all users from the device
     const users = await getUsersFromDevice();
     log('info', `Retrieved ${users.length} users from device`);
-    
+
     syncStatus.deviceInfo.users = users.length;
-    
+
     // 2. Build user_id → user.name mapping
     const nameMap = {};
     users.forEach(user => {
       nameMap[user.id] = user.name;
     });
-    
+
     // 3. Get attendance logs
     const logs = await getAttendanceData();
-    
+
     // Handle no records case
     if (!logs || logs.length === 0) {
       log('info', 'No attendance records found on device');
-      
+
       syncStatus.success = true;
       syncStatus.message = 'No attendance records found on device';
       syncStatus.todayRecords = beforeCount;
-      
+
       await new SyncStatus(syncStatus).save();
-      
+
       syncStats.lastSync = new Date();
       syncStats.successfulSyncs++;
-      
+
       log('info', `=============== Today's attendance: ${beforeCount} records ===============`);
-      
+
       return {
         success: true,
         message: 'No attendance records found on device',
         todayCount: beforeCount
       };
     }
-    
+
     log('info', `Processing ${logs.length} attendance records...`);
-    
+
     // Process records with bulk operations for better performance
     const bulkOps = [];
     let todayRecordsCount = 0;
-    
+
     // Get today's date range for checking
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const now = new Date();
+    const pkOffset = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
+    const pkToday = new Date(now.getTime() + pkOffset);
+    pkToday.setUTCHours(0, 0, 0, 0);
+    const pkTomorrow = new Date(pkToday);
+    pkTomorrow.setDate(pkToday.getDate() + 1);
     
+    // Then update the query:
+    const count = await Attendance.countDocuments({
+      date: {
+        $gte: pkToday,
+        $lt: pkTomorrow
+      }
+    });
     // Process each attendance record
-    for (const log of logs) {
+    for (const record of logs) {
       try {
-        // Format the data
-        const recordDate = new Date(log.timestamp);
-        
-        // Skip invalid dates
-        if (isNaN(recordDate.getTime())) {
-          log('warn', `Skipping record with invalid date: ${log.timestamp}`);
+        // Check if timestamp exists before trying to use it
+        if (!record.timestamp) {
+          log('warn', `Skipping record with missing timestamp: ${JSON.stringify(record)}`);
           continue;
         }
         
+        // Format the data
+        const recordDate = new Date(record.timestamp);
+        
+        // Skip invalid dates
+        if (isNaN(recordDate.getTime())) {
+          log('warn', `Skipping record with invalid date: ${record.timestamp}`);
+          log('debug', `Full record with invalid date: ${JSON.stringify(record)}`);
+          continue;
+        }
+
         // Check if record is from today
         const isToday = recordDate >= today && recordDate < tomorrow;
         if (isToday) {
           todayRecordsCount++;
         }
-        
+
         // Get user ID and name
-        const uid = log.uid || log.id; // Ensure we get the correct user ID field
+        const uid = record.uid || record.id; // Ensure we get the correct user ID field
         const name = nameMap[uid] || 'Unknown';
-        
+
         log('debug', `Processing record: ${uid}\t${name}\t${recordDate}`);
-        
+
         // Create date without time for uniqueness check
         const dateStart = new Date(recordDate);
         dateStart.setHours(0, 0, 0, 0);
-        
+
         // Prepare upsert operation
         bulkOps.push({
           updateOne: {
@@ -705,37 +729,54 @@ async function syncAttendanceLogs() {
         log('error', `Error processing attendance record: ${recordError.message}`);
       }
     }
-    
+
     // Execute bulk operations
     let newRecords = 0;
-    
+
+    // After executing bulk operations
     if (bulkOps.length > 0) {
       log('info', `Executing ${bulkOps.length} database operations...`);
-      const bulkResult = await Attendance.bulkWrite(bulkOps);
-      newRecords = bulkResult.upsertedCount || 0;
-      
-      syncStatus.recordsAdded = newRecords;
-      syncStatus.recordsProcessed = logs.length;
-      syncStatus.todayRecords = todayRecordsCount;
-      
-      log('info', `Bulk operations complete: ${newRecords} new records, ${bulkResult.modifiedCount} updated`);
+      try {
+        const bulkResult = await Attendance.bulkWrite(bulkOps);
+        log('info', `Database write result: ${JSON.stringify(bulkResult)}`);
+        newRecords = bulkResult.upsertedCount || 0;
+
+        // Log specific information about writes
+        log('info', `New records inserted: ${bulkResult.upsertedCount}`);
+        log('info', `Records modified: ${bulkResult.modifiedCount}`);
+        log('info', `Records matched but not modified: ${bulkResult.matchedCount - bulkResult.modifiedCount}`);
+
+        // If upsertedIds exists, log the specific ids
+        if (bulkResult.upsertedIds && Object.keys(bulkResult.upsertedIds).length > 0) {
+          log('info', `Upserted IDs: ${JSON.stringify(bulkResult.upsertedIds)}`);
+        }
+
+        syncStatus.recordsAdded = newRecords;
+        syncStatus.recordsProcessed = logs.length;
+        syncStatus.todayRecords = todayRecordsCount;
+
+        log('info', `Bulk operations complete: ${newRecords} new records, ${bulkResult.modifiedCount} updated`);
+      } catch (dbError) {
+        log('error', `Database write failed: ${dbError.message}`);
+        throw dbError; // Re-throw so it's properly handled
+      }
     }
-    
+
     // Get the updated count
     const afterCount = await getTodayAttendanceCount();
     const newTodayRecords = afterCount - beforeCount;
-    
+
     // Update sync stats
     syncStats.lastSync = new Date();
     syncStats.totalRecords += logs.length;
     syncStats.todayRecords = afterCount;
     syncStats.newRecords += newRecords;
     syncStats.successfulSyncs++;
-    
+
     // Update sync status
     syncStatus.success = true;
     syncStatus.message = `Sync completed successfully. Added ${syncStatus.recordsAdded} new records.`;
-    
+
     // Display summary of today's records
     if (newTodayRecords > 0) {
       log('info', `\n=============== ${newTodayRecords} NEW ATTENDANCE RECORDS TODAY ===============`);
@@ -744,13 +785,13 @@ async function syncAttendanceLogs() {
       log('info', `\n=============== No new attendance records today ===============`);
       log('info', `Total attendance for today: ${afterCount} records`);
     }
-    
+
     // Save sync status to database
     await new SyncStatus(syncStatus).save();
-    
+
     const syncDuration = Date.now() - syncStart;
     log('info', `Sync operation completed in ${syncDuration}ms`);
-    
+
     return {
       success: true,
       message: `Sync completed successfully in ${syncDuration}ms`,
@@ -761,22 +802,22 @@ async function syncAttendanceLogs() {
     };
   } catch (error) {
     log('error', `Sync error: ${error.message}`);
-    
+
     // Update sync status for error
     syncStatus.success = false;
     syncStatus.error = error.message;
     syncStatus.message = `Sync failed: ${error.message}`;
-    
+
     // Update sync stats
     syncStats.failedSyncs++;
-    
+
     // Save sync status to database
     try {
       await new SyncStatus(syncStatus).save();
     } catch (saveError) {
       log('error', `Failed to save sync status: ${saveError.message}`);
     }
-    
+
     return {
       success: false,
       message: `Sync failed: ${error.message}`,
@@ -790,22 +831,22 @@ function rotateLogs() {
   try {
     const logFiles = fs.readdirSync(CONFIG.logs.dir)
       .filter(file => file.startsWith('attendance-sync-') && file.endsWith('.log'));
-    
+
     // Sort files by date (oldest first)
     logFiles.sort();
-    
+
     // Calculate cutoff date
     const now = new Date();
     const cutoffDate = new Date(now.setDate(now.getDate() - CONFIG.logs.retention));
-    
+
     // Delete old log files
     let deletedCount = 0;
-    
+
     logFiles.forEach(file => {
       try {
         const fileDate = file.split('-')[2].split('.')[0]; // Extract date from filename
         const fileTimestamp = new Date(fileDate);
-        
+
         if (fileTimestamp < cutoffDate) {
           fs.unlinkSync(path.join(CONFIG.logs.dir, file));
           deletedCount++;
@@ -814,7 +855,7 @@ function rotateLogs() {
         log('error', `Failed to process log file ${file}: ${err.message}`);
       }
     });
-    
+
     if (deletedCount > 0) {
       log('info', `Log rotation: Deleted ${deletedCount} old log files`);
     }
@@ -829,11 +870,11 @@ function getSyncStats() {
   const hours = Math.floor(uptime / 3600);
   const minutes = Math.floor((uptime % 3600) / 60);
   const seconds = uptime % 60;
-  
+
   return {
     ...syncStats,
     uptime: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`,
-    successRate: syncStats.successfulSyncs + syncStats.failedSyncs > 0 
+    successRate: syncStats.successfulSyncs + syncStats.failedSyncs > 0
       ? ((syncStats.successfulSyncs / (syncStats.successfulSyncs + syncStats.failedSyncs)) * 100).toFixed(2) + '%'
       : 'N/A'
   };
@@ -844,14 +885,14 @@ async function startService() {
   log('info', '===== Starting ZKTeco Attendance Sync Service =====');
   log('info', `Device: ${CONFIG.device.ip}:${CONFIG.device.port}`);
   log('info', `Sync interval: ${CONFIG.sync.interval}ms`);
-  
+
   // Connect to database
   const dbConnected = await connectToDatabase();
   if (!dbConnected) {
     log('error', 'Failed to connect to database. Exiting.');
     process.exit(1);
   }
-  
+
   // Test connection to device
   const deviceConnected = await testConnection();
   if (!deviceConnected.success) {
@@ -860,7 +901,7 @@ async function startService() {
   } else {
     log('info', 'Successfully connected to device');
   }
-  
+
   // Get today's current attendance
   try {
     const todayCount = await getTodayAttendanceCount();
@@ -869,14 +910,14 @@ async function startService() {
   } catch (error) {
     log('error', `Failed to get today's attendance: ${error.message}`);
   }
-  
+
   // Run initial sync
   try {
     await syncAttendanceLogs();
   } catch (error) {
     log('error', `Initial sync failed: ${error.message}`);
   }
-  
+
   // Start sync interval
   syncIntervalId = setInterval(async () => {
     try {
@@ -885,15 +926,15 @@ async function startService() {
       log('error', `Scheduled sync error: ${error.message}`);
     }
   }, CONFIG.sync.interval);
-  
+
   // Schedule log rotation daily
   setInterval(rotateLogs, 24 * 60 * 60 * 1000);
-  
+
   // Also run log rotation now
   rotateLogs();
-  
+
   log('info', 'Service started successfully');
-  
+
   // Return API for management
   return {
     getStats: getSyncStats,
@@ -910,7 +951,7 @@ async function startService() {
       if (syncIntervalId) {
         clearInterval(syncIntervalId);
       }
-      
+
       syncIntervalId = setInterval(async () => {
         try {
           await syncAttendanceLogs();
@@ -918,7 +959,7 @@ async function startService() {
           log('error', `Scheduled sync error: ${error.message}`);
         }
       }, CONFIG.sync.interval);
-      
+
       log('info', 'Sync service restarted');
       return true;
     },
@@ -930,38 +971,38 @@ async function startService() {
 // Handle process termination
 process.on('SIGINT', async () => {
   log('info', 'Received SIGINT. Shutting down...');
-  
+
   if (syncIntervalId) {
     clearInterval(syncIntervalId);
     syncIntervalId = null;
   }
-  
+
   try {
     await mongoose.connection.close();
     log('info', 'Closed database connection');
   } catch (error) {
     log('error', `Error closing database connection: ${error.message}`);
   }
-  
+
   log('info', 'Service shutdown complete');
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
   log('info', 'Received SIGTERM. Shutting down...');
-  
+
   if (syncIntervalId) {
     clearInterval(syncIntervalId);
     syncIntervalId = null;
   }
-  
+
   try {
     await mongoose.connection.close();
     log('info', 'Closed database connection');
   } catch (error) {
     log('error', `Error closing database connection: ${error.message}`);
   }
-  
+
   log('info', 'Service shutdown complete');
   process.exit(0);
 });
@@ -994,3 +1035,4 @@ if (require.main === module) {
     syncAttendanceLogs
   };
 }
+// Run command  pm2 start attendance-sync-daemon.js --name attendance-sync

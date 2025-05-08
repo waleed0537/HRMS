@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { RefreshCw, AlertTriangle, Check, X, Upload, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { RefreshCw, AlertTriangle, Check, X, Calendar, ChevronLeft, ChevronRight, Database, Clock } from 'lucide-react';
 import API_BASE_URL from '../config/api.js';
 import '../assets/css/AttendanceManagement.css';
 
@@ -7,10 +7,10 @@ const AttendanceManagement = () => {
   const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [syncing, setSyncing] = useState(false);
-  const [syncStatus, setSyncStatus] = useState(null);
-  const [connectionStatus, setConnectionStatus] = useState(null);
-  const autoSyncIntervalRef = useRef(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [daemonStatus, setDaemonStatus] = useState(null);
+  const [statusMessage, setStatusMessage] = useState(null);
+  const refreshIntervalRef = useRef(null);
   const isMountedRef = useRef(true);
   
   // Date filter
@@ -18,85 +18,74 @@ const AttendanceManagement = () => {
   const [selectedDate, setSelectedDate] = useState(today);
   const formattedSelectedDate = selectedDate.toISOString().split('T')[0];
 
-  // Start auto-sync on component mount
+  // Start auto-refresh on component mount
   useEffect(() => {
     // Set ref to track if component is mounted
     isMountedRef.current = true;
     
-    // Initial data fetch and connection test
-    testDeviceConnection();
+    // Initial data fetch and daemon status check
+    checkDaemonStatus();
     fetchAttendanceData(formattedSelectedDate);
     
-    // FIXED: Changed from 5 seconds to 5 minutes
-    // Start auto-sync interval (every 5 minutes)
-    autoSyncIntervalRef.current = setInterval(() => {
+    // Start auto-refresh interval (every 30 seconds)
+    refreshIntervalRef.current = setInterval(() => {
       if (isMountedRef.current) {
-        console.log('Auto-sync triggered');
-        syncAttendanceData(true); // true = silent mode
+        console.log('Auto-refresh triggered');
+        fetchAttendanceData(formattedSelectedDate);
+        checkDaemonStatus();
       }
-    }, 300000); // Changed from 5000 (5 seconds) to 300000 (5 minutes)
+    }, 30000);
     
     // Cleanup on unmount
     return () => {
       isMountedRef.current = false;
-      if (autoSyncIntervalRef.current) {
-        clearInterval(autoSyncIntervalRef.current);
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
       }
     };
   }, []);
 
-  // Function to test device connection by trying to get data
-  const testDeviceConnection = async () => {
+  // Function to check the status of the attendance sync daemon
+  const checkDaemonStatus = async () => {
     try {
-      setConnectionStatus({ status: 'testing', message: 'Testing connection...' });
-      
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('No authentication token found');
       }
       
-      // Try to get actual data from the device to test connection
-      const response = await fetch(`${API_BASE_URL}/api/attendance/test-connection`, {
-        method: 'GET',
+      // Get the sync status from the server
+      const response = await fetch(`${API_BASE_URL}/api/attendance/sync-status`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         }
       });
       
       if (!response.ok) {
-        throw new Error(`Failed to test connection. Status: ${response.status}`);
+        throw new Error(`Failed to get daemon status. Status: ${response.status}`);
       }
       
-      const result = await response.json();
+      const statusData = await response.json();
       
-      // Only show success if we actually got user data from the device
-      if (result.success && result.userCount > 0) {
-        setConnectionStatus({ 
-          status: 'success', 
-          message: `Connected successfully! Retrieved ${result.userCount} users.`,
-          info: result.deviceInfo 
-        });
-      } else {
-        setConnectionStatus({ 
-          status: 'error', 
-          message: result.success ? 'Connected but no user data retrieved' : (result.message || 'Failed to connect to device')
-        });
-      }
+      setDaemonStatus({
+        lastSync: statusData.timestamp ? new Date(statusData.timestamp) : null,
+        success: statusData.success,
+        message: statusData.message,
+        count: statusData.count || 0,
+        config: statusData.config
+      });
+      
+      // Clear any previous status message
+      setTimeout(() => {
+        setStatusMessage(null);
+      }, 5000);
+      
     } catch (error) {
-      console.error('Error testing device connection:', error);
-      setConnectionStatus({ 
-        status: 'error', 
-        message: `Connection test failed: ${error.message}` 
+      console.error('Error getting daemon status:', error);
+      setStatusMessage({
+        type: 'error',
+        text: `Unable to get daemon status: ${error.message}`
       });
     }
-    
-    // Clear connection status after 3 seconds if successful
-    setTimeout(() => {
-      if (isMountedRef.current) {
-        setConnectionStatus(prev => prev?.status === 'success' ? null : prev);
-      }
-    }, 3000);
   };
 
   // Function to fetch attendance data for specific date
@@ -115,8 +104,7 @@ const AttendanceManagement = () => {
       // Get attendance data for the selected date
       const response = await fetch(`${API_BASE_URL}/api/attendance?date=${date}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -153,76 +141,40 @@ const AttendanceManagement = () => {
     fetchAttendanceData(formattedSelectedDate);
   }, [selectedDate]);
 
-  // Function to manually sync attendance data from ZKTeco device
-  const syncAttendanceData = async (silent = false) => {
-    if (syncing || !isMountedRef.current) return;
+  // Function to manually refresh data from database
+  const refreshData = async () => {
+    if (refreshing || !isMountedRef.current) return;
     
     try {
-      setSyncing(true);
-      if (!silent) {
-        setSyncStatus({ type: 'info', text: 'Syncing attendance data...' });
-      }
+      setRefreshing(true);
+      setStatusMessage({ type: 'info', text: 'Refreshing attendance data...' });
       
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
+      // Refresh attendance data for the currently selected date
+      await fetchAttendanceData(formattedSelectedDate);
+      await checkDaemonStatus();
       
-      const response = await fetch(`${API_BASE_URL}/api/attendance/sync`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      setStatusMessage({ 
+        type: 'success', 
+        text: 'Data refreshed successfully!' 
       });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to sync attendance data. Status: ${response.status}, Message: ${errorText}`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        if (!silent) {
-          setSyncStatus({ 
-            type: 'success', 
-            text: result.message || `Sync completed successfully. ${result.count} records processed.` 
-          });
-        }
-        
-        // Refresh attendance data for the currently selected date
-        await fetchAttendanceData(formattedSelectedDate);
-      } else {
-        if (!silent) {
-          setSyncStatus({ 
-            type: 'error', 
-            text: result.message || 'Sync failed. Please try again.' 
-          });
-        }
-      }
     } catch (error) {
-      console.error('Error syncing attendance data:', error);
-      if (!silent) {
-        setSyncStatus({ 
-          type: 'error', 
-          text: `Error: ${error.message}` 
-        });
-      }
+      console.error('Error refreshing data:', error);
+      setStatusMessage({ 
+        type: 'error', 
+        text: `Error: ${error.message}` 
+      });
     } finally {
       if (isMountedRef.current) {
-        setSyncing(false);
+        setRefreshing(false);
         
         // Clear success message after 3 seconds
-        if (!silent) {
-          setTimeout(() => {
-            if (isMountedRef.current) {
-              setSyncStatus(prevMessage => 
-                prevMessage && prevMessage.type === 'success' ? null : prevMessage
-              );
-            }
-          }, 3000);
-        }
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            setStatusMessage(prevMessage => 
+              prevMessage && prevMessage.type === 'success' ? null : prevMessage
+            );
+          }
+        }, 3000);
       }
     }
   };
@@ -238,6 +190,20 @@ const AttendanceManagement = () => {
     } catch {
       return 'Invalid Time';
     }
+  };
+
+  const formatLastSync = (date) => {
+    if (!date) return 'Unknown';
+    
+    const now = new Date();
+    const diffMs = now - date;
+    const diffSecs = Math.floor(diffMs / 1000);
+    
+    if (diffSecs < 60) return `${diffSecs} seconds ago`;
+    if (diffSecs < 3600) return `${Math.floor(diffSecs / 60)} minutes ago`;
+    if (diffSecs < 86400) return `${Math.floor(diffSecs / 3600)} hours ago`;
+    
+    return date.toLocaleString();
   };
 
   // Date navigation functions
@@ -285,46 +251,55 @@ const AttendanceManagement = () => {
           </div>
           <div className="attendance-header-actions">
             <button 
-              onClick={testDeviceConnection}
-              className="attendance-test-button"
-              disabled={syncing}
+              onClick={refreshData}
+              className={`attendance-refresh-button ${refreshing ? 'refreshing' : ''}`}
+              disabled={refreshing}
             >
-              Test Connection
-            </button>
-            <button 
-              onClick={() => syncAttendanceData(false)}
-              className={`attendance-sync-button ${syncing ? 'syncing' : ''}`}
-              disabled={syncing}
-            >
-              <RefreshCw className={`attendance-icon ${syncing ? 'spinning' : ''}`} />
-              {syncing ? 'Syncing...' : 'Sync Now'}
+              <RefreshCw className={`attendance-icon ${refreshing ? 'spinning' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh Data'}
             </button>
           </div>
         </div>
         
-        {/* Connection Status Message */}
-        {connectionStatus && (
-          <div className={`attendance-connection-message ${connectionStatus.status}`}>
-            {connectionStatus.message}
-            {connectionStatus.info && (
-              <span className="attendance-device-info">
-                Device: {connectionStatus.info.deviceName || 'ZKTeco Device'}
-              </span>
-            )}
+        {/* Daemon Status Information */}
+        {daemonStatus && (
+          <div className="attendance-daemon-status">
+            <div className="daemon-status-header">
+              <Database size={16} className="daemon-icon" />
+              <span>Attendance Sync Daemon Status</span>
+            </div>
+            <div className="daemon-status-details">
+              <div className="daemon-status-item">
+                <span className="daemon-status-label">Last Sync:</span>
+                <span className="daemon-status-value">
+                  {daemonStatus.lastSync ? formatLastSync(daemonStatus.lastSync) : 'Unknown'}
+                </span>
+              </div>
+              <div className="daemon-status-item">
+                <span className="daemon-status-label">Status:</span>
+                <span className={`daemon-status-value ${daemonStatus.success ? 'success' : 'error'}`}>
+                  {daemonStatus.success ? 'Active' : 'Error'}
+                </span>
+              </div>
+              <div className="daemon-status-item">
+                <span className="daemon-status-label">Records:</span>
+                <span className="daemon-status-value">{daemonStatus.count || 0}</span>
+              </div>
+            </div>
           </div>
         )}
         
-        {/* Sync Message */}
-        {syncStatus && (
-          <div className={`attendance-sync-message ${syncStatus.type}`}>
-            {syncStatus.text}
+        {/* Status Message */}
+        {statusMessage && (
+          <div className={`attendance-status-message ${statusMessage.type}`}>
+            {statusMessage.text}
           </div>
         )}
         
-        {/* Auto-sync status indicator */}
-        <div className="attendance-auto-sync-indicator">
-          <div className={`sync-pulse ${syncing ? 'active' : ''}`}></div>
-          <span>Auto-sync: Active (every 5 minutes)</span>
+        {/* Auto-refresh indicator */}
+        <div className="attendance-auto-refresh-indicator">
+          <div className={`refresh-pulse ${refreshing ? 'active' : ''}`}></div>
+          <span>Auto-refresh: Active (every 30 seconds)</span>
         </div>
         
         {/* Date navigation */}
@@ -381,10 +356,9 @@ const AttendanceManagement = () => {
             ) : attendanceData.length === 0 ? (
               <div className="attendance-no-records">
                 <p>No attendance records found for {formatDateForDisplay(selectedDate)}.</p>
-                {selectedDate.toDateString() === today.toDateString() && (
-                  <div className="attendance-sync-indicator">
-                    <RefreshCw className="spinning" size={24} />
-                    <p>Sync in progress...</p>
+                {selectedDate.toDateString() === today.toDateString() && daemonStatus?.lastSync && (
+                  <div className="attendance-daemon-info">
+                    <p>Last sync by daemon: {formatLastSync(daemonStatus.lastSync)}</p>
                   </div>
                 )}
               </div>
@@ -399,24 +373,21 @@ const AttendanceManagement = () => {
                       <th>User ID</th>
                       <th>Name</th>
                       <th>Present</th>
-                      <th>Company</th>
+                      <th>Department</th>
                       <th>Time</th>
                     </tr>
                   </thead>
                   <tbody>
-                  {attendanceData.map((record, index) => (
+                    {attendanceData.map((record, index) => (
                       <tr key={record._id || index}>
-                        <td>
-                          {/* Force deviceUserId to be displayed as a number */}
-                          {record.deviceUserId !== undefined ? record.deviceUserId : (record.employeeNumber || 'N/A')}
-                        </td>
+                        <td>{record.deviceUserId || record.employeeNumber || 'N/A'}</td>
                         <td>{record.employeeName || 'Unknown'}</td>
                         <td>
                           <span className="attendance-present-badge">
                             <Check size={16} className="attendance-present-icon" />
                           </span>
                         </td>
-                        <td>Company</td>
+                        <td>{record.department || 'General'}</td>
                         <td>{formatDateTime(record.date || record.timeIn)}</td>
                       </tr>
                     ))}

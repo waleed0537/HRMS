@@ -8,19 +8,20 @@ import {
   Bell, CheckCircle, XCircle, Download, Users, Calendar, 
   TrendingUp, CreditCard, DollarSign, Activity, Briefcase,
   ChevronRight, AlertTriangle, FilePlus, Eye, Clock, Archive,
-  Award, Code, MessageCircle, Layers, GitPullRequest, Building
+  Award, Code, MessageCircle, Layers, GitPullRequest, Building,
+  BarChart2, TrendingDown, ArrowRight, ShoppingBag, Target
 } from 'lucide-react';
 import AnnouncementModal from './AnnouncementModal.jsx';
 import AnnouncementsList from './AnnouncementsList.jsx';
 import API_BASE_URL from '../config/api.js';
 import '../assets/css/HrDashboard.css';
+import EnhancedLeaderboardModal from './EnhancedLeaderboardModal.jsx';
+
 // Enhanced color palette
 const COLORS = [
   '#6dbfb8', '#be95be', '#71a3c1', '#75ba75', '#b3be62', 
   '#fec76f', '#f5945c', '#f15bb5', '#00b4d8', '#0077b6'
 ]; 
-
-
 
 // Avatar backgrounds for activities
 const AVATAR_COLORS = [
@@ -34,8 +35,45 @@ const AVATAR_COLORS = [
   'linear-gradient(to top, #c471f5 0%, #fa71cd 100%)'
 ];
 
+// Mock branch revenue data
+const BRANCH_REVENUE_BY_TEAM = [
+  { month: 'Jan', 'Sales': 25000, 'Support': 18000, 'Marketing': 15000, 'Operations': 12000, total: 70000 },
+  { month: 'Feb', 'Sales': 22000, 'Support': 15000, 'Marketing': 12000, 'Operations': 11000, total: 60000 },
+  { month: 'Mar', 'Sales': 28000, 'Support': 20000, 'Marketing': 16000, 'Operations': 14000, total: 78000 },
+  { month: 'Apr', 'Sales': 26000, 'Support': 19000, 'Marketing': 14000, 'Operations': 13000, total: 72000 },
+  { month: 'May', 'Sales': 30000, 'Support': 22000, 'Marketing': 17000, 'Operations': 15000, total: 84000 },
+  { month: 'Jun', 'Sales': 35000, 'Support': 25000, 'Marketing': 20000, 'Operations': 18000, total: 98000 },
+  { month: 'Jul', 'Sales': 32000, 'Support': 23000, 'Marketing': 18000, 'Operations': 16000, total: 89000 },
+  { month: 'Aug', 'Sales': 28000, 'Support': 20000, 'Marketing': 16000, 'Operations': 14000, total: 78000 },
+  { month: 'Sep', 'Sales': 24000, 'Support': 17000, 'Marketing': 14000, 'Operations': 12000, total: 67000 },
+  { month: 'Oct', 'Sales': 27000, 'Support': 19000, 'Marketing': 15000, 'Operations': 13000, total: 74000 },
+  { month: 'Nov', 'Sales': 30000, 'Support': 22000, 'Marketing': 17000, 'Operations': 15000, total: 84000 },
+  { month: 'Dec', 'Sales': 38000, 'Support': 28000, 'Marketing': 22000, 'Operations': 20000, total: 108000 }
+];
+
+// Project Status Data for branch
+const BRANCH_PROJECT_STATUS = {
+  totalProjects: 16,
+  ongoing: 11,
+  completed: 5,
+  totalRevenue: 450000,
+  monthlyRevenue: 48000,
+  weeklyRevenue: 12000
+};
+
+// Top Performers for branch
+const BRANCH_TOP_PERFORMERS = [
+  { name: 'Sara Ahmed', username: '@Ahmed', performance: 92, department: 'Sales', avatar: 'SA' },
+  { name: 'Ali Hassan', username: '@Hassan', performance: 87, department: 'Support', avatar: 'AH' },
+  { name: 'Fatima Khan', username: '@Khan', performance: 84, department: 'Marketing', avatar: 'FK' },
+  { name: 'Omar Malik', username: '@Malik', performance: 79, department: 'Operations', avatar: 'OM' },
+  { name: 'Zainab Ali', username: '@Ali', performance: 76, department: 'Sales', avatar: 'ZA' },
+  { name: 'Tariq Shah', username: '@Shah', performance: 75, department: 'Support', avatar: 'TS' }
+];
+
 const HrDashboard = () => {
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
+  const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [notificationType, setNotificationType] = useState('');
   const [leaveStats, setLeaveStats] = useState([]);
@@ -53,11 +91,13 @@ const HrDashboard = () => {
   const [timeRange, setTimeRange] = useState('month');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [salesViewMode, setSalesViewMode] = useState('monthly');
+  const [performerTimeRange, setPerformerTimeRange] = useState('month');
   const [summaryCards, setSummaryCards] = useState([
     { title: 'Branch Employees', value: 0, change: 0, icon: Users, color: '#4361ee' },
     { title: 'Pending Leaves', value: 0, change: 0, icon: Calendar, color: '#7209b7' },
-    { title: 'Applicants', value: 0, change: 0, icon: Archive, color: '#f72585' },
-    { title: 'Attendance Rate', value: 0, change: 0, icon: Clock, color: '#4cc9f0' }
+    { title: 'Branch Revenue', value: 0, change: 0, icon: DollarSign, color: '#f72585' },
+    { title: 'Attendance Rate', value: 0, isPercentage: true, change: 0, icon: Clock, color: '#4cc9f0' }
   ]);
 
   useEffect(() => {
@@ -84,6 +124,9 @@ const HrDashboard = () => {
 
   const fetchUserBranch = async () => {
     try {
+      setIsLoading(true);
+      setError(null);
+
       const token = localStorage.getItem('token');
       // First get the user profile to determine their branch
       const profileResponse = await fetch(`${API_BASE_URL}/api/profile`, {
@@ -343,6 +386,32 @@ const HrDashboard = () => {
       activities.push(...applicantActivities);
     }
     
+    // Add some sales/performance related activities
+    const salesActivities = [
+      {
+        id: 'sale-1',
+        type: 'sale',
+        title: 'Sales Target Achieved',
+        description: `${userBranch} Sales team exceeded their monthly target by 8%`,
+        timestamp: new Date(Date.now() - 2400000).toISOString(),
+        status: 'success',
+        avatar: 'ST',
+        avatarColor: AVATAR_COLORS[2],
+        icon: Target
+      },
+      {
+        id: 'sale-2',
+        type: 'sale',
+        title: 'Major Deal Closed',
+        description: 'Sara Ahmed closed a deal worth $25,000',
+        timestamp: new Date(Date.now() - 5400000).toISOString(),
+        status: 'success',
+        avatar: 'SA',
+        avatarColor: AVATAR_COLORS[0],
+        icon: ShoppingBag
+      }
+    ];
+    
     // Add some extra HR-related activities
     const mockActivities = [
       {
@@ -369,8 +438,8 @@ const HrDashboard = () => {
       }
     ];
     
-    // Combine real and mock activities
-    const allActivities = [...activities, ...mockActivities];
+    // Combine all activities
+    const allActivities = [...activities, ...salesActivities, ...mockActivities];
 
     // Sort by timestamp (newest first)
     allActivities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -379,7 +448,7 @@ const HrDashboard = () => {
   };
 
   const generateKpiData = () => {
-    // Generate HR-specific KPI data
+    // Generate HR-specific KPI data for the branch
     const data = [
       { name: 'Recruitment', value: 75 },
       { name: 'Onboarding', value: 85 },
@@ -394,11 +463,12 @@ const HrDashboard = () => {
     const pendingLeaves = leaves.filter(leave => leave.status === 'pending').length;
     const applicantCount = applicants ? applicants.length : Math.floor(Math.random() * 10) + 2; // Mock if no real data
     const attendanceRate = 95; // Mock attendance rate (percentage)
+    const branchRevenue = BRANCH_PROJECT_STATUS.monthlyRevenue; // Use mock data for revenue
 
     setSummaryCards([
       { title: 'Branch Employees', value: employees.length, change: 2.5, icon: Users, color: '#4361ee' },
       { title: 'Pending Leaves', value: pendingLeaves, change: -1.2, icon: Calendar, color: '#7209b7' },
-      { title: 'Applicants', value: applicantCount, change: 4.7, icon: Archive, color: '#f72585' },
+      { title: 'Branch Revenue', value: branchRevenue, isCurrency: true, change: 4.7, icon: DollarSign, color: '#f72585' },
       { title: 'Attendance Rate', value: attendanceRate, isPercentage: true, change: 0.8, icon: Clock, color: '#4cc9f0' }
     ]);
   };
@@ -422,7 +492,12 @@ const HrDashboard = () => {
       '\nLeave Statistics:',
       ...leaveStats.map(stat =>
         `${stat.month}: ${stat.total} leave requests (${stat.approved} approved, ${stat.pending} pending, ${stat.rejected} rejected)`
-      )
+      ),
+      '\nBranch Revenue Statistics:',
+      `Monthly Revenue: $${BRANCH_PROJECT_STATUS.monthlyRevenue.toLocaleString()}`,
+      `Total Projects: ${BRANCH_PROJECT_STATUS.totalProjects}`,
+      `Ongoing Projects: ${BRANCH_PROJECT_STATUS.ongoing}`,
+      `Completed Projects: ${BRANCH_PROJECT_STATUS.completed}`
     ].join('\n');
 
     const blob = new Blob([reportContent], { type: 'text/plain' });
@@ -505,6 +580,54 @@ const HrDashboard = () => {
     return new Date(timestamp).toLocaleDateString();
   };
 
+  // Custom tooltip for charts
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="custom-tooltip">
+          <p className="tooltip-label">{`${label}`}</p>
+          {payload.map((entry, index) => (
+            <p key={`item-${index}`} className="tooltip-item" style={{ color: entry.color }}>
+              <span className="tooltip-key">{entry.name}: </span>
+              <span className="tooltip-value">
+                {entry.name.toLowerCase().includes('sales') || 
+                 entry.name === 'Support' || 
+                 entry.name === 'Marketing' || 
+                 entry.name === 'Operations' ?
+                  `$${entry.value.toLocaleString()}` :
+                  entry.unit === '%' ?
+                    `${entry.value}%` :
+                    entry.value.toLocaleString()}
+              </span>
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading your dashboard...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard-container">
+        <div className="error-message">
+          <AlertTriangle size={24} />
+          <p>{error}</p>
+          <button onClick={fetchDashboardData} className="retry-button">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="zoom-container">
     <div className="hr-dashboard">
@@ -522,9 +645,6 @@ const HrDashboard = () => {
       <div className="hr-dashboard-header">
         <div className="header-content">
           <h1>HR Dashboard - {userBranch} Branch</h1>
-          <div className="time-filters">
-         
-          </div>
         </div>
         <div className="hr-dashboard-actions">
           <button 
@@ -554,7 +674,7 @@ const HrDashboard = () => {
               <h3>{card.title}</h3>
               <div className="card-value">{formatValue(card.value, card.isCurrency, card.isPercentage)}</div>
               <div className={`card-change ${card.change >= 0 ? 'positive' : 'negative'}`}>
-                {card.change >= 0 ? <TrendingUp size={16} /> : <TrendingUp size={16} className="down" />}
+                {card.change >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} className="down" />}
                 {Math.abs(card.change)}% from last {timeRange}
               </div>
             </div>
@@ -899,10 +1019,211 @@ const HrDashboard = () => {
         </div>
       </div>
 
+      {/* Revenue and Projects Row */}
+      <div className="revenue-projects-row">
+        {/* Team Revenue Chart */}
+        <div className="chart-card revenue-chart">
+          <div className="admin-card-header">
+            <h2>Revenue Performance by Department</h2>
+            <div className="chart-controls">
+              <div className="view-selector">
+                <button
+                  className={`view-btn ${salesViewMode === 'monthly' ? 'active' : ''}`}
+                  onClick={() => setSalesViewMode('monthly')}
+                >
+                  <Calendar size={14} />
+                  <span>Monthly</span>
+                </button>
+                <button
+                  className={`view-btn ${salesViewMode === 'quarterly' ? 'active' : ''}`}
+                  onClick={() => setSalesViewMode('quarterly')}
+                >
+                  <BarChart2 size={14} />
+                  <span>Quarterly</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="card-body">
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart
+                data={BRANCH_REVENUE_BY_TEAM}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => `$${value / 1000}k`}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Bar dataKey="Sales" stackId="a" fill="#be95be" />
+                <Bar dataKey="Support" stackId="a" fill="#71a3c1" />
+                <Bar dataKey="Marketing" stackId="a" fill="#75ba75" />
+                <Bar dataKey="Operations" stackId="a" fill="#b3be62" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="card-footer">
+            <div className="trend-summary">
+              <span className="highlight-text">+12.7%</span> revenue growth compared to last year
+            </div>
+            <div className="chart-action-buttons">
+              <button className="chart-action-btn">
+                <ArrowRight size={14} />
+                <span>Full Report</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Project Stats Container */}
+        <div className="project-stats-container">
+          {/* Projects Card */}
+          <div className="chart-card project-card">
+            <div className="admin-card-header">
+              <h2>Branch Projects Overview</h2>
+            </div>
+            <div className="card-body">
+              <div className="project-metrics">
+                <div className="metric-item">
+                  <div className="metric-icon">
+                    <Briefcase size={18} />
+                  </div>
+                  <div className="metric-details">
+                    <div className="metric-value">{BRANCH_PROJECT_STATUS.totalProjects}</div>
+                    <div className="metric-label">Total Projects</div>
+                  </div>
+                </div>
+                <div className="metric-item">
+                  <div className="metric-icon active-icon">
+                    <Activity size={18} />
+                  </div>
+                  <div className="metric-details">
+                    <div className="metric-value">{BRANCH_PROJECT_STATUS.ongoing}</div>
+                    <div className="metric-label">Ongoing</div>
+                  </div>
+                </div>
+                <div className="metric-item">
+                  <div className="metric-icon completed-icon">
+                    <CheckCircle size={18} />
+                  </div>
+                  <div className="metric-details">
+                    <div className="metric-value">{BRANCH_PROJECT_STATUS.completed}</div>
+                    <div className="metric-label">Completed</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Revenue Card */}
+          <div className="chart-card revenue-card">
+            <div className="admin-card-header">
+              <h2>Branch Revenue</h2>
+            </div>
+            <div className="card-body">
+              <div className="revenue-metrics">
+                <div className="revenue-metric">
+                  <div className="revenue-value">{formatValue(BRANCH_PROJECT_STATUS.totalRevenue, true)}</div>
+                  <div className="revenue-label">Total Revenue</div>
+                  <div className="revenue-period">Year to Date</div>
+                </div>
+                <div className="revenue-metric">
+                  <div className="revenue-value">{formatValue(BRANCH_PROJECT_STATUS.monthlyRevenue, true)}</div>
+                  <div className="revenue-label">Monthly Revenue</div>
+                  <div className="revenue-trend positive">
+                    <TrendingUp size={14} />
+                    <span>+4.2%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Performers Section */}
+      <div className="top-performers-section">
+        <div className="top-performers-header">
+          <h2>Top Branch Performers</h2>
+          <div className="performer-filters">
+            <div className="time-filter">
+              <button 
+                className={`time-filter-btn ${performerTimeRange === 'month' ? 'active' : ''}`}
+                onClick={() => setPerformerTimeRange('month')}
+              >
+                Month
+              </button>
+              <button 
+                className={`time-filter-btn ${performerTimeRange === 'quarter' ? 'active' : ''}`}
+                onClick={() => setPerformerTimeRange('quarter')}
+              >
+                Quarter
+              </button>
+              <button 
+                className={`time-filter-btn ${performerTimeRange === 'year' ? 'active' : ''}`}
+                onClick={() => setPerformerTimeRange('year')}
+              >
+                Year
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="performer-cards">
+          {BRANCH_TOP_PERFORMERS.map((performer, index) => (
+            <div className="performer-card" key={index}>
+              <div className="performer-avatar" style={{ backgroundColor: COLORS[index % COLORS.length] }}>
+                {performer.avatar}
+              </div>
+              <div className="performer-info">
+                <div className="performer-name">{performer.name}</div>
+                <div className="performer-username">{performer.username}</div>
+                <div className="performer-branch">{performer.department}</div>
+                <div className="performer-progress-container">
+                  <div className="performer-progress-bar">
+                    <div 
+                      className="performer-progress-fill" 
+                      style={{ 
+                        width: `${performer.performance}%`,
+                        backgroundColor: COLORS[index % COLORS.length]
+                      }}
+                    ></div>
+                  </div>
+                  <div className="performer-progress-value">{performer.performance}%</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Add the View Details button */}
+        <div className="view-details-container">
+          <button 
+            className="view-details-button"
+            onClick={() => setIsLeaderboardModalOpen(true)}
+          >
+            View Branch Leaderboard
+          </button>
+        </div>
+      </div>
+
       <AnnouncementModal
         isOpen={isAnnouncementModalOpen}
         onClose={() => setIsAnnouncementModalOpen(false)}
         onSubmit={handleCreateAnnouncement}
+      />
+
+      <EnhancedLeaderboardModal 
+        isOpen={isLeaderboardModalOpen} 
+        onClose={() => setIsLeaderboardModalOpen(false)} 
       />
     </div>
     </div>

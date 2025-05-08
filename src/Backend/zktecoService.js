@@ -10,7 +10,7 @@ const os = require('os');
 const CONFIG = {
   ip: process.env.ZKTECO_IP || '192.168.100.35',
   port: parseInt(process.env.ZKTECO_PORT || '4370'),
-  timeout: parseInt(process.env.ZKTECO_TIMEOUT || '5000'), // Reduced timeout for faster sync
+  timeout: parseInt(process.env.ZKTECO_TIMEOUT || '2000'), // Reduced timeout for faster sync
   retry: parseInt(process.env.ZKTECO_RETRY || '2'),
   syncInterval: process.env.ZKTECO_SYNC_INTERVAL || '*/5 * * * * *', // Every 5 seconds
   attendanceParser: process.env.ZKTECO_PARSER || 'v6.60',
@@ -328,35 +328,51 @@ const syncAttendanceLogs = async (options = {}) => {
     const bulkOps = [];
     
     // 4) Process attendance records with user names (like Python script)
-    for (const log of logs) {
-      try {
-        // Format the data
-        const recordDate = new Date(log.timestamp);
-        
-        // Skip invalid dates
-        if (isNaN(recordDate.getTime())) {
-          console.warn(`Skipping record with invalid date: ${log.timestamp}`);
-          errors++;
-          continue;
-        }
-        
-        // Get user ID and name exactly like Python script
-        const uid = log.uid || log.id; // Ensure we get the correct user ID field
-        const name = nameMap[uid] || 'Unknown';
-        
-        console.log(`Processing record: ${uid}\t${name}\t${recordDate}`);
-        
-        // Generate a record
-        const record = {
-          employeeName: name,
-          employeeNumber: uid.toString(), // Store as string for compatibility
-          deviceUserId: uid, // Important: store the actual device ID
-          department: log.department || 'General', // Default department
-          date: recordDate,
-          timeIn: recordDate,
-          location: options.ip || CONFIG.ip,
-          verifyMethod: log.type?.toString() || '0'
-        };
+  
+      for (const log of logs) {
+        try {
+          // Format the data
+          const recordDate = new Date(log.timestamp);
+          
+          // Skip invalid dates
+          if (isNaN(recordDate.getTime())) {
+            console.warn(`Skipping record with invalid date: ${log.timestamp}`);
+            errors++;
+            continue;
+          }
+          
+          // FIXED: Get user ID and name with better validation
+          // Ensure we're using the correct device user ID field consistently
+          const uid = log.uid || log.id; // Get the raw device user ID
+          
+          // Convert uid to string for consistent comparison
+          const uidStr = uid.toString();
+          
+          // Add extra debug logging to track the mapping issue
+          console.log(`Device reported ID: ${uidStr}`);
+          console.log(`Name from map: ${nameMap[uidStr] || 'Not in mapping'}`);
+          
+          // Use the name from the map, but with stricter validation
+          let name = 'Unknown';
+          
+          // Only use the mapped name if it exists and isn't empty
+          if (nameMap[uidStr] && nameMap[uidStr].trim()) {
+            name = nameMap[uidStr];
+          }
+          
+          console.log(`Processing record: ${uid}\t${name}\t${recordDate}`);
+          
+          // Generate a record
+          const record = {
+            employeeName: 'Unknown',
+            employeeNumber: uidStr, // Store as string for consistency
+            deviceUserId: uid, // Important: store the actual device ID
+            department: log.department || 'General', // Default department
+            date: recordDate,
+            timeIn: recordDate,
+            location: options.ip || CONFIG.ip,
+            verifyMethod: log.type?.toString() || '0'
+          };
         
         // Check if record exists (without database query for speed)
         const dateStart = new Date(recordDate);

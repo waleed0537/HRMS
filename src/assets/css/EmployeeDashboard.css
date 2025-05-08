@@ -1,26 +1,31 @@
-/* EmployeeDashboard.css */
-.dashboard-container {
-  padding: 22px;
-  margin: 35px 0 0 16rem;
-  background-color: #f5f5f5;
-  min-height: calc(100vh - 64px);
+/* Enhanced Employee Dashboard Styles */
+
+/* Base Dashboard Layout */
+.emp-dashboard {
+  max-width: 100%;
+  margin: 64px 0 0 16rem; /* Added proper margins: 64px top for header, 16rem left for sidebar */
+  padding: 24px;
+  background-color: #f8fafc;
+  color: #1e293b;
+  font-family: 'Inter', sans-serif;
+  min-height: calc(100vh - 64px); /* Ensure it takes full height minus header */
 }
 
-.dashboard-header {
+.emp-dashboard__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
 }
 
-.dashboard-header h1 {
-  font-size: 28px;
-  font-weight: 400;
+.emp-dashboard__header h1 {
+  font-size: 24px;
+  font-weight: 600;
   color: #1e293b;
   margin: 0;
 }
 
-.dashboard-date {
+.emp-dashboard__date {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -28,467 +33,890 @@
   font-size: 14px;
 }
 
-.employee-dashboard-grid {
+/* Modern Grid Layout */
+.emp-dashboard__grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 24px;
 }
 
-/* Card Styles */
-.profile-card,
-.leave-quotas-card,
-.attendance-card,
-.activities-card,
-.holidays-card,
-.team-card,
-.announcements-card,
-.leave-card {
+/* First row - Profile, Weekly Quotas and Attendance (as requested) */
+.emp-dashboard__profile-card {
+  grid-column: span 4; /* 33% of the row */
   background: white;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 20px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  height: 100%;
+  border: 1px solid #e2e8f0;
+}
+
+.emp-dashboard__quotas-card {
+  grid-column: span 4; /* 33% of the row */
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  height: 100%;
+  border: 1px solid #e2e8f0;
+}
+
+.emp-dashboard__attendance-card {
+  grid-column: span 4; /* 33% of the row */
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  height: 100%;
+  border: 1px solid #e2e8f0;
+}
+
+/* Second row - Performance Gauge (70%) and Top Performers (30%) */
+.emp-dashboard__performance-gauge-container {
+  grid-column: span 8; /* 70% of the row */
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
   transition: all 0.2s ease;
   border: 1px solid #e2e8f0;
-  display: flex;
-  flex-direction: column;
 }
 
-.profile-card:hover,
-.leave-quotas-card:hover,
-.attendance-card:hover,
-.activities-card:hover,
-.holidays-card:hover,
-.team-card:hover,
-.announcements-card:hover,
-.leave-card:hover {
+.emp-dashboard__top-performers-card {
+  grid-column: span 4; /* 30% of the row */
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  border: 1px solid #e2e8f0;
+}
+
+/* Remaining rows - Two cards side by side */
+.emp-dashboard__goals-card,
+.emp-dashboard__milestones-card,
+.emp-dashboard__activities-card,
+.emp-dashboard__announcements-card {
+  grid-column: span 6; /* 50% of the row */
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  border: 1px solid #e2e8f0;
+}
+
+/* Hover effects for cards */
+.emp-dashboard__profile-card:hover,
+.emp-dashboard__quotas-card:hover,
+.emp-dashboard__attendance-card:hover,
+.emp-dashboard__performance-gauge-container:hover,
+.emp-dashboard__top-performers-card:hover,
+.emp-dashboard__goals-card:hover,
+.emp-dashboard__milestones-card:hover,
+.emp-dashboard__activities-card:hover,
+.emp-dashboard__announcements-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
 }
 
-/* Card Placement */
-.profile-card {
-  grid-column: span 4;
-}
-
-.leave-quotas-card {
-  grid-column: span 4;
-}
-
-.attendance-card {
-  grid-column: span 4;
-}
-
-.activities-card {
-  grid-column: span 6;
-}
-
-.holidays-card {
-  grid-column: span 3;
-}
-
-.team-card {
-  grid-column: span 3;
-}
-
-.announcements-card {
-  grid-column: span 6;
-}
-
-.leave-card {
-  grid-column: span 6;
-}
-
-/* Card Headers */
-.card-header {
+/* Card Header */
+.emp-dashboard__card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  background-color: #f8fafc;
 }
 
-.card-header h3 {
-  font-size: 18px;
+.emp-dashboard__card-header h3 {
+  font-size: 16px;
   font-weight: 600;
-  color: #1e293b;
+  color: #0f172a;
   margin: 0;
 }
 
-.card-header span {
-  font-size: 14px;
+.emp-dashboard__card-header span {
+  font-size: 12px;
   color: #64748b;
 }
 
-/* Profile Card */
-.profile-header {
+/* Card Footer */
+.emp-dashboard__card-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #f1f5f9;
+  background-color: #f8fafc;
+  display: flex;
+  justify-content: center;
+}
+
+/* Profile Card Components */
+.emp-dashboard__profile-header {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 20px;
+  padding: 16px;
 }
 
-.profile-avatar {
+.emp-dashboard__profile-avatar {
   width: 64px;
   height: 64px;
-  background-color: #474787;
-  color: white;
+  background: linear-gradient(120deg, #56e78b 0%, #1a8bc4 100%);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  color: white;
   font-size: 24px;
   font-weight: 600;
 }
 
-.profile-info h3 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 320;
-  color: #1e293b;
-}
-
-.profile-info p {
-  margin: 4px 0 0;
-  color: #64748b;
-  font-size: 14px;
-}
-
-.profile-details {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.profile-detail-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #475569;
-  font-size: 14px;
-}
-
-.profile-detail-item svg {
-  color: #64748b;
-}
-
-.profile-footer {
-  margin-top: auto;
-  padding-top: 16px;
-  border-top: 1px solid #e2e8f0;
-}
-
-.view-profile-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 0;
-  background-color: #f8fafc;
-  color: black;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 300;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.view-all-btn:hover {
-  background-color: #f1f5f9;
-}
-
-/* Holidays Card */
-.holidays-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  overflow-y: auto;
-  max-height: 250px;
-}
-
-.holiday-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 10px;
-  border-radius: 8px;
-  background-color: #f8fafc;
-  transition: background-color 0.2s;
-}
-
-.holiday-item:hover {
-  background-color: #f1f5f9;
-}
-
-.holiday-date {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-width: 50px;
-  padding: 8px;
-  background-color: #6dbfb8;
-  color: white;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.holiday-date .day {
+.emp-dashboard__profile-info h3 {
+  margin: 0 0 4px 0;
   font-size: 18px;
   font-weight: 600;
-  line-height: 1;
-}
-
-.holiday-date .month {
-  font-size: 12px;
-  text-transform: uppercase;
-}
-
-.holiday-details {
-  flex: 1;
-}
-
-.holiday-details h4 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
   color: #1e293b;
 }
 
-.holiday-day {
-  font-size: 12px;
+.emp-dashboard__profile-info p {
+  margin: 0;
+  font-size: 14px;
   color: #64748b;
 }
 
-/* Team Card */
-.team-list {
+.emp-dashboard__profile-details {
+  padding: 0 16px 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  overflow-y: auto;
-  max-height: 250px;
+  gap: 12px;
 }
 
-.team-member {
+.emp-dashboard__profile-detail-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px;
-  border-radius: 8px;
-  background-color: #f8fafc;
-  transition: background-color 0.2s;
-}
-
-.team-member:hover {
-  background-color: #f1f5f9;
-}
-
-.member-avatar {
-  width: 40px;
-  height: 40px;
-  background-color:#fec76f;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.member-info {
-  flex: 1;
-}
-
-.member-info h4 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.member-info p {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: #64748b;
-}
-
-/* Announcements Card */
-.branch-tag {
-  padding: 4px 8px;
-  background-color: #f1f5f9;
-  color: #1e293b;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.announcements-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  overflow-y: auto;
-  max-height: 275px;
-}
-
-.announcement-item {
-  padding: 16px;
-  border-radius: 8px;
-  background-color: #f8fafc;
-  transition: all 0.2s;
-}
-
-.announcement-item:hover {
-  background-color: #f1f5f9;
-}
-
-.announcement-priority {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #64748b;
-  margin-bottom: 8px;
-}
-
-.announcement-item h4 {
-  margin: 0 0 8px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.announcement-item p {
-  margin: 0 0 16px;
-  font-size: 14px;
   color: #475569;
-  line-height: 1.5;
+  font-size: 14px;
 }
 
-.announcement-footer {
-  font-size: 12px;
-  color: #94a3b8;
-  border-top: 1px solid #e2e8f0;
-  padding-top: 8px;
-}
-
-.empty-announcements {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px;
-  color: #94a3b8;
-  text-align: center;
-}
-
-.empty-announcements svg {
-  margin-bottom: 16px;
-  color: #cbd5e1;
-}
-
-/* Leave Card */
-.new-leave-btn {
+.emp-dashboard__view-profile-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  background-color: #75ba75;
-  color: white;
+  gap: 6px;
+  padding: 8px 16px;
+  background-color: #f1f5f9;
   border: none;
   border-radius: 6px;
-  font-size: 13px;
+  color: #0f172a;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.new-leave-btn:hover {
-  background-color: #373769;
+.emp-dashboard__view-profile-btn:hover {
+  background-color: #e2e8f0;
 }
 
-.leave-list {
+/* Weekly Quotas Card Components */
+.emp-dashboard__quotas-chart {
+  padding: 8px 16px;
+}
+
+.emp-dashboard__quotas-summary {
+  padding: 8px 16px 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  overflow-y: auto;
-  max-height: 275px;
 }
 
-.leave-item {
+.emp-dashboard__quota-item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 12px;
-  border-radius: 8px;
-  background-color: #f8fafc;
-  transition: background-color 0.2s;
+  gap: 12px;
 }
 
-.leave-item:hover {
-  background-color: #f1f5f9;
-}
-
-.leave-type {
-  min-width: 80px;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 500;
-  padding: 4px 8px;
-  background-color: #e2e8f0;
+.emp-dashboard__quota-label {
+  width: 80px;
+  font-size: 14px;
   color: #475569;
-  border-radius: 4px;
 }
 
-.leave-details {
+.emp-dashboard__quota-progress {
   flex: 1;
 }
 
-.leave-dates {
-  font-size: 13px;
-  font-weight: 500;
-  color: #1e293b;
-  margin-bottom: 4px;
+.emp-dashboard__quota-bar {
+  height: 8px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
-.leave-reason {
+.emp-dashboard__quota-fill {
+  height: 100%;
+  background-color: #be95be ;
+  border-radius: 4px;
+}
+
+.emp-dashboard__quota-value {
+  width: 60px;
+  text-align: right;
+  font-size: 14px;
+}
+
+.emp-dashboard__completed {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.emp-dashboard__total {
+  color: #64748b;
+}
+
+/* Attendance Card Components */
+.emp-dashboard__attendance-chart {
+  padding: 8px 16px;
+}
+
+.emp-dashboard__attendance-summary {
+  padding: 8px 16px 16px;
+  display: flex;
+  justify-content: space-around;
+}
+
+.emp-dashboard__summary-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background-color: #f1f5f9;
+  border-radius: 8px;
+}
+
+.emp-dashboard__summary-icon {
+  color: #3b82f6;
+}
+
+.emp-dashboard__summary-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.emp-dashboard__summary-label {
   font-size: 12px;
   color: #64748b;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 250px;
 }
 
-.leave-status {
-  min-width: 80px;
-  padding: 4px 8px;
-  text-align: center;
-  border-radius: 4px;
+.emp-dashboard__summary-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Modern Gauge Component - Based on the image you attached */
+.emp-dashboard__gauge-wrapper {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  align-items: center;
+  gap: 24px;
+}
+
+.emp-dashboard__modern-gauge {
+  width: 300px;
+  height: 200px;
+  position: relative;
+  margin: 0 auto;
+}
+
+.emp-dashboard__gauge-bg {
+  width: 300px;
+  height: 150px;
+  background-color: #f8fafc;
+  border-radius: 150px 150px 0 0;
+  position: absolute;
+  top: 0;
+  overflow: hidden;
+}
+
+.emp-dashboard__gauge-scale {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.emp-dashboard__gauge-tick {
+  position: absolute;
+  color: #94a3b8;
   font-size: 12px;
   font-weight: 500;
+}
+
+.emp-dashboard__gauge-tick-0 {
+  bottom: 10px;
+  left: 10px;
+}
+
+.emp-dashboard__gauge-tick-25 {
+  bottom: 40px;
+  left: 40px;
+}
+
+.emp-dashboard__gauge-tick-50 {
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.emp-dashboard__gauge-tick-75 {
+  bottom: 40px;
+  right: 40px;
+}
+
+.emp-dashboard__gauge-tick-100 {
+  bottom: 10px;
+  right: 10px;
+}
+
+.emp-dashboard__gauge-segments {
+  width: 280px;
+  height: 140px;
+  border-radius: 140px 140px 0 0;
+  overflow: hidden;
+  position: absolute;
+  top: 5px;
+  left: 10px;
+  display: flex;
+  flex-direction: row;
+  transform-origin: bottom center;
+}
+
+.emp-dashboard__gauge-segment {
+  width: 70px;
+  height: 140px;
+}
+
+.emp-dashboard__gauge-segment-poor {
+  background:#6dbfb8;
+}
+
+.emp-dashboard__gauge-segment-fair {
+  background:#be95be;
+}
+
+.emp-dashboard__gauge-segment-good {
+  background: #75ba75;
+}
+
+.emp-dashboard__gauge-segment-excellent {
+  background: #f5945c;
+}
+
+.emp-dashboard__gauge-needle {
+  width: 4px;
+  height: 120px;
+  background-color: #334155;
+  position: absolute;
+  bottom: 0;
+  left: 148px;
+  transform-origin: bottom center;
+  transform: rotate(-90deg); /* Start at 0 */
+  transition: transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 2;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.emp-dashboard__needle-dot {
+  width: 16px;
+  height: 16px;
+  background-color: #334155;
+  border-radius: 50%;
+  position: absolute;
+  bottom: -8px;
+  left: -6px;
+  z-index: 2;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.emp-dashboard__gauge-display {
+  width: 120px;
+  height: 80px;
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 3;
+}
+
+.emp-dashboard__gauge-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.emp-dashboard__gauge-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.emp-dashboard__metric-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.emp-dashboard__metric-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #f8fafc;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.emp-dashboard__metric-pill:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.emp-dashboard__metric-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.emp-dashboard__metric-name {
+  font-size: 14px;
+  color: #64748b;
   text-transform: capitalize;
 }
 
-.leave-status.approved {
-  background-color: #dcfce7;
-  color: #166534;
+.emp-dashboard__metric-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
 }
 
-.leave-status.pending {
-  background-color: #fff7ed;
-  color: #c2410c;
+/* Top Performers Card */
+.emp-dashboard__top-performers-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
-.leave-status.rejected {
-  background-color: #fef2f2;
-  color: #b91c1c;
+.emp-dashboard__performer-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
 
-.empty-leaves {
+.emp-dashboard__performer-item:hover {
+  transform: translateX(4px);
+  background-color: #f1f5f9;
+}
+
+.emp-dashboard__performer-rank {
+  width: 24px;
+  height: 24px;
+  background-color: #e2e8f0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.emp-dashboard__performer-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.emp-dashboard__performer-details {
+  flex: 1;
+}
+
+.emp-dashboard__performer-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.emp-dashboard__performer-role {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.emp-dashboard__performer-score {
+  text-align: right;
+}
+
+.emp-dashboard__score-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.emp-dashboard__score-change {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.emp-dashboard__score-change--positive {
+  color: #10b981;
+}
+
+.emp-dashboard__score-change--negative {
+  color: #ef4444;
+}
+
+/* Goals Card */
+.emp-dashboard__goals-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.emp-dashboard__goal-item {
+  padding: 16px;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+.emp-dashboard__goal-item:hover {
+  background-color: #f1f5f9;
+  transform: translateY(-2px);
+}
+
+.emp-dashboard__goal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.emp-dashboard__goal-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.emp-dashboard__goal-deadline {
+  font-size: 12px;
+  color: #64748b;
+  background-color: #e2e8f0;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.emp-dashboard__goal-progress-container {
+  margin-bottom: 12px;
+}
+
+.emp-dashboard__goal-progress-bar {
+  height: 8px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.emp-dashboard__goal-progress-fill {
+  height: 100%;
+  background-color: #3b82f6;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.emp-dashboard__goal-progress-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.emp-dashboard__goal-progress-label {
+  color: #64748b;
+}
+
+.emp-dashboard__goal-progress-value {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.emp-dashboard__goal-description {
+  margin: 0;
+  font-size: 14px;
+  color: #475569;
+}
+
+/* Milestones Card */
+.emp-dashboard__milestones-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.emp-dashboard__milestone-item {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+.emp-dashboard__milestone-item:hover {
+  background-color: #f1f5f9;
+  transform: translateY(-2px);
+}
+
+.emp-dashboard__milestone-icon {
+  width: 40px;
+  height: 40px;
+  background-color: #b3be62;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.emp-dashboard__milestone-content {
+  flex: 1;
+}
+
+.emp-dashboard__milestone-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.emp-dashboard__milestone-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.emp-dashboard__milestone-date {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.emp-dashboard__milestone-description {
+  margin: 0;
+  font-size: 14px;
+  color: #475569;
+}
+
+/* Activities Card */
+.emp-dashboard__activities-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.emp-dashboard__activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+.emp-dashboard__activity-item:hover {
+  background-color: #f1f5f9;
+  transform: translateX(4px);
+}
+
+.emp-dashboard__activity-icon {
+  width: 32px;
+  height: 32px;
+  background-color: #f5945c;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.emp-dashboard__activity-content {
+  flex: 1;
+}
+
+.emp-dashboard__activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.emp-dashboard__activity-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.emp-dashboard__activity-time {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.emp-dashboard__activity-content p {
+  margin: 0;
+  font-size: 14px;
+  color: #475569;
+}
+
+.emp-dashboard__activity-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emp-dashboard__status-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.emp-dashboard__status-icon--success {
+  color: #10b981;
+  background-color: #d1fae5;
+}
+
+.emp-dashboard__status-icon--error {
+  color: #ef4444;
+  background-color: #fee2e2;
+}
+
+.emp-dashboard__status-icon--pending {
+  color: #f59e0b;
+  background-color: #fef3c7;
+}
+
+/* Announcements Card */
+.emp-dashboard__announcements-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.emp-dashboard__announcement-item {
+  padding: 16px;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+.emp-dashboard__announcement-item:hover {
+  background-color: #f1f5f9;
+  transform: translateY(-2px);
+}
+
+.emp-dashboard__announcement-priority {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.emp-dashboard__announcement-item h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.emp-dashboard__announcement-item p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #475569;
+}
+
+.emp-dashboard__announcement-footer {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.emp-dashboard__branch-tag {
+  padding: 2px 8px;
+  background-color: #e2e8f0;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #475569;
+}
+
+/* Empty State Styles */
+.emp-dashboard__empty-goals,
+.emp-dashboard__empty-milestones,
+.emp-dashboard__empty-announcements {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -498,29 +926,30 @@
   text-align: center;
 }
 
-.empty-leaves svg {
+.emp-dashboard__empty-goals svg,
+.emp-dashboard__empty-milestones svg,
+.emp-dashboard__empty-announcements svg {
   margin-bottom: 16px;
   color: #cbd5e1;
 }
 
-/* Loading Container */
-.loading-container {
+/* Loading State */
+.emp-dashboard__loading {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 64px);
-  margin-top: -64px;
-  color: #475569;
-  gap: 16px;
+  min-height: 400px;
+  color: #64748b;
 }
 
-.loading-spinner {
+.emp-dashboard__loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #474787;
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid #3b82f6;
   border-radius: 50%;
+  margin-bottom: 16px;
   animation: spin 1s linear infinite;
 }
 
@@ -529,296 +958,585 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Error Message */
-.error-message {
+/* Error State */
+.emp-dashboard__error {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  min-height: 300px;
   padding: 32px;
-  background-color: #fef2f2;
-  border-radius: 8px;
-  color: #b91c1c;
+  color: #ef4444;
   text-align: center;
 }
 
-.retry-button {
+.emp-dashboard__error svg {
+  margin-bottom: 16px;
+}
+
+.emp-dashboard__retry-button {
+  margin-top: 16px;
   padding: 8px 16px;
-  background-color: #b91c1c;
+  background-color: #3b82f6;
   color: white;
   border: none;
   border-radius: 6px;
-  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.retry-button:hover {
-  background-color: #991b1b;
+.emp-dashboard__retry-button:hover {
+  background-color: #2563eb;
 }
 
-/* Responsive Design */
-@media (max-width: 1280px) {
-  .dashboard-container {
-    margin-left: 0;
-  }
-  
-  .employee-dashboard-grid {
-    grid-template-columns: repeat(6, 1fr);
-  }
-  
-  .profile-card,
-  .leave-quotas-card,
-  .attendance-card {
-    grid-column: span 2;
-  }
-  
-  .activities-card,
-  .announcements-card,
-  .leave-card {
-    grid-column: span 3;
-  }
-  
-  .holidays-card,
-  .team-card {
-    grid-column: span 3;
-  }
-}
-
-@media (max-width: 1024px) {
-  .employee-dashboard-grid {
-    grid-template-columns: repeat(4, 1fr);
+/* Responsive Styles */
+@media (max-width: 1400px) {
+  .emp-dashboard__grid {
     gap: 16px;
   }
-  
-  .profile-card,
-  .leave-quotas-card,
-  .attendance-card,
-  .holidays-card,
-  .team-card {
-    grid-column: span 2;
+}
+
+@media (max-width: 1200px) {
+  .emp-dashboard__profile-card,
+  .emp-dashboard__quotas-card,
+  .emp-dashboard__attendance-card {
+    grid-column: span 4;
   }
   
-  .activities-card,
-  .announcements-card,
-  .leave-card {
+  .emp-dashboard__performance-gauge-container {
+    grid-column: span 8;
+  }
+  
+  .emp-dashboard__top-performers-card {
     grid-column: span 4;
+  }
+  
+  .emp-dashboard__goals-card,
+  .emp-dashboard__milestones-card,
+  .emp-dashboard__activities-card,
+  .emp-dashboard__announcements-card {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 992px) {
+  .emp-dashboard__profile-card,
+  .emp-dashboard__quotas-card,
+  .emp-dashboard__attendance-card {
+    grid-column: span 6;
+  }
+  
+  .emp-dashboard__performance-gauge-container {
+    grid-column: span 12;
+  }
+  
+  .emp-dashboard__top-performers-card {
+    grid-column: span 12;
+  }
+  
+  .emp-dashboard__goals-card,
+  .emp-dashboard__milestones-card,
+  .emp-dashboard__activities-card,
+  .emp-dashboard__announcements-card {
+    grid-column: span 6;
+  }
+  
+  .emp-dashboard__metric-cards {
+    flex-wrap: wrap;
   }
 }
 
 @media (max-width: 768px) {
-  .dashboard-container {
+  .emp-dashboard {
     padding: 16px;
-    margin-top: 56px;
   }
   
-  .dashboard-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-  
-  .employee-dashboard-grid {
-    grid-template-columns: 1fr;
+  .emp-dashboard__grid {
+    grid-template-columns: repeat(6, 1fr);
     gap: 16px;
   }
   
-  .profile-card,
-  .leave-quotas-card,
-  .attendance-card,
-  .activities-card,
-  .holidays-card,
-  .team-card,
-  .announcements-card,
-  .leave-card {
-    grid-column: span 1;
+  .emp-dashboard__profile-card,
+  .emp-dashboard__quotas-card,
+  .emp-dashboard__attendance-card,
+  .emp-dashboard__performance-gauge-container,
+  .emp-dashboard__top-performers-card,
+  .emp-dashboard__goals-card,
+  .emp-dashboard__milestones-card,
+  .emp-dashboard__activities-card,
+  .emp-dashboard__announcements-card {
+    grid-column: span 6;
   }
   
-  .card-header {
-    margin-bottom: 12px;
+  .emp-dashboard__modern-gauge {
+    width: 240px;
+    height: 160px;
   }
   
-  .card-header h3 {
-    font-size: 16px;
+  .emp-dashboard__gauge-bg {
+    width: 240px;
+    height: 120px;
+  }
+  
+  .emp-dashboard__gauge-segments {
+    width: 220px;
+    height: 110px;
+  }
+  
+  .emp-dashboard__gauge-segment {
+    width: 55px;
+    height: 110px;
+  }
+  
+  .emp-dashboard__gauge-needle {
+    left: 118px;
+    height: 100px;
   }
 }
 
-
-.view-profile-btn:hover {
-  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
+@media (max-width: 576px) {
+  .emp-dashboard__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .emp-dashboard__modern-gauge {
+    width: 200px;
+    height: 140px;
+  }
+  
+  .emp-dashboard__gauge-bg {
+    width: 200px;
+    height: 100px;
+  }
+  
+  .emp-dashboard__gauge-segments {
+    width: 180px;
+    height: 90px;
+  }
+  
+  .emp-dashboard__gauge-segment {
+    width: 45px;
+    height: 90px;
+  }
+  
+  .emp-dashboard__gauge-needle {
+    left: 98px;
+    height: 80px;
+  }
+  
+  .emp-dashboard__gauge-display {
+    width: 100px;
+    height: 60px;
+  }
+  
+  .emp-dashboard__gauge-value {
+    font-size: 24px;
+  }
+  
+  .emp-dashboard__gauge-label {
+    font-size: 12px;
+  }
 }
+/* Simplified Performance Gauge Styles - Matching the provided image */
 
-/* Leave Quotas Card */
-.leave-quotas-chart {
-  margin-bottom: 16px;
-}
-
-.leave-quotas-summary {
+/* Performance Gauge Container */
+.emp-dashboard__modern-gauge-wrapper {
   display: flex;
-  justify-content: space-around;
-  margin-top: auto;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px;
+  background-color: white;
+  border-radius: 12px;
+  color: #0f172a;
+  gap: 16px;
+  position: relative;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
-.quota-item {
+/* Gauge Title */
+.emp-dashboard__gauge-title {
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  color: #1e293b;
+  letter-spacing: 0.5px;
+  margin-bottom: -5px;
+}
+
+.emp-dashboard__gauge-subtitle {
+  height: 2px;
+  width: 40px;
+  background-color: #4f46e5;
+  margin-bottom: 10px;
+}
+
+/* Main Gauge Component */
+.emp-dashboard__modern-gauge {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 20px;
+}
+
+.emp-dashboard__gauge-container {
+  position: relative;
+  width: 340px;
+  height: 190px;
+  margin: 0 auto;
+}
+
+/* Gauge Background Track */
+.emp-dashboard__gauge-track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 170px 170px 0 0;
+  background-color: #f8fafc;
+  overflow: hidden;
+}
+
+/* Color gradient on gauge track */
+.emp-dashboard__gauge-track:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: conic-gradient(
+    from 180deg at 50% 100%,
+    #ef4444 0deg, /* Red start */
+    #f97316 30deg, /* Orange */
+    #fbbf24 60deg, /* Yellow */
+    #84cc16 90deg, /* Greenish yellow */
+    #10b981 120deg, /* Green */
+    #4cbcce 150deg, /* Teal */
+    #3b82f6 180deg /* Blue end */
+  );
+  mask: radial-gradient(at 50% 100%, 
+    transparent 60px, 
+    black 61px,
+    black 140px,
+    transparent 141px
+  );
+  -webkit-mask: radial-gradient(at 50% 100%, 
+    transparent 60px, 
+    black 61px,
+    black 140px,
+    transparent 141px
+  );
+  opacity: 0.85;
+}
+
+/* Tick Marks on Gauge - Simple subtle lines */
+.emp-dashboard__tick-marks {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.emp-dashboard__tick {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  height: 130px;
+  width: 1px;
+  background-color: rgba(255, 255, 255, 0.3);
+  transform-origin: bottom center;
+}
+
+/* Simple value labels */
+.emp-dashboard__value-labels {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.emp-dashboard__value-label {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 500;
+  color: #94a3b8;
+  opacity: 0.7;
+}
+
+.emp-dashboard__value-0 {
+  bottom: 15px;
+  left: 35px;
+}
+
+.emp-dashboard__value-25 {
+  bottom: 45px;
+  left: 50px;
+}
+
+.emp-dashboard__value-50 {
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.emp-dashboard__value-75 {
+  bottom: 45px;
+  right: 50px;
+}
+
+.emp-dashboard__value-100 {
+  bottom: 15px;
+  right: 35px;
+}
+
+/* Performance expectation labels on the gauge itself */
+.emp-dashboard__gauge-expectations {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.emp-dashboard__expectation {
+  position: absolute;
+  font-size: 7px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.2px;
   text-align: center;
 }
 
-.quota-label {
-  font-size: 14px;
+.emp-dashboard__expectation-below {
+  color: #ef4444;
+  bottom: 50px;
+  left: 85px;
+  transform: rotate(-30deg);
+}
+
+.emp-dashboard__expectation-exceeds {
+  color: #10b981;
+  bottom: 50px;
+  right: 85px;
+  transform: rotate(30deg);
+}
+
+/* Performance aspect keywords */
+.emp-dashboard__gauge-keywords {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.emp-dashboard__keyword {
+  position: absolute;
+  font-size: 9px;
   color: #64748b;
-  margin-bottom: 4px;
-}
-
-.quota-value {
   font-weight: 600;
+  letter-spacing: 0.2px;
+  transform-origin: center;
 }
 
-.quota-value .remaining {
-  font-size: 20px;
-  color: #474787;
+.emp-dashboard__keyword-teamwork {
+  top: 60px;
+  left: 25px;
+  transform: rotate(-45deg);
+  color: #22c55e;
 }
 
-.quota-value .total {
-  font-size: 16px;
-  color: #94a3b8;
+.emp-dashboard__keyword-quality {
+  top: 25px;
+  left: 130px;
+  color: #22c55e;
 }
 
-/* Attendance Card */
-.attendance-chart {
-  margin-bottom: 16px;
+.emp-dashboard__keyword-initiative {
+  top: 35px;
+  right: 70px;
+  color: #64748b;
 }
 
-.attendance-summary {
+.emp-dashboard__keyword-productivity {
+  top: 80px;
+  right: 40px;
+  transform: rotate(45deg);
+  color: #64748b;
+}
+
+/* Gauge Needle */
+.emp-dashboard__gauge-fill {
+  position: absolute;
+  bottom: 0;
+  left: calc(50% - 1px);
+  width: 2px;
+  height: 125px;
+  background-color: #111827;
+  transform-origin: bottom center;
+  transition: transform 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 10;
+}
+
+.emp-dashboard__gauge-fill:before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 8px;
+  height: 8px;
+  background-color: #111827;
+  border-radius: 50%;
+}
+
+/* Center Display */
+.emp-dashboard__gauge-center {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 120px;
+  background: white;
+  border-radius: 60px 60px 0 0;
   display: flex;
-  justify-content: space-around;
-  margin-top: auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
 }
 
-.summary-item {
+.emp-dashboard__gauge-percentage {
+  font-size: 34px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0px;
+}
+
+.emp-dashboard__gauge-rating {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  letter-spacing: 0.5px;
+}
+
+/* Performance Metric Pills - Clean, colored style */
+.emp-dashboard__metric-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  padding: 5px 16px;
+}
+
+.emp-dashboard__metric-pill {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: white;
+  border: 1px solid #f1f5f9;
+  border-radius: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.summary-item svg {
-  color: #474787;
-}
-
-.summary-content {
-  display: flex;
-  flex-direction: column;
-}
-
-.summary-label {
-  font-size: 12px;
-  color: #64748b;
-}
-
-.summary-value {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-/* Activities Card */
-.activities-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  overflow-y: auto;
-  max-height: 275px;
-}
-
-.activity-item {
-  display: flex;
-  gap: 12px;
-  padding: 10px;
-  border-radius: 8px;
-  background-color: #f8fafc;
-  transition: background-color 0.2s;
-}
-
-.activity-item:hover {
-  background-color: #f1f5f9;
-}
-
-.activity-icon {
+.emp-dashboard__metric-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: #b3be62;
   color: white;
-  border-radius: 50%;
-  flex-shrink: 0;
 }
 
-.activity-content {
-  flex: 1;
+.emp-dashboard__metric-icon--productivity {
+  background-color: #4f46e5;
 }
 
-.activity-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+.emp-dashboard__metric-icon--quality {
+  background-color: #8b5cf6;
 }
 
-.activity-header h4 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
+.emp-dashboard__metric-icon--attendance {
+  background-color: #10b981;
 }
 
-.activity-time {
-  font-size: 12px;
-  color: #94a3b8;
+.emp-dashboard__metric-icon--communication {
+  background-color: #f59e0b;
 }
 
-.activity-content p {
-  margin: 4px 0 0;
+.emp-dashboard__metric-name {
+  color: #6b7280;
   font-size: 13px;
-  color: #64748b;
+  font-weight: 500;
 }
 
-.activity-status {
-  display: flex;
-  align-items: center;
+.emp-dashboard__metric-value {
+  color: #111827;
+  font-weight: 600;
+  font-size: 14px;
 }
 
-.status-icon {
-  width: 16px;
-  height: 16px;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .emp-dashboard__gauge-container {
+    width: 300px;
+    height: 170px;
+  }
+  
+  .emp-dashboard__gauge-percentage {
+    font-size: 30px;
+  }
+  
+  .emp-dashboard__gauge-fill {
+    height: 110px;
+  }
+  
+  .emp-dashboard__keyword {
+    font-size: 8px;
+  }
+  
+  .emp-dashboard__expectation {
+    font-size: 6px;
+  }
+  
+  .emp-dashboard__metric-cards {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .emp-dashboard__metric-pill {
+    width: 100%;
+    max-width: 280px;
+    justify-content: space-between;
+  }
 }
 
-.status-icon.success {
-  color: #10b981;
-}
-
-.status-icon.error {
-  color: #ef4444;
-}
-
-.status-icon.pending {
-  color: #f59e0b;
-}
-
-.activities-footer, .leave-footer {
-  margin-top: auto;
-  padding-top: 12px;
-  text-align: center;
-}
-
-.view-all-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background-color: #f8fafc;
-  color: #474787;
-  border: 1px solid;
+@media (max-width: 576px) {
+  .emp-dashboard__gauge-container {
+    width: 260px;
+    height: 150px;
+  }
+  
+  .emp-dashboard__gauge-percentage {
+    font-size: 28px;
+  }
+  
+  .emp-dashboard__gauge-center {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .emp-dashboard__gauge-fill {
+    height: 100px;
+  }
 }

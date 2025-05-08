@@ -76,11 +76,61 @@ const attendanceSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Create unique index to prevent duplicate records per day
-// REMOVED duplicate index definition to fix warning
-attendanceSchema.index({ employeeNumber: 1, date: 1 }, { unique: true, partialFilterExpression: { date: { $exists: true } } });
+// Create non-unique indices for improved query performance
+attendanceSchema.index({ employeeNumber: 1, date: 1 });
+attendanceSchema.index({ deviceUserId: 1, timeIn: 1 });
 
-// Add a timestamp accuracy check method
+// CRITICAL: Add code to drop the problematic unique index that's causing errors
+const Attendance = mongoose.model('Attendance', attendanceSchema);
+
+// This function will run when your application starts
+// It will drop the problematic index that's causing duplicate key errors
+async function dropUniqueIndices() {
+  try {
+    console.log('Checking for and removing problematic unique indices on attendance collection...');
+    
+    // Get collection to access raw MongoDB commands
+    const collection = Attendance.collection;
+    
+    // Get all indices on the collection
+    const indices = await collection.indexes();
+    
+    // Find problematic unique indices
+    const uniqueIndices = indices.filter(index => 
+      index.unique === true && 
+      (
+        // Look for the specific problematic index from the error message
+        (index.key && index.key.deviceUserId === 1 && index.key.date === 1) ||
+        // Also check for other potential unique indices that could cause problems
+        (index.key && index.key.employeeNumber === 1 && index.key.date === 1)
+      )
+    );
+    
+    if (uniqueIndices.length > 0) {
+      console.log(`Found ${uniqueIndices.length} problematic unique indices to drop:`);
+      uniqueIndices.forEach(index => console.log(` - ${index.name}`));
+      
+      // Drop each problematic index
+      for (const index of uniqueIndices) {
+        console.log(`Dropping index: ${index.name}...`);
+        await collection.dropIndex(index.name);
+        console.log(`Successfully dropped index: ${index.name}`);
+      }
+      
+      console.log('All problematic unique indices have been dropped!');
+    } else {
+      console.log('No problematic unique indices found on attendance collection.');
+    }
+  } catch (error) {
+    console.error('Error while trying to drop unique indices:', error);
+  }
+}
+
+// Call the function to drop problematic indices
+// This needs to run when your server starts
+dropUniqueIndices();
+
+// No changes to the existing methods
 attendanceSchema.methods.isLate = function(graceMinutes = 15) {
   if (!this.shiftStart) return false;
   
@@ -90,7 +140,6 @@ attendanceSchema.methods.isLate = function(graceMinutes = 15) {
   return this.timeIn > lateThreshold;
 };
 
-// Add method to check if this is a complete day
 attendanceSchema.methods.isCompleteDay = function() {
   if (!this.timeIn || !this.timeOut) return false;
   
@@ -101,7 +150,6 @@ attendanceSchema.methods.isCompleteDay = function() {
   return hoursWorked >= 7; // Assuming 7+ hours is a full day
 };
 
-// Static method to get attendance stats
 attendanceSchema.statics.getStats = async function(startDate, endDate, department = null) {
   const match = {
     date: {
@@ -137,7 +185,5 @@ attendanceSchema.statics.getStats = async function(startDate, endDate, departmen
     }
   ]);
 };
-
-const Attendance = mongoose.model('Attendance', attendanceSchema);
 
 module.exports = Attendance;

@@ -2,1047 +2,1047 @@
 
 /* Base container with elegant scaling */
 .hr-dashboard {
-    max-width: 100%;
-    margin: 36px auto 0 17rem;  
-    padding: 12px;
-    min-height: calc(100vh - 80px);
-    transition: all 0.3s ease;
-    background-color: #f5f5f5;
-  }
-  
-  /* Notification Banner with refined design */
-  .hr-notification-banner {
-    position: fixed;
-    top: 72px;
-    right: 22px;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    padding: 14px 22px;
-    
-    box-shadow: 0 9px 22px -5px rgba(85, 85, 85, 0.1);
-    animation: slideIn 0.3s ease-out forwards;
-    max-width: 360px;
-    gap: 10px;
-    overflow: hidden;
-    position: relative;
-  }
-  
-  /* Add glossy effect to notification banner */
-  .notification-banner::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 40%;
-    background: linear-gradient(to bottom, 
-                rgba(255, 255, 255, 0.15), 
-                rgba(255, 255, 255, 0.05));
+  max-width: 100%;
+  margin: 36px auto 0 17rem;  
+  padding: 12px;
+  min-height: calc(100vh - 80px);
+  transition: all 0.3s ease;
+  background-color: #f5f5f5;
+}
 
-    z-index: 1;
-  }
+/* Notification Banner with refined design */
+.hr-notification-banner {
+  position: fixed;
+  top: 72px;
+  right: 22px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  padding: 14px 22px;
   
-  .notification-banner.success {
-    background-color: #dcfce7;
-    color: #166534;
-    border-left: 3px solid #166534;
+  box-shadow: 0 9px 22px -5px rgba(85, 85, 85, 0.1);
+  animation: slideIn 0.3s ease-out forwards;
+  max-width: 360px;
+  gap: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Add glossy effect to notification banner */
+.notification-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, 
+              rgba(255, 255, 255, 0.15), 
+              rgba(255, 255, 255, 0.05));
+
+  z-index: 1;
+}
+
+.notification-banner.success {
+  background-color: #dcfce7;
+  color: #166534;
+  border-left: 3px solid #166534;
+}
+
+.notification-banner.error {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-left: 3px solid #b91c1c;
+}
+
+.notification-icon {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes slideIn {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
   }
-  
-  .notification-banner.error {
-    background-color: #fee2e2;
-    color: #b91c1c;
-    border-left: 3px solid #b91c1c;
+  100% {
+    transform: translateX(0);
+    opacity: 1;
   }
+}
+
+/* HR Dashboard Header with sophisticated design */
+.hr-dashboard-header {
+  color: #111111;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 18px;
+  background: white;
   
-  .notification-icon {
-    flex-shrink: 0;
-    position: relative;
-    z-index: 2;
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Add glossy effect to dashboard header */
+.hr-dashboard-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, 
+              rgba(255, 255, 255, 0.15), 
+              rgba(255, 255, 255, 0.05));
+ 
+  z-index: 1;
+}
+
+.hr-header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  z-index: 2;
+}
+
+.hr-dashboard-header h1 {
+  font-size: 25px;
+  font-weight: 400;
+  color: #1e293b;
+  margin: 0;
+  background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  z-index: 2;
+}
+
+.hr-time-filters {
+  display: flex;
+  gap: 9px;
+  position: relative;
+  z-index: 2;
+}
+
+.hr-time-filter-btn {
+  padding: 7px 16px;
+  border: 1px solid #e5e7eb;
+
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.hr-time-filter-btn.active {
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 3px 9px rgba(114, 9, 183, 0.2);
+}
+
+.hr-time-filter-btn:hover:not(.active) {
+  background-color: #f1f5f9;
+  transform: translateY(-1px);
+}
+
+.hr-dashboard-actions {
+  display: flex;
+  gap: 10px;
+  position: relative;
+  z-index: 2;
+}
+
+.hr-announcement-button,
+.hr-report-button {
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px;
+  border: none;
+ 
+  font-weight: 500;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.hr-report-button {
+  background-color: #ffffff;
+  color: white;
+}
+
+.hr-announcement-button {
+  background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
+  color: white;
+  box-shadow: 0 3px 9px rgba(114, 9, 183, 0.2);
+}
+
+.hr-announcement-button:hover,
+.hr-report-button:hover {
+  transform: translateY(-2px);
+}
+
+.hr-report-button:hover {
+  background-color: #4361ee15;
+}
+
+.hr-announcement-button:hover {
+  box-shadow: 0 5px 13px rgba(114, 9, 183, 0.3);
+}
+
+/* Summary Cards with polished design */
+.hr-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.hr-summary-card {
+  background: white;
+
+  padding: 22px;
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.03);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy effect for summary cards */
+.hr-summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, 
+              rgba(255, 255, 255, 0.15), 
+              rgba(255, 255, 255, 0.05));
+
+  z-index: 1;
+}
+
+.hr-summary-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 54px;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,1) 100%);
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.hr-summary-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 9px 18px rgba(0, 0, 0, 0.08);
+}
+
+.hr-summary-card:hover::after {
+  opacity: 1;
+}
+
+.hr-summary-card:hover::before {
+  opacity: 0.9;
+}
+
+.hr-card-icon {
+  width: 50px;
+  height: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.hr-card-content {
+  flex: 1;
+  position: relative;
+  z-index: 2;
+}
+
+.hr-card-content h3 {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 7px 0;
+  font-weight: 500;
+}
+
+.hr-card-value {
+  font-size: 25px;
+  color: #1e293b;
+  margin-bottom: 5px;
+  background: linear-gradient(90deg, #1e293b 0%, #475569 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hr-card-change {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.hr-card-change.positive {
+  color: #10b981;
+}
+
+.hr-card-change.negative {
+  color: #ef4444;
+}
+
+.hr-card-change .down {
+  transform: rotate(180deg);
+}
+
+/* HR Dashboard Grid Layout */
+.hr-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: auto auto;
+  gap: 22px;
+  margin-bottom: 22px;
+}
+
+/* Chart Card Styles with premium look */
+.hr-chart-card {
+  background: white;
+
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  height: 100%;
+  position: relative;
+}
+
+/* Glossy effect for chart cards */
+.hr-chart-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 35%;
+  background: linear-gradient(to bottom, 
+              rgba(255, 255, 255, 0.12), 
+              rgba(255, 255, 255, 0.03));
+
+  z-index: 1;
+}
+
+.hr-chart-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.08);
+}
+
+.hr-chart-card:hover::before {
+  opacity: 0.9;
+}
+
+.hr-card-header {
+  padding: 18px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #fcfcfd;
+  position: relative;
+  z-index: 2;
+}
+
+.hr-card-header h2 {
+  font-size: 15px;
+  font-weight: 400;
+  color: #111111;
+  margin: 0;
+  position: relative;
+  padding-left: 11px;
+}
+
+.hr-card-header h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 14px;
+  background: #04a9f5;
+
+}
+
+.hr-card-body {
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+  background: white;
+  position: relative;
+  z-index: 2;
+}
+
+.hr-card-footer {
+  padding: 14px 18px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  justify-content: space-between;
+  background-color: #fcfcfd;
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+}
+
+/* Add glossy effect to card footer */
+.hr-card-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, 
+              rgba(255, 255, 255, 0.15), 
+              rgba(255, 255, 255, 0.05));
+  z-index: 1;
+}
+
+/* Scale down the chart elements for better fit */
+.recharts-wrapper, 
+.recharts-surface {
+  transform: scale(0.9);
+  transform-origin: center center;
+}
+
+/* Employee Distribution Updates with modern design */
+.hr-employee-stats-footer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+}
+
+.hr-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 9px;
+  background-color: #f8fafc;
+  text-align: center;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy effect for stat items */
+.hr-stat-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, 
+              rgba(255, 255, 255, 0.15), 
+              rgba(255, 255, 255, 0.05));
+
+  z-index: 1;
+}
+
+.hr-stat-item:hover {
+  background-color: #f1f5f9;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.05);
+}
+
+.hr-stat-item:hover::before {
+  opacity: 0.9;
+}
+
+.hr-stat-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  position: relative;
+  z-index: 2;
+}
+
+.hr-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  background: #71a3c1;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  z-index: 2;
+}
+
+/* Leave Trends Updates with elegant design */
+.hr-leave-legend-footer {
+  display: flex;
+  justify-content: space-around;
+}
+
+.hr-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #64748b;
+  padding: 5px 13px;
+
+  background-color: #f8fafc;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy effect for legend items */
+.hr-legend-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, 
+              rgba(255, 255, 255, 0.15), 
+              rgba(255, 255, 255, 0.05));
+
+  z-index: 1;
+}
+
+.hr-legend-item:hover {
+  background-color: #f1f5f9;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.05);
+}
+
+.hr-legend-item:hover::before {
+  opacity: 0.9;
+}
+
+.hr-legend-color {
+  width: 9px;
+  height: 9px;
+
+  display: inline-block;
+  position: relative;
+  z-index: 2;
+}
+
+/* Department Performance Styles */
+.hr-view-details-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy effect for details button */
+.hr-view-details-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, 
+              rgba(255, 255, 255, 0.15), 
+              rgba(255, 255, 255, 0.05));
+
+  z-index: 1;
+}
+
+.hr-view-details-btn:hover {
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 3px 9px rgba(114, 9, 183, 0.2);
+}
+
+.hr-view-details-btn:hover::before {
+  opacity: 0.9;
+}
+
+/* Progress Summary with elegant typography */
+.hr-progress-summary {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  position: relative;
+  z-index: 2;
+}
+
+.hr-highlight {
+  font-weight: 700;
+  font-size: 16px;
+  background: #71a3c1;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Activity List with sophisticated design */
+.hr-activity-list {
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  overflow-y: auto;
+  max-height: 324px;
+  padding-right: 4px !important;
+}
+
+.hr-activity-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.hr-activity-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+
+}
+
+.hr-activity-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+
+}
+
+.hr-activity-item {
+  display: flex;
+  gap: 13px;
+  padding: 14px;
+
+  background-color: #f8fafc;
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+  align-items: flex-start;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy effect for activity items */
+.hr-activity-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, 
+              rgba(255, 255, 255, 0.1), 
+              rgba(255, 255, 255, 0.02));
+ 
+  z-index: 1;
+}
+
+.hr-activity-item:hover {
+  background-color: #f1f5f9;
+  border-left-color: #71a3c1;
+  transform: translateX(2px);
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.05);
+}
+
+.hr-activity-item:hover::before {
+  opacity: 0.9;
+}
+
+.hr-activity-avatar {
+  width: 32px;
+  height: 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 13px;
+  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 2;
+}
+
+.hr-activity-content {
+  flex: 1;
+  position: relative;
+  z-index: 2;
+}
+
+.hr-activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 5px;
+}
+
+.hr-activity-header h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.hr-activity-time {
+  font-size: 11px;
+  padding: 3px 7px;
+
+  background-color: #f1f5f9;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.hr-activity-content p {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.hr-activity-status {
+  display: flex;
+  align-items: flex-start;
+  padding-top: 2px;
+  position: relative;
+  z-index: 2;
+}
+
+.status-icon {
+  width: 22px;
+  height: 22px;
+  padding: 3px;
+
+}
+
+.status-icon.success {
+  color: #10b981;
+  background-color: #d1fae5;
+}
+
+.status-icon.error {
+  color: #ef4444;
+  background-color: #fee2e2;
+}
+
+.status-icon.pending {
+  color: #f59e0b;
+  background-color: #fff7ed;
+}
+
+.hr-view-all-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  background-color: #f8fafc;
+  color: #71a3c1;
+  border: 1px solid #e2e8f0;
+
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy effect for view all button */
+.hr-view-all-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, 
+              rgba(255, 255, 255, 0.15), 
+              rgba(255, 255, 255, 0.05));
+
+  z-index: 1;
+}
+
+.hr-view-all-btn:hover {
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 3px 9px rgba(114, 9, 183, 0.2);
+  transform: translateY(-2px);
+}
+
+.hr-view-all-btn:hover::before {
+  opacity: 0.9;
+}
+
+/* Announcements section styles */
+.hr-create-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 13px;
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
+  color: white;
+  border: none;
+
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 5px rgba(114, 9, 183, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy effect for create button */
+.hr-create-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, 
+              rgba(255, 255, 255, 0.15), 
+              rgba(255, 255, 255, 0.05));
+
+  z-index: 1;
+}
+
+.hr-create-btn:hover {
+  box-shadow: 0 5px 9px rgba(114, 9, 183, 0.3);
+  transform: translateY(-2px);
+}
+
+.hr-create-btn:hover::before {
+  opacity: 0.9;
+}
+
+.hr-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 29px;
+  gap: 14px;
+  color: #94a3b8;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Add glossy effect to empty state */
+.hr-empty-state::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, 
+              rgba(255, 255, 255, 0.1), 
+              rgba(255, 255, 255, 0.02));
+  z-index: 1;
+}
+
+.hr-empty-state p {
+  margin: 0;
+  font-size: 13px;
+  position: relative;
+  z-index: 2;
+}
+
+.hr-create-announcement-btn {
+  padding: 9px 18px;
+  background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
+  color: white;
+  border: none;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 5px rgba(114, 9, 183, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy effect for create announcement button */
+.hr-create-announcement-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, 
+              rgba(255, 255, 255, 0.15), 
+              rgba(255, 255, 255, 0.05));
+  border-radius: 9px 9px 0 0;
+  z-index: 1;
+}
+
+.hr-create-announcement-btn:hover {
+  box-shadow: 0 7px 13px rgba(114, 9, 183, 0.3);
+  transform: translateY(-3px);
+}
+
+.hr-create-announcement-btn:hover::before {
+  opacity: 0.9;
+}
+
+.hr-announcements-wrapper {
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Responsive Layouts */
+@media (max-width: 1400px) {
+  .hr-dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
-  
-  @keyframes slideIn {
-    0% {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    100% {
-      transform: translateX(0);
-      opacity: 1;
-    }
+
+  .hr-employee-distribution,
+  .hr-leave-trends,
+  .hr-department-performance,
+  .hr-metrics,
+  .hr-recent-activity,
+  .hr-announcements {
+    grid-column: auto;
+    grid-row: auto;
   }
-  
-  /* HR Dashboard Header with sophisticated design */
+}
+
+@media (max-width: 1200px) {
+  .hr-dashboard {
+    margin-left: 0;
+    padding: 14px;
+  }
+
+  .hr-summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .hr-dashboard-header {
-    color: #111111;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding: 18px;
-    background: white;
-    
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.03);
-    border: 1px solid rgba(0, 0, 0, 0.03);
-    position: relative;
-    overflow: hidden;
-  }
-  
-  /* Add glossy effect to dashboard header */
-  .hr-dashboard-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 40%;
-    background: linear-gradient(to bottom, 
-                rgba(255, 255, 255, 0.15), 
-                rgba(255, 255, 255, 0.05));
-   
-    z-index: 1;
-  }
-  
-  .hr-header-content {
-    display: flex;
     flex-direction: column;
-    gap: 10px;
-    position: relative;
-    z-index: 2;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .hr-dashboard-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 768px) {
+  .hr-dashboard {
+    margin-left: 0;
+    padding: 1rem;
   }
   
-  .hr-dashboard-header h1 {
-    font-size: 25px;
-    font-weight: 400;
-    color: #1e293b;
-    margin: 0;
-    background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    position: relative;
-    z-index: 2;
+  .hr-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .hr-summary-cards {
+    grid-template-columns: 1fr;
   }
   
   .hr-time-filters {
-    display: flex;
-    gap: 9px;
-    position: relative;
-    z-index: 2;
+    width: 100%;
+    justify-content: space-between;
   }
   
   .hr-time-filter-btn {
-    padding: 7px 16px;
-    border: 1px solid #e5e7eb;
- 
-    background: transparent;
-    color: #64748b;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 13px;
-    font-weight: 500;
-  }
-  
-  .hr-time-filter-btn.active {
-    background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
-    color: white;
-    border-color: transparent;
-    box-shadow: 0 3px 9px rgba(114, 9, 183, 0.2);
-  }
-  
-  .hr-time-filter-btn:hover:not(.active) {
-    background-color: #f1f5f9;
-    transform: translateY(-1px);
+    flex: 1;
+    text-align: center;
   }
   
   .hr-dashboard-actions {
-    display: flex;
-    gap: 10px;
-    position: relative;
-    z-index: 2;
+    flex-direction: column;
+    width: 100%;
   }
   
-  .hr-announcement-button,
-  .hr-report-button {
-    background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 10px 18px;
-    border: none;
-   
-    font-weight: 500;
-    font-size: 13px;
-    transition: all 0.3s ease;
-    cursor: pointer;
-  }
-  
-  .hr-report-button {
-    background-color: #ffffff;
-    color: white;
-  }
-  
+  .hr-report-button,
   .hr-announcement-button {
-    background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
-    color: white;
-    box-shadow: 0 3px 9px rgba(114, 9, 183, 0.2);
-  }
-  
-  .hr-announcement-button:hover,
-  .hr-report-button:hover {
-    transform: translateY(-2px);
-  }
-  
-  .hr-report-button:hover {
-    background-color: #4361ee15;
-  }
-  
-  .hr-announcement-button:hover {
-    box-shadow: 0 5px 13px rgba(114, 9, 183, 0.3);
-  }
-  
-  /* Summary Cards with polished design */
-  .hr-summary-cards {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 18px;
-    margin-bottom: 22px;
-  }
-  
-  .hr-summary-card {
-    background: white;
-
-    padding: 22px;
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.03);
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(0, 0, 0, 0.03);
-    position: relative;
-    overflow: hidden;
-  }
-  
-  /* Glossy effect for summary cards */
-  .hr-summary-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 40%;
-    background: linear-gradient(to bottom, 
-                rgba(255, 255, 255, 0.15), 
-                rgba(255, 255, 255, 0.05));
- 
-    z-index: 1;
-  }
-  
-  .hr-summary-card::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 54px;
-    height: 100%;
-    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,1) 100%);
-    z-index: 1;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-  
-  .hr-summary-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 9px 18px rgba(0, 0, 0, 0.08);
-  }
-  
-  .hr-summary-card:hover::after {
-    opacity: 1;
-  }
-  
-  .hr-summary-card:hover::before {
-    opacity: 0.9;
-  }
-  
-  .hr-card-icon {
-    width: 50px;
-    height: 50px;
-
-    display: flex;
-    align-items: center;
+    width: 100%;
     justify-content: center;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 2;
   }
-  
-  .hr-card-content {
-    flex: 1;
-    position: relative;
-    z-index: 2;
-  }
-  
-  .hr-card-content h3 {
-    font-size: 13px;
-    color: #64748b;
-    margin: 0 0 7px 0;
-    font-weight: 500;
-  }
-  
-  .hr-card-value {
-    font-size: 25px;
-    color: #1e293b;
-    margin-bottom: 5px;
-    background: linear-gradient(90deg, #1e293b 0%, #475569 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  
-  .hr-card-change {
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    color: #64748b;
-    font-weight: 500;
-  }
-  
-  .hr-card-change.positive {
-    color: #10b981;
-  }
-  
-  .hr-card-change.negative {
-    color: #ef4444;
-  }
-  
-  .hr-card-change .down {
-    transform: rotate(180deg);
-  }
-  
-  /* HR Dashboard Grid Layout */
-  .hr-dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: auto auto;
-    gap: 22px;
-    margin-bottom: 22px;
-  }
-  
-  /* Chart Card Styles with premium look */
-  .hr-chart-card {
-    background: white;
-  
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.03);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(0, 0, 0, 0.03);
-    height: 100%;
-    position: relative;
-  }
-  
-  /* Glossy effect for chart cards */
-  .hr-chart-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 35%;
-    background: linear-gradient(to bottom, 
-                rgba(255, 255, 255, 0.12), 
-                rgba(255, 255, 255, 0.03));
+}
 
-    z-index: 1;
+@media (max-width: 576px) {
+  .hr-dashboard {
+    padding: 10px;
   }
   
-  .hr-chart-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.08);
-  }
-  
-  .hr-chart-card:hover::before {
-    opacity: 0.9;
-  }
-  
-  .hr-card-header {
-    padding: 18px;
-    border-bottom: 1px solid #f1f5f9;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #fcfcfd;
-    position: relative;
-    z-index: 2;
-  }
-  
-  .hr-card-header h2 {
-    font-size: 15px;
-    font-weight: 400;
-    color: #111111;
-    margin: 0;
-    position: relative;
-    padding-left: 11px;
-  }
-  
-  .hr-card-header h2::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 14px;
-    background: #04a9f5;
- 
-  }
-  
-  .hr-card-body {
-    padding: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-grow: 1;
-    background: white;
-    position: relative;
-    z-index: 2;
-  }
-  
+  .hr-card-header, 
+  .hr-card-body, 
   .hr-card-footer {
-    padding: 14px 18px;
-    border-top: 1px solid #f1f5f9;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    justify-content: space-between;
-    background-color: #fcfcfd;
-    position: relative;
-    z-index: 2;
-    overflow: hidden;
+    padding: 10px;
   }
   
-  /* Add glossy effect to card footer */
-  .hr-card-footer::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 40%;
-    background: linear-gradient(to bottom, 
-                rgba(255, 255, 255, 0.15), 
-                rgba(255, 255, 255, 0.05));
-    z-index: 1;
-  }
-  
-  /* Scale down the chart elements for better fit */
-  .recharts-wrapper, 
-  .recharts-surface {
-    transform: scale(0.9);
-    transform-origin: center center;
-  }
-  
-  /* Employee Distribution Updates with modern design */
-  .hr-employee-stats-footer {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 9px;
-  }
-  
-  .hr-stat-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 9px;
-    background-color: #f8fafc;
-    text-align: center;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  /* Glossy effect for stat items */
-  .hr-stat-item::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 50%;
-    background: linear-gradient(to bottom, 
-                rgba(255, 255, 255, 0.15), 
-                rgba(255, 255, 255, 0.05));
-
-    z-index: 1;
-  }
-  
-  .hr-stat-item:hover {
-    background-color: #f1f5f9;
-    transform: translateY(-2px);
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.05);
-  }
-  
-  .hr-stat-item:hover::before {
-    opacity: 0.9;
-  }
-  
-  .hr-stat-label {
-    font-size: 11px;
-    color: #64748b;
-    font-weight: 500;
-    position: relative;
-    z-index: 2;
-  }
-  
-  .hr-stat-value {
-    font-size: 18px;
-    font-weight: 700;
-    color: #1e293b;
-    background: #71a3c1;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    position: relative;
-    z-index: 2;
-  }
-  
-  /* Leave Trends Updates with elegant design */
+  .hr-employee-stats-footer,
   .hr-leave-legend-footer {
-    display: flex;
-    justify-content: space-around;
-  }
-  
-  .hr-legend-item {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 11px;
-    color: #64748b;
-    padding: 5px 13px;
-  
-    background-color: #f8fafc;
-    transition: all 0.3s ease;
-    font-weight: 500;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  /* Glossy effect for legend items */
-  .hr-legend-item::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 50%;
-    background: linear-gradient(to bottom, 
-                rgba(255, 255, 255, 0.15), 
-                rgba(255, 255, 255, 0.05));
-
-    z-index: 1;
-  }
-  
-  .hr-legend-item:hover {
-    background-color: #f1f5f9;
-    transform: translateY(-2px);
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.05);
-  }
-  
-  .hr-legend-item:hover::before {
-    opacity: 0.9;
-  }
-  
-  .hr-legend-color {
-    width: 9px;
-    height: 9px;
-
-    display: inline-block;
-    position: relative;
-    z-index: 2;
-  }
-  
-  /* Department Performance Styles */
-  .hr-view-details-btn {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    padding: 9px 14px;
-    background-color: #f8fafc;
-    border: 1px solid #e2e8f0;
-
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin-left: auto;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  /* Glossy effect for details button */
-  .hr-view-details-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 50%;
-    background: linear-gradient(to bottom, 
-                rgba(255, 255, 255, 0.15), 
-                rgba(255, 255, 255, 0.05));
-  
-    z-index: 1;
-  }
-  
-  .hr-view-details-btn:hover {
-    background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
-    color: white;
-    border-color: transparent;
-    box-shadow: 0 3px 9px rgba(114, 9, 183, 0.2);
-  }
-  
-  .hr-view-details-btn:hover::before {
-    opacity: 0.9;
-  }
-  
-  /* Progress Summary with elegant typography */
-  .hr-progress-summary {
-    font-size: 13px;
-    color: #64748b;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    position: relative;
-    z-index: 2;
-  }
-  
-  .hr-highlight {
-    font-weight: 700;
-    font-size: 16px;
-    background: #71a3c1;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  
-  /* Activity List with sophisticated design */
-  .hr-activity-list {
-    padding: 0 !important;
-    display: flex;
-    flex-direction: column;
-    gap: 11px;
-    overflow-y: auto;
-    max-height: 324px;
-    padding-right: 4px !important;
-  }
-  
-  .hr-activity-list::-webkit-scrollbar {
-    width: 4px;
-  }
-  
-  .hr-activity-list::-webkit-scrollbar-track {
-    background: #f1f5f9;
-
-  }
-  
-  .hr-activity-list::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-  
-  }
-  
-  .hr-activity-item {
-    display: flex;
-    gap: 13px;
-    padding: 14px;
-
-    background-color: #f8fafc;
-    transition: all 0.3s ease;
-    border-left: 3px solid transparent;
-    align-items: flex-start;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  /* Glossy effect for activity items */
-  .hr-activity-item::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 50%;
-    background: linear-gradient(to bottom, 
-                rgba(255, 255, 255, 0.1), 
-                rgba(255, 255, 255, 0.02));
-   
-    z-index: 1;
-  }
-  
-  .hr-activity-item:hover {
-    background-color: #f1f5f9;
-    border-left-color: #71a3c1;
-    transform: translateX(2px);
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.05);
-  }
-  
-  .hr-activity-item:hover::before {
-    opacity: 0.9;
-  }
-  
-  .hr-activity-avatar {
-    width: 32px;
-    height: 32px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    flex-shrink: 0;
-    font-weight: 600;
-    font-size: 13px;
-    box-shadow: 0 3px 7px rgba(0, 0, 0, 0.1);
-    position: relative;
-    z-index: 2;
-  }
-  
-  .hr-activity-content {
-    flex: 1;
-    position: relative;
-    z-index: 2;
-  }
-  
-  .hr-activity-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 5px;
-  }
-  
-  .hr-activity-header h4 {
-    font-size: 13px;
-    font-weight: 600;
-    color: #1e293b;
-    margin: 0;
-  }
-  
-  .hr-activity-time {
-    font-size: 11px;
-    padding: 3px 7px;
-
-    background-color: #f1f5f9;
-    color: #64748b;
-    font-weight: 500;
-  }
-  
-  .hr-activity-content p {
-    font-size: 12px;
-    color: #64748b;
-    margin: 0;
-    line-height: 1.5;
-  }
-  
-  .hr-activity-status {
-    display: flex;
-    align-items: flex-start;
-    padding-top: 2px;
-    position: relative;
-    z-index: 2;
-  }
-  
-  .status-icon {
-    width: 22px;
-    height: 22px;
-    padding: 3px;
-
-  }
-  
-  .status-icon.success {
-    color: #10b981;
-    background-color: #d1fae5;
-  }
-  
-  .status-icon.error {
-    color: #ef4444;
-    background-color: #fee2e2;
-  }
-  
-  .status-icon.pending {
-    color: #f59e0b;
-    background-color: #fff7ed;
-  }
-  
-  .hr-view-all-btn {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    padding: 9px 14px;
-    background-color: #f8fafc;
-    color: #71a3c1;
-    border: 1px solid #e2e8f0;
-
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin: 0 auto;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  /* Glossy effect for view all button */
-  .hr-view-all-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 50%;
-    background: linear-gradient(to bottom, 
-                rgba(255, 255, 255, 0.15), 
-                rgba(255, 255, 255, 0.05));
-
-    z-index: 1;
-  }
-  
-  .hr-view-all-btn:hover {
-    background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
-    color: white;
-    border-color: transparent;
-    box-shadow: 0 3px 9px rgba(114, 9, 183, 0.2);
-    transform: translateY(-2px);
-  }
-  
-  .hr-view-all-btn:hover::before {
-    opacity: 0.9;
-  }
-  
-  /* Announcements section styles */
-  .hr-create-btn {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 7px 13px;
-    background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
-    color: white;
-    border: none;
-
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 3px 5px rgba(114, 9, 183, 0.2);
-    position: relative;
-    overflow: hidden;
-  }
-  
-  /* Glossy effect for create button */
-  .hr-create-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 50%;
-    background: linear-gradient(to bottom, 
-                rgba(255, 255, 255, 0.15), 
-                rgba(255, 255, 255, 0.05));
-
-    z-index: 1;
-  }
-  
-  .hr-create-btn:hover {
-    box-shadow: 0 5px 9px rgba(114, 9, 183, 0.3);
-    transform: translateY(-2px);
-  }
-  
-  .hr-create-btn:hover::before {
-    opacity: 0.9;
-  }
-  
-  .hr-empty-state {
-    display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 29px;
-    gap: 14px;
-    color: #94a3b8;
-    height: 100%;
-    position: relative;
-    overflow: hidden;
+    gap: 7px;
   }
-  
-  /* Add glossy effect to empty state */
-  .hr-empty-state::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 40%;
-    background: linear-gradient(to bottom, 
-                rgba(255, 255, 255, 0.1), 
-                rgba(255, 255, 255, 0.02));
-    z-index: 1;
-  }
-  
-  .hr-empty-state p {
-    margin: 0;
-    font-size: 13px;
-    position: relative;
-    z-index: 2;
-  }
-  
-  .hr-create-announcement-btn {
-    padding: 9px 18px;
-    background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
-    color: white;
-    border: none;
-    border-radius: 9px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 3px 5px rgba(114, 9, 183, 0.2);
-    position: relative;
-    overflow: hidden;
-  }
-  
-  /* Glossy effect for create announcement button */
-  .hr-create-announcement-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 50%;
-    background: linear-gradient(to bottom, 
-                rgba(255, 255, 255, 0.15), 
-                rgba(255, 255, 255, 0.05));
-    border-radius: 9px 9px 0 0;
-    z-index: 1;
-  }
-  
-  .hr-create-announcement-btn:hover {
-    box-shadow: 0 7px 13px rgba(114, 9, 183, 0.3);
-    transform: translateY(-3px);
-  }
-  
-  .hr-create-announcement-btn:hover::before {
-    opacity: 0.9;
-  }
-  
-  .hr-announcements-wrapper {
-    height: 100%;
-    overflow-y: auto;
-  }
-  
-  /* Responsive Layouts */
-  @media (max-width: 1400px) {
-    .hr-dashboard-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  
-    .hr-employee-distribution,
-    .hr-leave-trends,
-    .hr-department-performance,
-    .hr-metrics,
-    .hr-recent-activity,
-    .hr-announcements {
-      grid-column: auto;
-      grid-row: auto;
-    }
-  }
-  
-  @media (max-width: 1200px) {
-    .hr-dashboard {
-      margin-left: 0;
-      padding: 14px;
-    }
-  
-    .hr-summary-cards {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  
-    .hr-dashboard-header {
-      flex-direction: column;
-      gap: 14px;
-      align-items: flex-start;
-    }
-  
-    .hr-dashboard-actions {
-      width: 100%;
-      justify-content: space-between;
-    }
-  }
-  
-  @media (max-width: 768px) {
-    .hr-dashboard {
-      margin-left: 0;
-      padding: 1rem;
-    }
-    
-    .hr-dashboard-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .hr-summary-cards {
-      grid-template-columns: 1fr;
-    }
-    
-    .hr-time-filters {
-      width: 100%;
-      justify-content: space-between;
-    }
-    
-    .hr-time-filter-btn {
-      flex: 1;
-      text-align: center;
-    }
-    
-    .hr-dashboard-actions {
-      flex-direction: column;
-      width: 100%;
-    }
-    
-    .hr-report-button,
-    .hr-announcement-button {
-      width: 100%;
-      justify-content: center;
-    }
-  }
-  
-  @media (max-width: 576px) {
-    .hr-dashboard {
-      padding: 10px;
-    }
-    
-    .hr-card-header, 
-    .hr-card-body, 
-    .hr-card-footer {
-      padding: 10px;
-    }
-    
-    .hr-employee-stats-footer,
-    .hr-leave-legend-footer {
-      flex-direction: column;
-      align-items: center;
-      gap: 7px;
-    }
-  }
-  
-  /* Zoom container for scalability */
+}
+
+/* Zoom container for scalability */
+.hr-zoom-container {
+  transition: all 0.1s ease;
+}
+
+
+@media (min-width: 1600px) {
   .hr-zoom-container {
-    transition: all 0.1s ease;
+    transform: scale(0.99);
+    transform-origin: center top;
   }
-  
-  
-  @media (min-width: 1600px) {
-    .hr-zoom-container {
-      transform: scale(0.99);
-      transform-origin: center top;
-    }
-  }
+}

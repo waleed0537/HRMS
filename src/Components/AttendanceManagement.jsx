@@ -27,13 +27,14 @@ const AttendanceManagement = () => {
     testDeviceConnection();
     fetchAttendanceData(formattedSelectedDate);
     
-    // Start auto-sync interval (every 5 seconds)
+    // FIXED: Changed from 5 seconds to 5 minutes
+    // Start auto-sync interval (every 5 minutes)
     autoSyncIntervalRef.current = setInterval(() => {
       if (isMountedRef.current) {
         console.log('Auto-sync triggered');
         syncAttendanceData(true); // true = silent mode
       }
-    }, 5000);
+    }, 300000); // Changed from 5000 (5 seconds) to 300000 (5 minutes)
     
     // Cleanup on unmount
     return () => {
@@ -323,7 +324,7 @@ const AttendanceManagement = () => {
         {/* Auto-sync status indicator */}
         <div className="attendance-auto-sync-indicator">
           <div className={`sync-pulse ${syncing ? 'active' : ''}`}></div>
-          <span>Auto-sync: Active (every 5 seconds)</span>
+          <span>Auto-sync: Active (every 5 minutes)</span>
         </div>
         
         {/* Date navigation */}
@@ -403,9 +404,12 @@ const AttendanceManagement = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {attendanceData.map((record, index) => (
+                  {attendanceData.map((record, index) => (
                       <tr key={record._id || index}>
-                        <td>{record.deviceUserId || record.employeeNumber || 'N/A'}</td>
+                        <td>
+                          {/* Force deviceUserId to be displayed as a number */}
+                          {record.deviceUserId !== undefined ? record.deviceUserId : (record.employeeNumber || 'N/A')}
+                        </td>
                         <td>{record.employeeName || 'Unknown'}</td>
                         <td>
                           <span className="attendance-present-badge">

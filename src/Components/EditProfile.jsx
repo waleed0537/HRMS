@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  User, Mail, Phone, MapPin, Building, Briefcase, 
+import {
+  User, Mail, Phone, MapPin, Building, Briefcase,
   Save, Upload, X, FileText, Clock, Award, Calendar, AlertCircle,
   Menu, ChevronDown, ChevronUp, Info
 } from 'lucide-react';
@@ -21,7 +21,7 @@ const EditProfile = () => {
   const [debugInfo, setDebugInfo] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
-  
+
   // Add milestone tracking
   const [showMilestoneForm, setShowMilestoneForm] = useState(false);
   const [milestone, setMilestone] = useState({
@@ -32,11 +32,11 @@ const EditProfile = () => {
     branch: '',
     type: 'milestone'
   });
-  
+
   // Mobile specific states
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  
+
   const [formData, setFormData] = useState({
     personalDetails: {
       name: '',
@@ -62,7 +62,7 @@ const EditProfile = () => {
         setMobileNavOpen(false);
       }
     };
-    
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -72,22 +72,78 @@ const EditProfile = () => {
     const fetchCurrentUser = async () => {
       try {
         setLoadingUser(true);
-        const response = await fetch(`${API_BASE_URL}/api/profile`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        console.log('Fetching current user profile...');
+
+        // Add more error handling and retry logic for the profile endpoint
+        let response;
+        try {
+          response = await fetch(`${API_BASE_URL}/api/profile`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+        } catch (fetchError) {
+          console.error("Network error fetching profile:", fetchError);
+
+          // Alternative approach if profile endpoint fails - get user data from localStorage
+          console.log("Trying to use stored user data as fallback...");
+          const storedUser = localStorage.getItem('user');
+
+          if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            setCurrentUser({
+              isAdmin: parsedUser.isAdmin,
+              email: parsedUser.email,
+              role: parsedUser.role,
+              professionalDetails: {
+                role: parsedUser.role,
+                branch: parsedUser.branchName || 'Unknown'
+              }
+            });
+            setLoadingUser(false);
+            return;
           }
-        });
+
+          throw new Error(`Network error: ${fetchError.message}`);
+        }
 
         if (!response.ok) {
-          throw new Error('Failed to fetch current user profile');
+          const errorText = await response.text();
+          console.error("Profile request failed:", response.status, errorText);
+
+          // If we get a 404, try the fallback approach
+          if (response.status === 404) {
+            // Try to use stored user data
+            const storedUser = localStorage.getItem('user');
+
+            if (storedUser) {
+              const parsedUser = JSON.parse(storedUser);
+              setCurrentUser({
+                isAdmin: parsedUser.isAdmin,
+                email: parsedUser.email,
+                role: parsedUser.role,
+                professionalDetails: {
+                  role: parsedUser.role,
+                  branch: parsedUser.branchName || 'Unknown'
+                }
+              });
+              setLoadingUser(false);
+              return;
+            }
+          }
+
+          throw new Error(`Failed to fetch profile: ${response.status} ${errorText}`);
         }
 
         const userData = await response.json();
+        console.log("User profile loaded successfully");
         setCurrentUser(userData);
-        console.log("Current user loaded:", userData);
       } catch (err) {
-        console.error("Error fetching current user:", err);
-        error("Failed to load your profile information");
+        console.error("Error in fetchCurrentUser:", err);
+        error("Failed to load your profile. Using limited functionality.");
+
+        // We still need to set loadingUser to false so the UI can proceed
+        // This allows the component to work even with profile fetch errors
       } finally {
         setLoadingUser(false);
       }
@@ -107,12 +163,13 @@ const EditProfile = () => {
     try {
       setLoading(true);
       let endpoint = `${API_BASE_URL}/api/employees`;
-      
-      // If user is an HR manager, use HR-specific endpoint or filter
-      if (currentUser && currentUser.professionalDetails?.role === 'hr_manager') {
-        // You could use a specific HR endpoint if available:
-        // endpoint = `${API_BASE_URL}/api/hr/employees`;
-        console.log(`HR Manager detected for branch: ${currentUser.professionalDetails.branch}`);
+
+      // Use the HR edit profiles endpoint for both HR managers and admins
+      // This endpoint is now properly handling both roles
+      if (currentUser && (currentUser.professionalDetails?.role === 'hr_manager' || currentUser.isAdmin)) {
+        endpoint = `${API_BASE_URL}/api/hr/edit-profiles`;
+        console.log('Using HR edit profiles endpoint for user role:',
+          currentUser.isAdmin ? 'Admin' : currentUser.professionalDetails?.role);
       }
 
       const response = await fetch(endpoint, {
@@ -126,30 +183,10 @@ const EditProfile = () => {
       }
 
       let data = await response.json();
-      
-      // For HR managers, filter employees by their branch on the client side
-      if (currentUser && 
-          currentUser.professionalDetails?.role === 'hr_manager' && 
-          currentUser.professionalDetails?.branch) {
-        
-        const hrBranch = currentUser.professionalDetails.branch;
-        console.log(`Filtering employees for branch: ${hrBranch}`);
-        
-        // Filter employees to only include those from HR's branch
-        data = data.filter(employee => 
-          employee.professionalDetails?.branch === hrBranch
-        );
-        
-        console.log(`Filtered to ${data.length} employees in branch ${hrBranch}`);
-      }
-      
-      if (Array.isArray(data)) {
-        setEmployees(data);
-      } else {
-        console.error("Employees data is not an array:", data);
-        setEmployees([]);
-      }
-      
+      console.log(`Fetched ${data.length} employees for editing`);
+
+      // No need for client-side filtering as the server now handles it
+      setEmployees(Array.isArray(data) ? data : []);
       setLoading(false);
     } catch (err) {
       console.error("Error fetching employees:", err);
@@ -165,22 +202,24 @@ const EditProfile = () => {
       resetForm();
       return;
     }
-    
+
     try {
       setLoading(true);
-      
+
       const employee = employees.find(emp => emp._id === employeeId);
-      
+
       // Check if employee exists and is from the HR's branch if user is HR
+      // But don't restrict admins from seeing any employee
       if (employee) {
-        if (currentUser && 
-            currentUser.professionalDetails?.role === 'hr_manager' && 
-            employee.professionalDetails?.branch !== currentUser.professionalDetails?.branch) {
+        if (currentUser &&
+          currentUser.professionalDetails?.role === 'hr_manager' &&
+          !currentUser.isAdmin && // Add this check to bypass for admins
+          employee.professionalDetails?.branch !== currentUser.professionalDetails?.branch) {
           throw new Error(`You don't have permission to edit employees from other branches`);
         }
-        
+
         setSelectedEmployee(employee);
-        
+
         try {
           // Fetch employee documents
           const docsResponse = await fetch(`${API_BASE_URL}/api/employees/${employeeId}/documents`, {
@@ -188,27 +227,27 @@ const EditProfile = () => {
               'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
           });
-          
+
           if (!docsResponse.ok) {
             throw new Error('Failed to fetch employee documents');
           }
-          
+
           const docsData = await docsResponse.json();
           setDocuments(Array.isArray(docsData) ? docsData : []);
         } catch (docError) {
           console.error("Error fetching documents:", docError);
           setDocuments([]);
         }
-        
+
         // Update form data with employee details, ensuring we have valid objects
         setFormData({
-          personalDetails: { 
+          personalDetails: {
             name: employee?.personalDetails?.name || '',
             contact: employee?.personalDetails?.contact || '',
             email: employee?.personalDetails?.email || '',
             address: employee?.personalDetails?.address || ''
           },
-          professionalDetails: { 
+          professionalDetails: {
             role: employee?.professionalDetails?.role || '',
             branch: employee?.professionalDetails?.branch || '',
             department: employee?.professionalDetails?.department || '',
@@ -216,14 +255,14 @@ const EditProfile = () => {
           },
           milestones: []
         });
-        
+
         // Reset the mobile nav menu when selecting a new employee
         setMobileNavOpen(false);
       } else {
         console.error("Employee not found in the list");
         error("Employee not found");
       }
-      
+
       setLoading(false);
     } catch (err) {
       console.error("Error in handleEmployeeSelect:", err);
@@ -264,12 +303,12 @@ const EditProfile = () => {
 
   const handleInputChange = (section, field, value) => {
     // For HR managers, restrict branch changes to their own branch
-    if (section === 'professionalDetails' && field === 'branch' && 
-        currentUser?.professionalDetails?.role === 'hr_manager') {
+    if (section === 'professionalDetails' && field === 'branch' &&
+      currentUser?.professionalDetails?.role === 'hr_manager') {
       // Force branch to be HR's branch
       value = currentUser.professionalDetails.branch;
     }
-    
+
     setFormData(prev => ({
       ...prev,
       [section]: {
@@ -282,30 +321,30 @@ const EditProfile = () => {
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files);
     setDocumentError(null);
-    
+
     // Check file size (5MB limit)
     const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
       setDocumentError(`Some files exceed the 5MB limit: ${oversizedFiles.map(f => f.name).join(', ')}`);
       return;
     }
-    
+
     // Check file type
     const allowedTypes = [
-      'application/pdf', 
-      'application/msword', 
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
-      'image/jpeg', 
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
       'image/png',
       'image/gif'
     ];
-    
+
     const invalidFiles = files.filter(file => !allowedTypes.includes(file.type));
     if (invalidFiles.length > 0) {
       setDocumentError(`Invalid file format: ${invalidFiles.map(f => f.name).join(', ')}. Only PDF, Word, and images are allowed.`);
       return;
     }
-    
+
     setUploadedDocuments(prev => [...prev, ...files]);
   };
 
@@ -315,7 +354,7 @@ const EditProfile = () => {
 
   const removeExistingDocument = async (documentId) => {
     if (!selectedEmployee) return;
-    
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/employees/${selectedEmployee._id}/documents/${documentId}`, {
         method: 'DELETE',
@@ -363,15 +402,15 @@ const EditProfile = () => {
       { value: 't1_member', label: 'T1 Member' },
       { value: 'operational_manager', label: 'Operational Manager' }
     ];
-    
+
     return roles.map(role => {
       const isCurrentRole = selectedEmployee?.professionalDetails?.role === role.value;
       const isSelected = formData.professionalDetails.role === role.value;
       const changed = isCurrentRole && !isSelected;
-      
+
       return (
-        <option 
-          key={role.value} 
+        <option
+          key={role.value}
           value={role.value}
           className={changed ? 'role-changed' : isCurrentRole ? 'current-role' : ''}
         >
@@ -387,12 +426,12 @@ const EditProfile = () => {
     if (field === 'branch' && currentUser?.professionalDetails?.role === 'hr_manager') {
       value = currentUser.professionalDetails.branch;
     }
-    
+
     setMilestone(prev => ({
       ...prev,
       [field]: value
     }));
-    
+
     // Auto-set branch from professional details if not set
     if (field === 'branch' && !value) {
       setMilestone(prev => ({
@@ -408,19 +447,19 @@ const EditProfile = () => {
       error('Please provide both title and description for the milestone');
       return;
     }
-    
+
     // Add milestone to form data with current date if not specified
     const newMilestone = {
       ...milestone,
       branch: milestone.branch || formData.professionalDetails.branch,
       date: milestone.date || new Date().toISOString().split('T')[0]
     };
-    
+
     setFormData(prev => ({
       ...prev,
       milestones: [...prev.milestones, newMilestone]
     }));
-    
+
     // Reset milestone form
     setMilestone({
       title: '',
@@ -431,7 +470,7 @@ const EditProfile = () => {
       type: 'milestone'
     });
     setShowMilestoneForm(false);
-    
+
     // Show success message
     success('Milestone added and will be saved with profile updates');
   };
@@ -452,19 +491,19 @@ const EditProfile = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (!historyResponse.ok) {
         throw new Error('Failed to fetch history');
       }
-      
+
       const historyData = await historyResponse.json();
-      
+
       // Add this for debugging 
       setDebugInfo({
         historyCount: historyData.length,
         history: historyData
       });
-      
+
       // Return whether history has items
       return historyData.length > 0;
     } catch (err) {
@@ -481,25 +520,25 @@ const EditProfile = () => {
       error('No employee selected');
       return;
     }
-    
+
     // Check if there are document validation errors
     if (documentError) {
       error(documentError);
       return;
     }
-    
+
     // For HR managers, ensure branch stays as their branch
     if (currentUser?.professionalDetails?.role === 'hr_manager') {
       formData.professionalDetails.branch = currentUser.professionalDetails.branch;
     }
-    
+
     try {
       setLoading(true);
-      
+
       const formPayload = new FormData();
-      
+
       // Detect role changes and branch transfers and add as automatic milestones
-      
+
       if (GENERATE_AUTO_MILESTONES_CLIENT_SIDE) {
         // Check for role change  
         if (selectedEmployee.professionalDetails?.role !== formData.professionalDetails.role) {
@@ -513,7 +552,7 @@ const EditProfile = () => {
           };
           autoMilestones.push(roleMilestone);
         }
-      
+
         // Check for branch transfer
         if (selectedEmployee.professionalDetails?.branch !== formData.professionalDetails.branch) {
           const branchMilestone = {
@@ -526,7 +565,7 @@ const EditProfile = () => {
           };
           autoMilestones.push(branchMilestone);
         }
-      
+
         // Check for status change
         if (selectedEmployee.professionalDetails?.status !== formData.professionalDetails.status) {
           const statusText = formData.professionalDetails.status.replace('_', ' ');
@@ -541,10 +580,10 @@ const EditProfile = () => {
           autoMilestones.push(statusMilestone);
         }
       }
-      
+
       // Combine auto-generated milestones with manually added ones
       const allMilestones = [...autoMilestones, ...formData.milestones];
-      
+
       // Prepare data structure with all updates
       const sanitizedFormData = {
         personalDetails: {
@@ -565,11 +604,11 @@ const EditProfile = () => {
 
       // Always include milestones array to ensure it's processed
       sanitizedFormData.milestones = allMilestones;
-      
+
       console.log("Submitting employee update with milestones:", sanitizedFormData.milestones);
-      
+
       formPayload.append('employeeData', JSON.stringify(sanitizedFormData));
-      
+
       // Add uploaded documents if any
       if (uploadedDocuments && uploadedDocuments.length > 0) {
         uploadedDocuments.forEach(doc => {
@@ -578,7 +617,7 @@ const EditProfile = () => {
           }
         });
       }
-      
+
       const response = await fetch(`${API_BASE_URL}/api/employees/${selectedEmployee._id}`, {
         method: 'PUT',
         headers: {
@@ -586,20 +625,20 @@ const EditProfile = () => {
         },
         body: formPayload
       });
-  
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Server error response:", errorText);
         throw new Error(`Failed to update employee details: ${response.status} ${response.statusText}`);
       }
-  
+
       // Get response data
       const responseData = await response.json();
       console.log("Update response:", responseData);
-      
+
       const milestonesCount = sanitizedFormData.milestones.length;
       const autoCount = autoMilestones.length;
-      
+
       // Reset uploaded documents and milestones
       setUploadedDocuments([]);
       setDocumentError(null);
@@ -607,11 +646,11 @@ const EditProfile = () => {
         ...prev,
         milestones: []
       }));
-      
+
       // Refresh employee data
       await fetchEmployees();
       await handleEmployeeSelect(selectedEmployee._id);
-      
+
       // Show toast with milestone count information
       let successMessage = 'Employee profile updated successfully.';
       if (milestonesCount > 0) {
@@ -621,9 +660,9 @@ const EditProfile = () => {
         }
         successMessage += '.';
       }
-      
+
       success(successMessage);
-      
+
     } catch (err) {
       console.error("Submit error:", err);
       error('Error updating profile: ' + (err.message || 'Unknown error'));
@@ -654,25 +693,25 @@ const EditProfile = () => {
   // Function to render either an avatar image or a text-based avatar with user's initial
   const renderAvatar = () => {
     if (!selectedEmployee) return null;
-    
+
     // Get name for display and initials
     const name = selectedEmployee?.personalDetails?.name || 'User';
     const initial = getInitials(name);
-    
+
     // Check if user has a profilePic (from user or employee object)
     const profilePic = selectedEmployee?.user?.profilePic || selectedEmployee?.profilePic;
-    
+
     if (profilePic) {
       return (
         <div className="profile-avatar">
-          <img 
+          <img
             src={new URL(`../assets/avatars/avatar-${profilePic}.jpg`, import.meta.url).href}
             alt={name}
-            style={{ 
-              width: '100%', 
-              height: '100%', 
-              borderRadius: '50%', 
-              objectFit: 'cover' 
+            style={{
+              width: '100%',
+              height: '100%',
+              borderRadius: '50%',
+              objectFit: 'cover'
             }}
             onError={(e) => {
               // If image fails to load, replace with initial
@@ -684,7 +723,7 @@ const EditProfile = () => {
         </div>
       );
     }
-    
+
     // Fallback to initial-based avatar
     return (
       <div className="profile-avatar initial-avatar">
@@ -698,7 +737,7 @@ const EditProfile = () => {
     if (currentUser?.professionalDetails?.role !== 'hr_manager') {
       return null;
     }
-    
+
     return (
       <div className="branch-restriction-notice">
         <Info size={18} />
@@ -734,7 +773,7 @@ const EditProfile = () => {
 
   const renderStatusBadge = () => {
     if (!selectedEmployee || !selectedEmployee.professionalDetails) return null;
-    
+
     const status = selectedEmployee.professionalDetails?.status || 'active';
     return (
       <span className={`profile-status status-${status}`}>
@@ -746,9 +785,9 @@ const EditProfile = () => {
   // Render mobile navigation toggle
   const renderMobileNavToggle = () => {
     if (windowWidth > 768 || !selectedEmployee) return null;
-    
+
     return (
-      <button 
+      <button
         className="mobile-nav-toggle"
         onClick={() => setMobileNavOpen(!mobileNavOpen)}
         aria-label={mobileNavOpen ? "Close navigation menu" : "Open navigation menu"}
@@ -764,31 +803,31 @@ const EditProfile = () => {
   // Render mobile section navigation
   const renderMobileNav = () => {
     if (windowWidth > 768 || !selectedEmployee || !mobileNavOpen) return null;
-    
+
     return (
       <div className="mobile-nav-menu">
-        <button 
+        <button
           className={`mobile-nav-item ${activeSection === 'personal' ? 'active' : ''}`}
           onClick={() => handleNavClick('personal')}
         >
           <User size={18} />
           Personal Details
         </button>
-        <button 
+        <button
           className={`mobile-nav-item ${activeSection === 'professional' ? 'active' : ''}`}
           onClick={() => handleNavClick('professional')}
         >
           <Briefcase size={18} />
           Professional Details
         </button>
-        <button 
+        <button
           className={`mobile-nav-item ${activeSection === 'milestones' ? 'active' : ''}`}
           onClick={() => handleNavClick('milestones')}
         >
           <Award size={18} />
           Employment Milestones
         </button>
-        <button 
+        <button
           className={`mobile-nav-item ${activeSection === 'documents' ? 'active' : ''}`}
           onClick={() => handleNavClick('documents')}
         >
@@ -836,19 +875,19 @@ const EditProfile = () => {
           <h1 className="page-title">Edit Employee Profiles</h1>
           <p className="page-description">Update employee information, status, and documents</p>
         </div>
-        
+
         {renderBranchRestrictionNotice()}
-        
+
         <div className="employee-selector">
           <label htmlFor="employee-select">
-            Select Employee 
+            Select Employee
             {currentUser?.professionalDetails?.role === 'hr_manager' && (
               <span className="branch-filter-label">
                 (From {currentUser.professionalDetails.branch} branch)
               </span>
             )}
           </label>
-          <select 
+          <select
             id="employee-select"
             className="employee-select"
             value={selectedEmployee?._id || ''}
@@ -875,7 +914,7 @@ const EditProfile = () => {
           {/* Mobile navigation toggle and dropdown */}
           {renderMobileNavToggle()}
           {renderMobileNav()}
-          
+
           <div className="profile-sidebar">
             <div className="profile-info">
               {renderAvatar()}
@@ -883,30 +922,30 @@ const EditProfile = () => {
               <p className="profile-role">{formatRole(selectedEmployee?.professionalDetails?.role) || 'Employee'}</p>
               {renderStatusBadge()}
             </div>
-            
+
             <div className="profile-nav">
-              <button 
+              <button
                 className={`nav-item ${activeSection === 'personal' ? 'active' : ''}`}
                 onClick={() => handleNavClick('personal')}
               >
                 <User size={18} />
                 Personal Details
               </button>
-              <button 
+              <button
                 className={`nav-item ${activeSection === 'professional' ? 'active' : ''}`}
                 onClick={() => handleNavClick('professional')}
               >
                 <Briefcase size={18} />
                 Professional Details
               </button>
-              <button 
+              <button
                 className={`nav-item ${activeSection === 'milestones' ? 'active' : ''}`}
                 onClick={() => handleNavClick('milestones')}
               >
                 <Award size={18} />
                 Employment Milestones
               </button>
-              <button 
+              <button
                 className={`nav-item ${activeSection === 'documents' ? 'active' : ''}`}
                 onClick={() => handleNavClick('documents')}
               >
@@ -915,14 +954,14 @@ const EditProfile = () => {
               </button>
             </div>
           </div>
-          
+
           <div className="edit-form">
             {loading && (
               <div className="form-loading-overlay">
                 <div className="spinner"></div>
               </div>
             )}
-            
+
             {/* Debug info panel */}
             {showDebugInfo && debugInfo && (
               <div className="debug-panel">
@@ -933,7 +972,7 @@ const EditProfile = () => {
                 </div>
               </div>
             )}
-            
+
             <form onSubmit={handleSubmit}>
               {/* Personal Details Section */}
               {activeSection === 'personal' && (
@@ -944,7 +983,7 @@ const EditProfile = () => {
                       Personal Details
                     </h3>
                   </div>
-                  
+
                   <div className="form-grid">
                     <div className="form-field">
                       <label htmlFor="full-name">Full Name</label>
@@ -960,7 +999,7 @@ const EditProfile = () => {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="form-field">
                       <label htmlFor="email">Email</label>
                       <div className="input-icon-wrapper">
@@ -975,7 +1014,7 @@ const EditProfile = () => {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="form-field">
                       <label htmlFor="contact">Contact Number</label>
                       <div className="input-icon-wrapper">
@@ -990,7 +1029,7 @@ const EditProfile = () => {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="form-field full-width">
                       <label htmlFor="address">Address</label>
                       <div className="input-icon-wrapper">
@@ -1007,7 +1046,7 @@ const EditProfile = () => {
                   </div>
                 </div>
               )}
-              
+
               {/* Professional Details Section */}
               {activeSection === 'professional' && (
                 <div className="form-section">
@@ -1017,7 +1056,7 @@ const EditProfile = () => {
                       Professional Details
                     </h3>
                   </div>
-                  
+
                   <div className="form-grid">
                     <div className="form-field">
                       <label htmlFor="role">Role</label>
@@ -1035,7 +1074,7 @@ const EditProfile = () => {
                         </select>
                       </div>
                     </div>
-                    
+
                     <div className="form-field">
                       <label htmlFor="branch">
                         Branch
@@ -1057,7 +1096,7 @@ const EditProfile = () => {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="form-field">
                       <label htmlFor="department">Department</label>
                       <div className="input-icon-wrapper">
@@ -1071,7 +1110,7 @@ const EditProfile = () => {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="form-field">
                       <label htmlFor="status">Status</label>
                       <div className="input-icon-wrapper">
@@ -1091,7 +1130,7 @@ const EditProfile = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Feedback about automatic milestone tracking */}
                   <div className="form-feedback">
                     {formData.milestones.length > 0 && (
@@ -1100,21 +1139,21 @@ const EditProfile = () => {
                         <span>You have {formData.milestones.length} pending milestones to be saved</span>
                       </div>
                     )}
-                    
+
                     {selectedEmployee?.professionalDetails?.role !== formData.professionalDetails.role && (
                       <div className="change-indicator role">
                         <Briefcase size={16} />
                         <span>Role change will be recorded in history</span>
                       </div>
                     )}
-                    
+
                     {selectedEmployee?.professionalDetails?.branch !== formData.professionalDetails.branch && (
                       <div className="change-indicator branch">
                         <Building size={16} />
                         <span>Branch transfer will be recorded in history</span>
                       </div>
                     )}
-                    
+
                     {selectedEmployee?.professionalDetails?.status !== formData.professionalDetails.status && (
                       <div className="change-indicator status">
                         <Clock size={16} />
@@ -1122,30 +1161,30 @@ const EditProfile = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   {selectedEmployee.professionalDetails?.role !== formData.professionalDetails.role && (
                     <div className="role-change-alert">
                       <Award size={18} />
                       <p>
-                        <strong>Role Change Detected:</strong> Changing from {formatRole(selectedEmployee.professionalDetails?.role)} to {formatRole(formData.professionalDetails.role)}. 
+                        <strong>Role Change Detected:</strong> Changing from {formatRole(selectedEmployee.professionalDetails?.role)} to {formatRole(formData.professionalDetails.role)}.
                         This change will be automatically recorded in the employee's history.
                       </p>
                     </div>
                   )}
-                  
-                  {currentUser?.professionalDetails?.role !== 'hr_manager' && 
-                   selectedEmployee.professionalDetails?.branch !== formData.professionalDetails.branch && (
-                    <div className="branch-change-alert">
-                      <Building size={18} />
-                      <p>
-                        <strong>Branch Transfer Detected:</strong> Moving from {selectedEmployee.professionalDetails?.branch} to {formData.professionalDetails.branch}. 
-                        This change will be automatically recorded in the employee's history.
-                      </p>
-                    </div>
-                  )}
+
+                  {currentUser?.professionalDetails?.role !== 'hr_manager' &&
+                    selectedEmployee.professionalDetails?.branch !== formData.professionalDetails.branch && (
+                      <div className="branch-change-alert">
+                        <Building size={18} />
+                        <p>
+                          <strong>Branch Transfer Detected:</strong> Moving from {selectedEmployee.professionalDetails?.branch} to {formData.professionalDetails.branch}.
+                          This change will be automatically recorded in the employee's history.
+                        </p>
+                      </div>
+                    )}
                 </div>
               )}
-              
+
               {/* Milestones Section */}
               {activeSection === 'milestones' && (
                 <div className="form-section">
@@ -1155,8 +1194,8 @@ const EditProfile = () => {
                       Employment Milestones
                     </h3>
                     {!showMilestoneForm && (
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         className="add-milestone-btn"
                         onClick={() => setShowMilestoneForm(true)}
                       >
@@ -1164,7 +1203,7 @@ const EditProfile = () => {
                       </button>
                     )}
                   </div>
-                  
+
                   {showMilestoneForm ? (
                     <div className="milestone-form">
                       <div className="form-grid">
@@ -1180,7 +1219,7 @@ const EditProfile = () => {
                             required
                           />
                         </div>
-                        
+
                         <div className="form-field">
                           <label htmlFor="milestone-date">Date <span className="required">*</span></label>
                           <input
@@ -1192,7 +1231,7 @@ const EditProfile = () => {
                             required
                           />
                         </div>
-                        
+
                         <div className="form-field full-width">
                           <label htmlFor="milestone-description">Description <span className="required">*</span></label>
                           <textarea
@@ -1205,7 +1244,7 @@ const EditProfile = () => {
                             required
                           />
                         </div>
-                        
+
                         <div className="form-field">
                           <label htmlFor="milestone-branch">
                             Branch
@@ -1219,8 +1258,8 @@ const EditProfile = () => {
                               id="milestone-branch"
                               type="text"
                               className="form-input"
-                              value={currentUser?.professionalDetails?.role === 'hr_manager' 
-                                ? currentUser.professionalDetails.branch 
+                              value={currentUser?.professionalDetails?.role === 'hr_manager'
+                                ? currentUser.professionalDetails.branch
                                 : (milestone.branch || formData.professionalDetails.branch)}
                               onChange={(e) => handleMilestoneChange('branch', e.target.value)}
                               readOnly={currentUser?.professionalDetails?.role === 'hr_manager'}
@@ -1229,7 +1268,7 @@ const EditProfile = () => {
                             />
                           </div>
                         </div>
-                        
+
                         <div className="form-field full-width">
                           <label htmlFor="milestone-impact">Impact (Optional)</label>
                           <textarea
@@ -1242,17 +1281,17 @@ const EditProfile = () => {
                           />
                         </div>
                       </div>
-                      
+
                       <div className="milestone-actions">
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           className="cancel-milestone-btn"
                           onClick={() => setShowMilestoneForm(false)}
                         >
                           Cancel
                         </button>
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           className="add-milestone-btn"
                           onClick={handleAddMilestone}
                         >
@@ -1326,7 +1365,7 @@ const EditProfile = () => {
                   )}
                 </div>
               )}
-              
+
               {/* Documents Section */}
               {activeSection === 'documents' && (
                 <div className="form-section">
@@ -1336,7 +1375,7 @@ const EditProfile = () => {
                       Documents
                     </h3>
                   </div>
-                  
+
                   <div className="document-upload">
                     <input
                       type="file"
@@ -1356,14 +1395,14 @@ const EditProfile = () => {
                       </div>
                     </label>
                   </div>
-                  
+
                   {documentError && (
                     <div className="document-error">
                       <AlertCircle size={18} />
                       <span>{documentError}</span>
                     </div>
                   )}
-                  
+
                   {uploadedDocuments.length > 0 && (
                     <div className="document-list">
                       <div className="document-list-header">
@@ -1371,17 +1410,17 @@ const EditProfile = () => {
                       </div>
                       <div className="document-items-container">
                         {uploadedDocuments.map((doc, index) => (
-                          <DocumentItem 
-                            key={index} 
-                            document={doc} 
-                            isUploaded={true} 
-                            index={index} 
+                          <DocumentItem
+                            key={index}
+                            document={doc}
+                            isUploaded={true}
+                            index={index}
                           />
                         ))}
                       </div>
                     </div>
                   )}
-                  
+
                   {documents.length > 0 && (
                     <div className="existing-documents">
                       <div className="document-list-header">
@@ -1389,10 +1428,10 @@ const EditProfile = () => {
                       </div>
                       <div className="document-items-container">
                         {documents.map(doc => (
-                          <DocumentItem 
-                            key={doc._id} 
-                            document={doc} 
-                            isUploaded={false} 
+                          <DocumentItem
+                            key={doc._id}
+                            document={doc}
+                            isUploaded={false}
                           />
                         ))}
                       </div>
@@ -1400,10 +1439,10 @@ const EditProfile = () => {
                   )}
                 </div>
               )}
-              
+
               <div className="form-actions">
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="submit-button"
                   disabled={loading}
                 >

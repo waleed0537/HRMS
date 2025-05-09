@@ -1,4 +1,4 @@
-// attendance-sync-daemon.js - Standalone service for ZKTeco attendance sync
+// Modified attendance-sync-daemon.js with reduced logging and hourly log rotation
 const ZKLib = require('zklib');
 const mongoose = require('mongoose');
 const fs = require('fs');
@@ -29,7 +29,7 @@ const CONFIG = {
 
   // Sync settings
   sync: {
-    interval: parseInt(process.env.SYNC_INTERVAL || '5000'), // 5 seconds
+    interval: parseInt(process.env.SYNC_INTERVAL || '30000'), // 30 seconds
     maxRetries: parseInt(process.env.MAX_RETRIES || '3'),
     retryDelay: parseInt(process.env.RETRY_DELAY || '3000')
   },
@@ -37,8 +37,9 @@ const CONFIG = {
   // Logging settings
   logs: {
     dir: process.env.LOG_DIR || './logs',
-    level: process.env.LOG_LEVEL || 'debug',
-    retention: parseInt(process.env.LOG_RETENTION || '7') // days
+    level: process.env.LOG_LEVEL || 'info', // Changed from debug to info for fewer logs
+    retention: parseInt(process.env.LOG_RETENTION || '7'), // days
+    cleanInterval: parseInt(process.env.LOG_CLEAN_INTERVAL || '3600000') // 1 hour in milliseconds
   }
 };
 
@@ -51,6 +52,9 @@ if (!fs.existsSync(CONFIG.logs.dir)) {
 const today = new Date().toISOString().split('T')[0];
 const logFile = path.join(CONFIG.logs.dir, `attendance-sync-${today}.log`);
 
+// Create empty log file or clear existing file
+fs.writeFileSync(logFile, `=== Log started at ${new Date().toISOString()} ===\n`);
+
 // Track sync statistics
 let syncStats = {
   lastSync: null,
@@ -62,7 +66,10 @@ let syncStats = {
   startTime: new Date()
 };
 
-// Enhanced logging function with colors for console and file output
+// Time of last log cleanup
+let lastLogCleanup = new Date();
+
+// Modified logging function with reduced verbosity
 function log(level, message, data = null) {
   const levels = ['error', 'warn', 'info', 'debug'];
   const configLevel = CONFIG.logs.level.toLowerCase();
@@ -71,14 +78,43 @@ function log(level, message, data = null) {
     return; // Skip logging if level is higher than config
   }
 
+  // Filter out unnecessary logs
+  // Only log errors, warnings, and important info messages
+  if (level === 'debug') {
+    // Omit most debug messages except for essential ones
+    if (!message.includes('Connection successful') && 
+        !message.includes('Today\'s attendance') &&
+        !message.includes('NEW ATTENDANCE RECORDS')) {
+      return;
+    }
+  }
+
+  // Skip detailed data dumps for routine operations
+  if (message.includes('Processing record:') || 
+      message.includes('Found users:') || 
+      message.includes('Retrieved') && message.includes('attendance records')) {
+    data = null; // Skip detailed data
+  }
+
   const timestamp = new Date().toISOString();
   let logMessage = message;
 
-  // Add data as JSON if provided
+  // Add data as JSON if provided, but limit verbosity
   if (data) {
     if (typeof data === 'object') {
       try {
-        logMessage += ' ' + JSON.stringify(data, null, 2);
+        // Limit JSON stringification depth to reduce verbosity
+        const stringified = JSON.stringify(data, (key, value) => {
+          // Filter out nested objects and arrays to reduce log size
+          if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            return '[Object]';
+          }
+          if (Array.isArray(value) && value.length > 5) {
+            return `[Array(${value.length})]`;
+          }
+          return value;
+        });
+        logMessage += ' ' + stringified;
       } catch (e) {
         logMessage += ' [Object cannot be stringified]';
       }
@@ -105,6 +141,29 @@ function log(level, message, data = null) {
     fs.appendFileSync(logFile, logEntry);
   } catch (err) {
     console.error('Error writing to log file:', err);
+  }
+}
+
+// New function to clear log file every hour
+function cleanLogFile() {
+  try {
+    const now = new Date();
+    const hoursSinceLastCleanup = (now - lastLogCleanup) / (1000 * 60 * 60);
+    
+    // Check if an hour has passed
+    if (hoursSinceLastCleanup >= 1) {
+      // Clear the log file and start fresh
+      fs.writeFileSync(logFile, `=== Log cleared at ${now.toISOString()} ===\n`);
+      
+      // Log summary stats before clearing
+      fs.appendFileSync(logFile, `[SUMMARY] Today's attendance: ${syncStats.todayRecords} records\n`);
+      fs.appendFileSync(logFile, `[SUMMARY] Successful syncs: ${syncStats.successfulSyncs}, Failed syncs: ${syncStats.failedSyncs}\n`);
+      
+      log('info', `Log file cleared. Starting fresh log at ${now.toISOString()}`);
+      lastLogCleanup = now;
+    }
+  } catch (error) {
+    console.error('Error cleaning log file:', error);
   }
 }
 
@@ -237,6 +296,7 @@ const SyncStatus = mongoose.model('SyncStatus', syncStatusSchema);
 // Connection status tracking
 let isConnected = false;
 let syncIntervalId = null;
+let logCleanupIntervalId = null; // Track log cleanup interval
 
 // Connect to MongoDB
 async function connectToDatabase() {
@@ -260,15 +320,17 @@ async function pingDevice(ip) {
       ? `ping -n 1 -w 2000 ${ip}`
       : `ping -c 1 -W 2 ${ip}`;
 
-    log('debug', `Executing ping command: ${pingCmd}`);
-
+    // Reduced logging - don't log ping command details
     childProcess.exec(pingCmd, (error, stdout) => {
       const isAlive = !error &&
         (platform === 'win32'
           ? stdout.includes('Reply from')
           : stdout.includes(' 0% packet loss'));
 
-      log(isAlive ? 'debug' : 'warn', `Ping result for ${ip}: ${isAlive ? 'Device reachable' : 'Device unreachable'}`);
+      // Only log if ping fails
+      if (!isAlive) {
+        log('warn', `Ping result for ${ip}: Device unreachable`);
+      }
 
       resolve({
         alive: isAlive,
@@ -288,13 +350,16 @@ function createZkInstance() {
     attendanceParser: CONFIG.device.attendanceParser
   };
   
-  log('debug', 'Creating ZK instance with options:', zkOptions);
+  // Reduce logging - don't log instance creation details
   return new ZKLib(zkOptions);
 }
 
 // Multi-try approach to connect to ZKTeco device
 async function connectToDevice(retry = 0) {
-  log('info', `Connecting to ZKTeco device (attempt ${retry + 1})...`);
+  // Only log the first attempt and successful connection
+  if (retry === 0) {
+    log('info', 'Connecting to ZKTeco device...');
+  }
 
   return new Promise((resolve, reject) => {
     const zk = createZkInstance();
@@ -305,7 +370,7 @@ async function connectToDevice(retry = 0) {
       try { zk.disconnect(); } catch (e) { } // Make sure to clean up
 
       if (retry < CONFIG.device.connectionTries - 1) {
-        log('info', `Retrying connection (${retry + 1}/${CONFIG.device.connectionTries})`);
+        // Don't log retry attempts to reduce verbosity
         setTimeout(() => {
           connectToDevice(retry + 1)
             .then(resolve)
@@ -322,11 +387,14 @@ async function connectToDevice(retry = 0) {
         clearTimeout(connectionTimeout);
 
         if (err) {
-          log('error', `Connection error: ${err.message}`);
+          // Only log the final error, not intermediate retries
+          if (retry === CONFIG.device.connectionTries - 1) {
+            log('error', `Connection error: ${err.message}`);
+          }
           try { zk.disconnect(); } catch (e) { } // Clean up
 
           if (retry < CONFIG.device.connectionTries - 1) {
-            log('info', `Retrying connection (${retry + 1}/${CONFIG.device.connectionTries})`);
+            // Don't log retry attempts
             setTimeout(() => {
               connectToDevice(retry + 1)
                 .then(resolve)
@@ -343,10 +411,14 @@ async function connectToDevice(retry = 0) {
       });
     } catch (error) {
       clearTimeout(connectionTimeout);
-      log('error', `Connection attempt error: ${error.message}`);
+      
+      // Only log the final error, not intermediate retries
+      if (retry === CONFIG.device.connectionTries - 1) {
+        log('error', `Connection attempt error: ${error.message}`);
+      }
 
       if (retry < CONFIG.device.connectionTries - 1) {
-        log('info', `Retrying connection (${retry + 1}/${CONFIG.device.connectionTries})`);
+        // Don't log retry attempts
         setTimeout(() => {
           connectToDevice(retry + 1)
             .then(resolve)
@@ -389,7 +461,8 @@ async function getUsersFromDevice() {
           return reject(new Error('Invalid user data format'));
         }
 
-        log('info', `Retrieved ${users.length} users from device!`);
+        // Only log the count, not the full user details
+        log('info', `Retrieved ${users.length} users from device`);
 
         // Process users for easier mapping
         const processedUsers = users.map(user => ({
@@ -441,9 +514,7 @@ async function getAttendanceData() {
           return reject(new Error('Invalid attendance data format'));
         }
 
-        log('info', `Retrieved ${data.length} attendance records from device!`);
-
-        // Check for today's records
+        // Count today's records only
         const now = new Date();
         // Adjust for Pakistan Standard Time offset (UTC+5)
         const pkOffset = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
@@ -454,10 +525,11 @@ async function getAttendanceData() {
         
         const todayRecords = data.filter(record => {
           const recordDate = new Date(record.timestamp);
-          return recordDate >= pkToday && recordDate < pkTomorrow;  // Fixed reference
+          return recordDate >= pkToday && recordDate < pkTomorrow;
         });
 
-        log('info', `${todayRecords.length} of these records are from today!`);
+        // Log only total count and today's count, not all records
+        log('info', `Retrieved ${data.length} attendance records, ${todayRecords.length} from today`);
 
         resolve(data);
       });
@@ -512,7 +584,7 @@ async function testConnection() {
   }
 }
 
-// Update user cache in database
+// Update user cache in database - reduced logging
 async function updateUserCache(users) {
   try {
     if (!users || users.length === 0) {
@@ -520,7 +592,8 @@ async function updateUserCache(users) {
       return false;
     }
 
-    log('info', `Updating user cache with ${users.length} users...`);
+    // Only log count, not details
+    log('info', `Updating user cache with ${users.length} users`);
 
     // Prepare bulk operations
     const bulkOps = users.map(user => ({
@@ -553,22 +626,19 @@ async function getTodayAttendanceCount() {
   try {
     // Define today's date range
     const now = new Date();
-const pkOffset = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
-const pkToday = new Date(now.getTime() + pkOffset);
-pkToday.setUTCHours(0, 0, 0, 0);
-const pkTomorrow = new Date(pkToday);
-pkTomorrow.setDate(pkToday.getDate() + 1);
-
-// Then update the query:
-const count = await Attendance.countDocuments({
-  date: {
-    $gte: pkToday,
-    $lt: pkTomorrow
-  }
-});
+    const pkOffset = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
+    const pkToday = new Date(now.getTime() + pkOffset);
+    pkToday.setUTCHours(0, 0, 0, 0);
+    const pkTomorrow = new Date(pkToday);
+    pkTomorrow.setDate(pkToday.getDate() + 1);
 
     // Query database
-
+    const count = await Attendance.countDocuments({
+      date: {
+        $gte: pkToday,
+        $lt: pkTomorrow
+      }
+    });
 
     log('info', `Today's attendance count: ${count} records`);
     return count;
@@ -578,7 +648,7 @@ const count = await Attendance.countDocuments({
   }
 }
 
-// Enhanced sync attendance logs with improved error handling
+// Simplified sync attendance logs with reduced logging
 async function syncAttendanceLogs() {
   const syncStart = Date.now();
   let syncStatus = {
@@ -602,10 +672,9 @@ async function syncAttendanceLogs() {
     // Get today's attendance count before sync
     const beforeCount = await getTodayAttendanceCount();
 
-    // 1. First, get all users from the device
+    // 1. Get users from the device
     const users = await getUsersFromDevice();
-    log('info', `Retrieved ${users.length} users from device`);
-
+    
     syncStatus.deviceInfo.users = users.length;
 
     // 2. Build user_id → user.name mapping
@@ -639,6 +708,7 @@ async function syncAttendanceLogs() {
       };
     }
 
+    // Only log that we're processing records, not each individual record
     log('info', `Processing ${logs.length} attendance records...`);
 
     // Process records with bulk operations for better performance
@@ -653,19 +723,11 @@ async function syncAttendanceLogs() {
     const pkTomorrow = new Date(pkToday);
     pkTomorrow.setDate(pkToday.getDate() + 1);
     
-    // Then update the query:
-    const count = await Attendance.countDocuments({
-      date: {
-        $gte: pkToday,
-        $lt: pkTomorrow
-      }
-    });
-    // Process each attendance record
+    // Process each attendance record - don't log individual records
     for (const record of logs) {
       try {
         // Check if timestamp exists before trying to use it
         if (!record.timestamp) {
-          log('warn', `Skipping record with missing timestamp: ${JSON.stringify(record)}`);
           continue;
         }
         
@@ -674,13 +736,11 @@ async function syncAttendanceLogs() {
         
         // Skip invalid dates
         if (isNaN(recordDate.getTime())) {
-          log('warn', `Skipping record with invalid date: ${record.timestamp}`);
-          log('debug', `Full record with invalid date: ${JSON.stringify(record)}`);
           continue;
         }
 
         // Check if record is from today
-        const isToday = recordDate >= today && recordDate < tomorrow;
+        const isToday = recordDate >= pkToday && recordDate < pkTomorrow;
         if (isToday) {
           todayRecordsCount++;
         }
@@ -689,7 +749,8 @@ async function syncAttendanceLogs() {
         const uid = record.uid || record.id; // Ensure we get the correct user ID field
         const name = nameMap[uid] || 'Unknown';
 
-        log('debug', `Processing record: ${uid}\t${name}\t${recordDate}`);
+        // Don't log each record - too verbose
+        // log('debug', `Processing record: ${uid}\t${name}\t${recordDate}`);
 
         // Create date without time for uniqueness check
         const dateStart = new Date(recordDate);
@@ -712,7 +773,7 @@ async function syncAttendanceLogs() {
                 date: recordDate,
                 timeIn: recordDate,
                 location: CONFIG.device.ip,
-                verifyMethod: log.type?.toString() || '0',
+                verifyMethod: record.type?.toString() || '0',
                 status: 'present',
                 createdAt: new Date()
               },
@@ -738,18 +799,9 @@ async function syncAttendanceLogs() {
       log('info', `Executing ${bulkOps.length} database operations...`);
       try {
         const bulkResult = await Attendance.bulkWrite(bulkOps);
-        log('info', `Database write result: ${JSON.stringify(bulkResult)}`);
+        
+        // Only log concise results, not the full details
         newRecords = bulkResult.upsertedCount || 0;
-
-        // Log specific information about writes
-        log('info', `New records inserted: ${bulkResult.upsertedCount}`);
-        log('info', `Records modified: ${bulkResult.modifiedCount}`);
-        log('info', `Records matched but not modified: ${bulkResult.matchedCount - bulkResult.modifiedCount}`);
-
-        // If upsertedIds exists, log the specific ids
-        if (bulkResult.upsertedIds && Object.keys(bulkResult.upsertedIds).length > 0) {
-          log('info', `Upserted IDs: ${JSON.stringify(bulkResult.upsertedIds)}`);
-        }
 
         syncStatus.recordsAdded = newRecords;
         syncStatus.recordsProcessed = logs.length;
@@ -777,7 +829,7 @@ async function syncAttendanceLogs() {
     syncStatus.success = true;
     syncStatus.message = `Sync completed successfully. Added ${syncStatus.recordsAdded} new records.`;
 
-    // Display summary of today's records
+    // Display summary of today's records - important, keep this
     if (newTodayRecords > 0) {
       log('info', `\n=============== ${newTodayRecords} NEW ATTENDANCE RECORDS TODAY ===============`);
       log('info', `Total attendance for today: ${afterCount} records`);
@@ -823,44 +875,6 @@ async function syncAttendanceLogs() {
       message: `Sync failed: ${error.message}`,
       error: error.message
     };
-  }
-}
-
-// Rotate logs to maintain storage
-function rotateLogs() {
-  try {
-    const logFiles = fs.readdirSync(CONFIG.logs.dir)
-      .filter(file => file.startsWith('attendance-sync-') && file.endsWith('.log'));
-
-    // Sort files by date (oldest first)
-    logFiles.sort();
-
-    // Calculate cutoff date
-    const now = new Date();
-    const cutoffDate = new Date(now.setDate(now.getDate() - CONFIG.logs.retention));
-
-    // Delete old log files
-    let deletedCount = 0;
-
-    logFiles.forEach(file => {
-      try {
-        const fileDate = file.split('-')[2].split('.')[0]; // Extract date from filename
-        const fileTimestamp = new Date(fileDate);
-
-        if (fileTimestamp < cutoffDate) {
-          fs.unlinkSync(path.join(CONFIG.logs.dir, file));
-          deletedCount++;
-        }
-      } catch (err) {
-        log('error', `Failed to process log file ${file}: ${err.message}`);
-      }
-    });
-
-    if (deletedCount > 0) {
-      log('info', `Log rotation: Deleted ${deletedCount} old log files`);
-    }
-  } catch (error) {
-    log('error', `Log rotation error: ${error.message}`);
   }
 }
 
@@ -927,11 +941,14 @@ async function startService() {
     }
   }, CONFIG.sync.interval);
 
-  // Schedule log rotation daily
-  setInterval(rotateLogs, 24 * 60 * 60 * 1000);
-
-  // Also run log rotation now
-  rotateLogs();
+  // Set up hourly log cleanup
+  logCleanupIntervalId = setInterval(() => {
+    try {
+      cleanLogFile();
+    } catch (error) {
+      console.error('Log cleanup error:', error);
+    }
+  }, 15 * 60 * 1000); // Check every 15 minutes
 
   log('info', 'Service started successfully');
 
@@ -942,14 +959,20 @@ async function startService() {
       if (syncIntervalId) {
         clearInterval(syncIntervalId);
         syncIntervalId = null;
-        log('info', 'Sync service stopped');
-        return true;
       }
-      return false;
+      if (logCleanupIntervalId) {
+        clearInterval(logCleanupIntervalId);
+        logCleanupIntervalId = null;
+      }
+      log('info', 'Sync service stopped');
+      return true;
     },
     restart: () => {
       if (syncIntervalId) {
         clearInterval(syncIntervalId);
+      }
+      if (logCleanupIntervalId) {
+        clearInterval(logCleanupIntervalId);
       }
 
       syncIntervalId = setInterval(async () => {
@@ -960,10 +983,19 @@ async function startService() {
         }
       }, CONFIG.sync.interval);
 
+      logCleanupIntervalId = setInterval(() => {
+        try {
+          cleanLogFile();
+        } catch (error) {
+          console.error('Log cleanup error:', error);
+        }
+      }, 15 * 60 * 1000);
+
       log('info', 'Sync service restarted');
       return true;
     },
     syncNow: syncAttendanceLogs,
+    cleanLogs: cleanLogFile,
     testConnection
   };
 }
@@ -975,6 +1007,11 @@ process.on('SIGINT', async () => {
   if (syncIntervalId) {
     clearInterval(syncIntervalId);
     syncIntervalId = null;
+  }
+  
+  if (logCleanupIntervalId) {
+    clearInterval(logCleanupIntervalId);
+    logCleanupIntervalId = null;
   }
 
   try {
@@ -994,6 +1031,11 @@ process.on('SIGTERM', async () => {
   if (syncIntervalId) {
     clearInterval(syncIntervalId);
     syncIntervalId = null;
+  }
+  
+  if (logCleanupIntervalId) {
+    clearInterval(logCleanupIntervalId);
+    logCleanupIntervalId = null;
   }
 
   try {
@@ -1032,7 +1074,8 @@ if (require.main === module) {
     testConnection,
     getUsersFromDevice,
     getAttendanceData,
-    syncAttendanceLogs
+    syncAttendanceLogs,
+    cleanLogFile
   };
 }
 // Run command  pm2 start attendance-sync-daemon.js --name attendance-sync

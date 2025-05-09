@@ -1569,16 +1569,43 @@ app.get('/api/employees/byemail/:email', authenticateToken, async (req, res) => 
 });
 
 // Add this endpoint in server.js
+// Add or update this endpoint in your server.js file
 app.get('/api/profile', authenticateToken, async (req, res) => {
   try {
-    const employee = await Employee.findOne({ userId: req.user.id });
-    if (!employee) {
-      return res.status(404).json({ message: 'Employee profile not found' });
-    }
-
-    // Get the user data as well
+    console.log('Profile request received for user ID:', req.user.id);
+    
+    // First check if the user exists
     const user = await User.findById(req.user.id).select('-password');
-
+    if (!user) {
+      console.log('User not found');
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    console.log('User found:', user.email);
+    
+    // Then look for employee record
+    const employee = await Employee.findOne({ userId: req.user.id });
+    
+    // If no employee record exists, still return the user data
+    // This is important for admin users who might not have an employee record
+    if (!employee) {
+      console.log('No employee record found for user, returning user data only');
+      return res.json({
+        email: user.email,
+        role: user.role,
+        isAdmin: user.isAdmin,
+        branchName: user.branchName,
+        // Add basic structure to prevent client-side errors
+        personalDetails: { name: user.email.split('@')[0] },
+        professionalDetails: { 
+          role: user.role,
+          branch: user.branchName
+        }
+      });
+    }
+    
+    console.log('Employee record found');
+    
     // Combine employee and user data
     const profile = {
       ...employee.toObject(),
@@ -1703,64 +1730,6 @@ app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
 // Attendance Routes
 // In server.js, update the attendance endpoint
 
-app.get('/api/attendance', authenticateToken, async (req, res) => {
-  try {
-    const { date } = req.query;
-    console.log('Received date parameter:', date);
-
-    let query = {};
-
-    if (date) {
-      // Convert the date to start and end of day in UTC
-      const queryDate = new Date(date);
-      const startOfDay = new Date(queryDate);
-      startOfDay.setUTCHours(0, 0, 0, 0);
-      const endOfDay = new Date(queryDate);
-      endOfDay.setUTCHours(23, 59, 59, 999);
-
-      console.log('Query date range:', {
-        startOfDay: startOfDay.toISOString(),
-        endOfDay: endOfDay.toISOString()
-      });
-
-      query.date = {
-        $gte: startOfDay,
-        $lte: endOfDay
-      };
-    }
-
-    console.log('Final MongoDB query:', JSON.stringify(query, null, 2));
-
-    // First, get total count
-    const totalCount = await Attendance.countDocuments(query);
-    console.log('Total matching records:', totalCount);
-
-    // Then get the actual records
-    const attendanceRecords = await Attendance.find(query)
-      .sort({ timeIn: 1 })
-      .lean();
-
-    console.log(`Found ${attendanceRecords.length} attendance records`);
-    console.log('Sample record:', attendanceRecords[0]);
-
-    // Send detailed response
-    res.json({
-      success: true,
-      count: attendanceRecords.length,
-      totalRecords: totalCount,
-      date: date || 'all',
-      data: attendanceRecords
-    });
-
-  } catch (error) {
-    console.error('Error fetching attendance records:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching attendance records',
-      error: error.message
-    });
-  }
-});
 
 // Add to server.js
 
@@ -2705,12 +2674,21 @@ app.get('/api/hr/applicants', authenticateToken, async (req, res) => {
 // Get branch employees for HR editing
 app.get('/api/hr/edit-profiles', authenticateToken, isHrManager, async (req, res) => {
   try {
-    // Find all employees from HR's branch
-    const branchEmployees = await Employee.find({
-      'professionalDetails.branch': req.hrBranch
-    }).populate('userId');
+    let employees = [];
+    
+    if (req.isAdmin) {
+      // If user is admin, get all employees
+      console.log('Admin user detected, fetching all employees');
+      employees = await Employee.find({}).populate('userId');
+    } else {
+      // For HR managers, keep branch-specific filtering
+      console.log(`HR Manager fetching employees for branch: ${req.hrBranch}`);
+      employees = await Employee.find({
+        'professionalDetails.branch': req.hrBranch
+      }).populate('userId');
+    }
 
-    const employees = branchEmployees.map(employee => ({
+    const transformedEmployees = employees.map(employee => ({
       ...employee.toObject(),
       userDetails: employee.userId ? {
         email: employee.userId.email,
@@ -2719,9 +2697,10 @@ app.get('/api/hr/edit-profiles', authenticateToken, isHrManager, async (req, res
       } : null
     }));
 
-    res.json(employees);
+    console.log(`Found ${transformedEmployees.length} employees for editing`);
+    res.json(transformedEmployees);
   } catch (error) {
-    console.error('Error fetching branch employees for editing:', error);
+    console.error('Error fetching employees for editing:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -3007,36 +2986,50 @@ app.get('/api/attendance/test-connection', authenticateToken, async (req, res) =
 });
 
 // Existing route to get attendance data
-// Make sure it doesn't cause conflicts with your existing route
+// Update this endpoint in server.js
 app.get('/api/attendance', authenticateToken, async (req, res) => {
   try {
     const { date, employeeNumber, department, startDate, endDate, limit } = req.query;
     console.log('Fetching attendance records with filters:', req.query);
 
-    const query = {};
+    let query = {};
 
     // Filter by date (single day)
     if (date) {
       const queryDate = new Date(date);
-      const startOfDay = new Date(queryDate);
-      startOfDay.setUTCHours(0, 0, 0, 0);
-      const endOfDay = new Date(queryDate);
-      endOfDay.setUTCHours(23, 59, 59, 999);
+      
+      // Create the date range spanning 12pm on the requested date to 12pm the next day
+      // This will include all night shift check-ins that happen after midnight
+      const startOfPeriod = new Date(queryDate);
+      startOfPeriod.setHours(12, 0, 0, 0); // Start at noon on the requested date
+      
+      const endOfPeriod = new Date(queryDate);
+      endOfPeriod.setDate(endOfPeriod.getDate() + 1); // Go to next day
+      endOfPeriod.setHours(11, 59, 59, 999); // End at 11:59:59.999 AM the next day
 
-      query.date = {
-        $gte: startOfDay,
-        $lte: endOfDay
+      console.log('Attendance query date range:', {
+        startOfPeriod: startOfPeriod.toISOString(),
+        endOfPeriod: endOfPeriod.toISOString()
+      });
+
+      // Find records where timeIn (the actual check-in time) is within this 24-hour window
+      // This will include both day shift (12pm-midnight) and night shift (midnight-12pm next day)
+      query.timeIn = {
+        $gte: startOfPeriod,
+        $lte: endOfPeriod
       };
     }
     
-    // Filter by date range
+    // Filter by date range if provided
     if (startDate && endDate) {
       const start = new Date(startDate);
-      start.setUTCHours(0, 0, 0, 0);
-      const end = new Date(endDate);
-      end.setUTCHours(23, 59, 59, 999);
+      start.setHours(12, 0, 0, 0); // Start at noon on start date
       
-      query.date = {
+      const end = new Date(endDate);
+      end.setDate(end.getDate() + 1); // Go to next day after end date
+      end.setHours(11, 59, 59, 999); // End at 11:59:59.999 AM
+      
+      query.timeIn = {
         $gte: start,
         $lte: end
       };
@@ -3052,25 +3045,58 @@ app.get('/api/attendance', authenticateToken, async (req, res) => {
       query.department = department;
     }
 
-    // Get total count for pagination
+    console.log('Final MongoDB query:', JSON.stringify(query, null, 2));
+
+    // Get total count
     const totalCount = await Attendance.countDocuments(query);
-    
+    console.log('Total matching records:', totalCount);
+
     // Apply limit if provided
     const limitValue = limit ? parseInt(limit) : 500;
 
     // Get attendance records
     const attendanceRecords = await Attendance.find(query)
-      .sort({ date: -1 }) // Sort by date descending (newest first)
+      .sort({ timeIn: 1 }) // Sort by check-in time
       .limit(limitValue)
       .lean();
 
+    // Process records to assign them to the correct day for display
+    const processedRecords = attendanceRecords.map(record => {
+      const recordTime = new Date(record.timeIn);
+      const hours = recordTime.getHours();
+      
+      // Create a display date - if it's after midnight but before noon, 
+      // consider it part of the previous day for display purposes
+      let displayDate = new Date(record.timeIn);
+      if (hours >= 0 && hours < 12) {
+        // Early morning check-in (after midnight, before noon)
+        // Display it as part of previous day
+        displayDate.setDate(displayDate.getDate() - 1);
+      }
+      
+      return {
+        ...record,
+        displayDate: displayDate.toISOString().split('T')[0] // YYYY-MM-DD format
+      };
+    });
+
+    // Filter to only show records that belong to the requested display date
+    const filteredRecords = processedRecords.filter(record => {
+      if (!date) return true; // If no date filter, show all records
+      return record.displayDate === date;
+    });
+
+    console.log(`Found ${filteredRecords.length} attendance records for display date ${date || 'all'}`);
+
+    // Send response
     res.json({
       success: true,
-      count: attendanceRecords.length,
+      count: filteredRecords.length,
       totalRecords: totalCount,
-      filters: req.query,
-      data: attendanceRecords
+      date: date || 'all',
+      data: filteredRecords
     });
+
   } catch (error) {
     console.error('Error fetching attendance records:', error);
     res.status(500).json({

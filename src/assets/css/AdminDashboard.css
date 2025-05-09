@@ -174,7 +174,7 @@
 }
 
 .report-button {
-  background-color: #4361ee;
+      background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
   color: white;
 }
 
@@ -1298,7 +1298,7 @@
 }
 
 .time-filter-btn.active {
-  background: #4361ee;
+      background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
   color: white;
 }
 
@@ -1533,7 +1533,7 @@
 }
 
 .view-details-button {
-  background: linear-gradient(135deg, #113366 0%, #1e5da6 100%);
+  background: linear-gradient(-135deg, #1de9b6 0%, #1dc4e9 100%);
   color: white;
   padding: 14px 28px;
   border: none;
@@ -1570,7 +1570,7 @@
 .view-details-button:hover {
   transform: translateY(-3px);
   box-shadow: 0 10px 20px rgba(17, 51, 102, 0.35);
-  background: linear-gradient(135deg, #1e5da6 0%, #3a7fd9 100%);
+
 }
 
 .view-details-button:hover::before {

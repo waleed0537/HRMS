@@ -900,3 +900,75 @@
     font-size: 13px;
   }
 }
+/* Add these styles to AttendanceManagement.css */
+
+/* New view mode & deduplication toggles */
+.atm-view-mode-button,
+.atm-dedupe-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 6px;
+  background-color: #f8f9fa;
+  border: 1px solid #e2e8f0;
+  color: #4a5568;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 8px;
+}
+
+.atm-view-mode-button:hover,
+.atm-dedupe-button:hover {
+  background-color: #edf2f7;
+}
+
+.atm-dedupe-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+}
+
+.atm-dedupe-button.atm-active {
+  background-color: #e6effd;
+  border-color: #90cdf4;
+  color: #2b6cb0;
+}
+
+/* Date debug info display */
+.atm-date-debug {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #a0aec0;
+}
+
+/* Improved cache info */
+.atm-cache-info {
+  margin-left: auto;
+  background-color: #f7fafc;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #4a5568;
+}
+
+/* Status for early morning check-ins */
+.atm-status-badge.early-morning {
+  background-color: #ebf8ff;
+  color: #2b6cb0;
+}
+
+/* Additional responsive styles */
+@media (max-width: 768px) {
+  .atm-view-mode-button span,
+  .atm-dedupe-button span {
+    display: none;
+  }
+  
+  .atm-dedupe-button {
+    padding: 8px;
+  }
+}

@@ -2998,105 +2998,135 @@ app.get('/api/attendance/test-connection', authenticateToken, async (req, res) =
   }
 });
 
-// Existing route to get attendance data
-// Update this endpoint in server.js
+// Update the server's API endpoint for attendance
+// In server.js, find and update the /api/attendance route
+
 app.get('/api/attendance', authenticateToken, async (req, res) => {
   try {
-    const { date, employeeNumber, department, startDate, endDate, limit } = req.query;
+    const { date, employeeNumber, department, startDate, endDate, limit, deduplicate } = req.query;
     console.log('Fetching attendance records with filters:', req.query);
 
-    let query = {};
-
-    // Filter by date (single day) with Pakistan timezone correction
+    // Build options for zktecoService
+    const options = {};
+    
     if (date) {
-      const queryDate = new Date(date);
-      
-      // Pakistan is UTC+5
-      const pkOffset = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
-      
-      // Create the date range spanning the day in Pakistan time
-      // Convert to UTC for database query
-      const pkDayStart = new Date(queryDate);
-      pkDayStart.setHours(0, 0, 0, 0);
-      const utcDayStart = new Date(pkDayStart.getTime() - pkOffset);
-      
-      const pkDayEnd = new Date(queryDate);
-      pkDayEnd.setHours(23, 59, 59, 999);
-      const utcDayEnd = new Date(pkDayEnd.getTime() - pkOffset);
-
-      console.log('Attendance query date range:', {
-        pkDayStart: pkDayStart.toISOString(),
-        utcDayStart: utcDayStart.toISOString(),
-        pkDayEnd: pkDayEnd.toISOString(),
-        utcDayEnd: utcDayEnd.toISOString()
-      });
-
-      // Find records by the logical date field, not the actual timeIn
-      // This ensures we get all records assigned to this day regardless of actual check-in time
-      query.date = {
-        $gte: pkDayStart,
-        $lte: pkDayEnd
-      };
+      options.date = date;
     }
     
-    // Filter by date range if provided
     if (startDate && endDate) {
-      const pkOffset = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
-      
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-      
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      
-      query.date = {
-        $gte: start,
-        $lte: end
-      };
+      options.startDate = startDate;
+      options.endDate = endDate;
     }
-
-    // Filter by employee number
+    
     if (employeeNumber) {
-      query.employeeNumber = employeeNumber;
+      options.employeeNumber = employeeNumber;
     }
-
-    // Filter by department
+    
     if (department) {
-      query.department = department;
+      options.department = department;
+    }
+    
+    if (limit) {
+      options.limit = parseInt(limit);
+    }
+    
+    // Add deduplication option
+    if (deduplicate !== undefined) {
+      options.deduplicate = deduplicate === 'true';
     }
 
-    console.log('Final MongoDB query:', JSON.stringify(query, null, 2));
+    console.log('Fetching attendance with options:', options);
+    
+    // Use zktecoService to get attendance data
+    let attendanceRecords;
+    try {
+      attendanceRecords = await zktecoService.getAttendanceData(options);
+    } catch (serviceError) {
+      console.error('Service error:', serviceError);
+      
+      // Fallback to direct MongoDB query if zktecoService fails
+      console.log('Trying direct database query...');
+      
+      // Try to get Attendance model directly
+      const Attendance = require('./models/Attendance');
+      
+      // Build query based on options
+      const query = {};
+      
+      if (date) {
+        const queryDate = new Date(date);
+        const startOfDay = new Date(queryDate);
+        startOfDay.setUTCHours(0, 0, 0, 0);
+        
+        const endOfDay = new Date(queryDate);
+        endOfDay.setDate(endOfDay.getDate() + 1);
+        endOfDay.setUTCHours(0, 0, 0, 0);
+        
+        // IMPORTANT: Use timeIn for filtering (not date)
+        // This ensures we see all check-ins that happened on the calendar day
+        query.timeIn = {
+          $gte: startOfDay,
+          $lt: endOfDay
+        };
+      }
+      
+      if (employeeNumber) {
+        query.employeeNumber = employeeNumber;
+      }
+      
+      if (department) {
+        query.department = department;
+      }
+      
+      // Execute query
+      attendanceRecords = await Attendance.find(query)
+        .sort({ timeIn: -1 })
+        .limit(options.limit || 500)
+        .lean();
+      
+      // Manual deduplication if requested
+      if (options.deduplicate !== false) {
+        const uniqueEmployees = {};
+        
+        attendanceRecords.forEach(record => {
+          const key = record.employeeNumber;
+          if (!uniqueEmployees[key] || 
+              new Date(record.timeIn) < new Date(uniqueEmployees[key].timeIn)) {
+            uniqueEmployees[key] = record;
+          }
+        });
+        
+        attendanceRecords = Object.values(uniqueEmployees);
+      }
+    }
+    
+    // Always ensure we're returning an array
+    if (!Array.isArray(attendanceRecords)) {
+      attendanceRecords = [];
+    }
 
-    // Get total count
-    const totalCount = await Attendance.countDocuments(query);
-    console.log('Total matching records:', totalCount);
-
-    // Apply limit if provided
-    const limitValue = limit ? parseInt(limit) : 500;
-
-    // Get attendance records
-    const attendanceRecords = await Attendance.find(query)
-      .sort({ timeIn: 1 }) // Sort by check-in time
-      .limit(limitValue)
-      .lean();
-
-    console.log(`Found ${attendanceRecords.length} attendance records for display date ${date || 'all'}`);
+    console.log(`Returning ${attendanceRecords.length} attendance records`);
 
     // Send response
     res.json({
       success: true,
       count: attendanceRecords.length,
-      totalRecords: totalCount,
+      totalRecords: attendanceRecords.length,
       date: date || 'all',
       data: attendanceRecords
     });
 
   } catch (error) {
     console.error('Error fetching attendance records:', error);
-    res.status(500).json({
+    
+    // Return an empty result instead of an error
+    res.json({
       success: false,
-      message: 'Error fetching attendance records',
-      error: error.message
+      message: 'Error fetching attendance records: ' + error.message,
+      count: 0,
+      totalRecords: 0,
+      date: date || 'all',
+      data: []
     });
   }
 });

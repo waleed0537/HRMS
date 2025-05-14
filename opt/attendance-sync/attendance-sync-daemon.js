@@ -624,23 +624,37 @@ async function updateUserCache(users) {
 // Get today's attendance count
 async function getTodayAttendanceCount() {
   try {
-    // Define today's date range
+    // Define today's date range in Pakistan time (UTC+5)
     const now = new Date();
     const pkOffset = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
-    const pkToday = new Date(now.getTime() + pkOffset);
-    pkToday.setUTCHours(0, 0, 0, 0);
+    
+    // Convert current UTC time to Pakistan time
+    const pkNow = new Date(now.getTime() + pkOffset);
+    
+    // Get the start of today in Pakistan time
+    const pkToday = new Date(pkNow);
+    pkToday.setHours(0, 0, 0, 0);
+    
+    // Convert back to UTC for database query (subtract the offset)
+    const utcTodayStart = new Date(pkToday.getTime() - pkOffset);
+    
+    // Calculate the end of the day (tomorrow at 00:00 Pakistan time)
     const pkTomorrow = new Date(pkToday);
     pkTomorrow.setDate(pkToday.getDate() + 1);
+    
+    // Convert back to UTC for database query
+    const utcTomorrowStart = new Date(pkTomorrow.getTime() - pkOffset);
 
-    // Query database
+    // Query database using UTC time boundaries that correspond to Pakistan day
     const count = await Attendance.countDocuments({
-      date: {
-        $gte: pkToday,
-        $lt: pkTomorrow
+      timeIn: {
+        $gte: utcTodayStart,
+        $lt: utcTomorrowStart
       }
     });
 
     log('info', `Today's attendance count: ${count} records`);
+    log('debug', `Using date range: ${utcTodayStart.toISOString()} to ${utcTomorrowStart.toISOString()}`);
     return count;
   } catch (error) {
     log('error', `Error getting today's attendance count: ${error.message}`);
@@ -725,71 +739,95 @@ async function syncAttendanceLogs() {
     
     // Process each attendance record - don't log individual records
     for (const record of logs) {
-      try {
-        // Check if timestamp exists before trying to use it
-        if (!record.timestamp) {
-          continue;
-        }
-        
-        // Format the data
-        const recordDate = new Date(record.timestamp);
-        
-        // Skip invalid dates
-        if (isNaN(recordDate.getTime())) {
-          continue;
-        }
-
-        // Check if record is from today
-        const isToday = recordDate >= pkToday && recordDate < pkTomorrow;
-        if (isToday) {
-          todayRecordsCount++;
-        }
-
-        // Get user ID and name
-        const uid = record.uid || record.id; // Ensure we get the correct user ID field
-        const name = nameMap[uid] || 'Unknown';
-
-        // Don't log each record - too verbose
-        // log('debug', `Processing record: ${uid}\t${name}\t${recordDate}`);
-
-        // Create date without time for uniqueness check
-        const dateStart = new Date(recordDate);
-        dateStart.setHours(0, 0, 0, 0);
-
-        // Prepare upsert operation
-        bulkOps.push({
-          updateOne: {
-            filter: {
-              deviceUserId: uid,
-              date: {
-                $gte: dateStart,
-                $lt: new Date(dateStart.getTime() + 24 * 60 * 60 * 1000)
-              }
-            },
-            update: {
-              $setOnInsert: {
-                employeeNumber: uid.toString(),
-                department: 'General',
-                date: recordDate,
-                timeIn: recordDate,
-                location: CONFIG.device.ip,
-                verifyMethod: record.type?.toString() || '0',
-                status: 'present',
-                createdAt: new Date()
-              },
-              $set: {
-                deviceUserId: uid,
-                employeeName: name,
-                updatedAt: new Date()
-              }
-            },
-            upsert: true
-          }
-        });
-      } catch (recordError) {
-        log('error', `Error processing attendance record: ${recordError.message}`);
-      }
+  try {
+    // Check if timestamp exists before trying to use it
+    if (!record.timestamp) {
+      continue;
     }
+    
+    // Format the data - this is the device's UTC timestamp
+    const recordTimestamp = new Date(record.timestamp);
+    
+    // Skip invalid dates
+    if (isNaN(recordTimestamp.getTime())) {
+      continue;
+    }
+
+    // Convert to Pakistan time for date determination
+    const pkOffset = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
+    const pkRecordTime = new Date(recordTimestamp.getTime() + pkOffset);
+    
+    // CRITICAL: Create a date object for the appropriate day in Pakistan time
+    // For attendance accounting purposes, we want the logical "day" in Pakistan time
+    const pkRecordDate = new Date(pkRecordTime);
+    
+    // Check if this is a late night/early morning check-in (between 12:00 AM and 7:59 AM)
+    // and adjust the date to previous day - this helps with night shift records
+    const pkHours = pkRecordTime.getHours();
+    if (pkHours >= 0 && pkHours < 8) {
+      // This is early morning attendance (after midnight, e.g., 1:05 AM Pakistan time)
+      // Subtract one day to make it part of the previous day's records for night shifts
+      pkRecordDate.setDate(pkRecordDate.getDate() - 1);
+    }
+    
+    // Set the time to midnight for date-only comparison
+    pkRecordDate.setHours(0, 0, 0, 0);
+    
+    // Check if record is from today in Pakistan time
+    const pkToday = new Date(new Date().getTime() + pkOffset);
+    pkToday.setHours(0, 0, 0, 0);
+    
+    const pkTomorrow = new Date(pkToday);
+    pkTomorrow.setDate(pkToday.getDate() + 1);
+    
+    const isToday = 
+      pkRecordDate.getFullYear() === pkToday.getFullYear() && 
+      pkRecordDate.getMonth() === pkToday.getMonth() && 
+      pkRecordDate.getDate() === pkToday.getDate();
+      
+    if (isToday) {
+      todayRecordsCount++;
+    }
+
+    // Get user ID and name
+    const uid = record.uid || record.id; // Ensure we get the correct user ID field
+    const name = nameMap[uid] || 'Unknown';
+
+    // Store the logical date (for grouping records by day) and the actual timestamp
+    const dateForDay = pkRecordDate; // This is the Pakistan date with time set to 00:00:00
+    
+    // Prepare upsert operation
+    bulkOps.push({
+      updateOne: {
+        filter: {
+          deviceUserId: uid,
+          // Use the logical date as the key identifier
+          date: dateForDay
+        },
+        update: {
+          $setOnInsert: {
+            employeeNumber: uid.toString(),
+            department: 'General',
+            date: dateForDay,  // Store the logical day (Pakistan time with hours=0)
+            timeIn: recordTimestamp,  // Keep actual UTC timestamp for check-in time
+            location: CONFIG.device.ip,
+            verifyMethod: record.type?.toString() || '0',
+            status: 'present',
+            createdAt: new Date()
+          },
+          $set: {
+            deviceUserId: uid,
+            employeeName: name,
+            updatedAt: new Date()
+          }
+        },
+        upsert: true
+      }
+    });
+  } catch (recordError) {
+    log('error', `Error processing attendance record: ${recordError.message}`);
+  }
+}
 
     // Execute bulk operations
     let newRecords = 0;

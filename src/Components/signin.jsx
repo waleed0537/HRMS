@@ -10,7 +10,7 @@ const SignIn = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [userId, setUserId] = useState(''); // New field for user ID
+  const [userId, setUserId] = useState(''); // User ID field
   const [contact, setContact] = useState('');
   const [address, setAddress] = useState('');
   const [role, setRole] = useState('employee');
@@ -67,16 +67,20 @@ const SignIn = ({ onLogin }) => {
     }
   };
 
+  // FIXED SIGNUP FUNCTION WITH DEBUGGING
   const handleSignUp = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
+      console.log('Starting signup with data:', { name, userId, email, role, branch });
+      
       // Create user data object with required structure
       const userData = {
         personalDetails: {
           name: name,
-          id: userId, // Include the user ID field
+          id: userId, // This is where the User ID is set - KEEP THIS FORMAT
+          userId: userId, // Add an extra copy of the userId to ensure it's saved
           email,
           contact,
           address
@@ -90,6 +94,9 @@ const SignIn = ({ onLogin }) => {
         password
       };
 
+      console.log('Sending request to server');
+      
+      // Make sure the API endpoint is correct
       const response = await fetch(`${API_BASE_URL}/api/signup`, {
         method: 'POST',
         headers: {
@@ -97,8 +104,18 @@ const SignIn = ({ onLogin }) => {
         },
         body: JSON.stringify(userData),
       });
-
-      const data = await response.json();
+      
+      console.log('Received response:', response.status, response.statusText);
+      
+      // Safely parse JSON with error handling
+      let data;
+      try {
+        data = await response.json();
+        console.log('Response data:', data);
+      } catch (jsonError) {
+        console.error('Error parsing response:', jsonError);
+        throw new Error('Invalid response from server. Please try again.');
+      }
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to sign up');
@@ -127,10 +144,11 @@ const SignIn = ({ onLogin }) => {
       }, 1000);
       
     } catch (err) {
-      // Show error using toast
-      toastError(err.message);
+      console.error('Signup error:', err);
+      toastError(err.message || 'An error occurred during signup');
     } finally {
-      setIsLoading(false);
+      console.log('Setting loading state to false');
+      setIsLoading(false); // CRITICAL: Ensure this runs to stop the spinner
     }
   };
 
@@ -220,7 +238,7 @@ const SignIn = ({ onLogin }) => {
                       id="userId"
                       type="text"
                       className="form-input"
-                      placeholder="e.g 12"
+                      placeholder="e.g 67"
                       value={userId}
                       onChange={(e) => setUserId(e.target.value)}
                       required

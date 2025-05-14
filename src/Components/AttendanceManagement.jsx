@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Calendar as CalendarIcon, Search, Filter, RefreshCw, Download,
-  ChevronLeft, ChevronRight, Check, Clock, X
+  Calendar, Search, Filter, RefreshCw, Download,
+  ChevronLeft, ChevronRight, Check, Clock, X, User, 
+  Building, Mail, Phone, AlertTriangle
 } from 'lucide-react';
 import API_BASE_URL from '../config/api';
 import '../assets/css/AttendanceManagement.css';
 
-// Calendar component for date selection
+// Calendar component for date selection (unchanged)
 const CalendarDropdown = ({ selectedDate, onDateChange, onClose }) => {
+  // Calendar component implementation remains the same
+  // Keeping this unchanged as it's working properly
+  
   const [currentMonth, setCurrentMonth] = useState(new Date(selectedDate));
   const calendarRef = useRef(null);
   
@@ -190,9 +194,12 @@ const CalendarDropdown = ({ selectedDate, onDateChange, onClose }) => {
   );
 };
 
+// Enhanced AttendanceManagement component with improved employee mapping
 const AttendanceManagement = () => {
   // State declarations
   const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [employeeMap, setEmployeeMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -207,69 +214,250 @@ const AttendanceManagement = () => {
     status: 'Failed',
     records: 0
   });
+  const [loadingEmployees, setLoadingEmployees] = useState(true);
 
-  // Fetch attendance data on component mount and date change
+  // Use a ref to track debug info
+  const debugInfo = useRef({
+    mappedRecords: 0,
+    unmappedRecords: 0,
+    mappingMethod: {}
+  });
+
+  // Fetch employees and attendance data on component mount and date change
   useEffect(() => {
-    fetchAttendanceData();
+    const fetchData = async () => {
+      await fetchEmployees();
+      await fetchAttendanceData();
+    };
+    
+    fetchData();
   }, [selectedDate]);
 
-  // Function to fetch attendance data
-  const fetchAttendanceData = async () => {
-    setLoading(true);
+  // Function to fetch all employees and build a mapping dictionary
+  const fetchEmployees = async () => {
+    setLoadingEmployees(true);
     try {
-      // Format date for API request (YYYY-MM-DD)
-      const dateStr = selectedDate.toISOString().split('T')[0];
-      const response = await fetch(`${API_BASE_URL}/api/attendance?date=${dateStr}`, {
+      console.log('Fetching employee data for attendance mapping...');
+      
+      const response = await fetch(`${API_BASE_URL}/api/employees`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch attendance data');
+        throw new Error('Failed to fetch employees');
       }
 
       const data = await response.json();
-
-      // Process records to show proper time display
-      const processedRecords = (data.data || []).map(record => {
-        // Format the time for display
-        let timeDisplay = '';
-        if (record.timeIn) {
-          const timeIn = new Date(record.timeIn);
-          const hours = timeIn.getHours();
-
-          // For after-midnight check-ins, add a visual indicator
-          if (hours >= 0 && hours < 12) {
-            timeDisplay = `${timeIn.toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit'
-            })} (+1)`;  // Add "+1" to indicate next day
-          } else {
-            timeDisplay = timeIn.toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit'
-            });
+      console.log(`Fetched ${data.length} employees`);
+      
+      // Store the full employee data
+      setEmployees(data);
+      
+      // Build optimized mapping dictionaries for faster lookups
+      const idMap = {};
+      const numberMap = {};
+      const emailMap = {};
+      
+      // Extract unique departments for filtering
+      const deptSet = new Set(['General']);
+      
+      // Process each employee and build the maps
+      data.forEach(emp => {
+        if (emp.personalDetails) {
+          // Map by ID (primary identifier)
+          if (emp.personalDetails.id) {
+            idMap[emp.personalDetails.id.toString()] = emp;
           }
-        } else {
-          timeDisplay = '-';
+          
+          // Map by contact number
+          if (emp.personalDetails.contact) {
+            numberMap[emp.personalDetails.contact.toString()] = emp;
+          }
+          
+          // Map by email
+          if (emp.personalDetails.email) {
+            emailMap[emp.personalDetails.email.toLowerCase()] = emp;
+          }
+          
+          // Collect departments for filtering
+          if (emp.professionalDetails && emp.professionalDetails.department) {
+            deptSet.add(emp.professionalDetails.department);
+          }
         }
-
-        return {
-          ...record,
-          timeDisplay
-        };
       });
-
-      setAttendanceRecords(processedRecords);
-      setError(null);
+      
+      // Store the mapping dictionaries for efficient lookups
+      setEmployeeMap({
+        byId: idMap,
+        byNumber: numberMap,
+        byEmail: emailMap
+      });
+      
+      // Update department list for filtering
+      setDepartments(Array.from(deptSet).sort());
+      
+      console.log('Employee mapping built successfully');
+      console.log(`ID mappings: ${Object.keys(idMap).length}`);
+      console.log(`Contact mappings: ${Object.keys(numberMap).length}`);
     } catch (err) {
-      console.error('Error fetching attendance:', err);
-      setError(err.message);
+      console.error('Error fetching employees:', err);
+      setError('Failed to load employee data: ' + err.message);
     } finally {
-      setLoading(false);
+      setLoadingEmployees(false);
     }
   };
+
+  // Enhanced function to find employee by ID with multiple strategies
+  const findEmployeeByIdOrNumber = (deviceUserId, employeeNumber) => {
+    // Track which method found the match for debugging
+    let method = 'none';
+    
+    // Convert IDs to strings for consistent comparison
+    const deviceIdStr = deviceUserId?.toString() || '';
+    const empNumberStr = employeeNumber?.toString() || '';
+    
+    // Strategy 1: Try direct match using the mapping dictionaries (fastest)
+    if (deviceIdStr && employeeMap.byId[deviceIdStr]) {
+      method = 'direct-id-map';
+      return { employee: employeeMap.byId[deviceIdStr], method };
+    }
+    
+    if (empNumberStr && employeeMap.byId[empNumberStr]) {
+      method = 'direct-emp-number-map';
+      return { employee: employeeMap.byId[empNumberStr], method };
+    }
+    
+    if (empNumberStr && employeeMap.byNumber[empNumberStr]) {
+      method = 'contact-map';
+      return { employee: employeeMap.byNumber[empNumberStr], method };
+    }
+    
+    // Strategy 2: Try full search through employees array (slower but more thorough)
+    // First try matching by personalDetails.id
+    const employeeByUserId = employees.find(emp => 
+      emp.personalDetails && emp.personalDetails.id && 
+      (emp.personalDetails.id === deviceIdStr || 
+       emp.personalDetails.id === empNumberStr)
+    );
+
+    if (employeeByUserId) {
+      method = 'full-search-id';
+      return { employee: employeeByUserId, method };
+    }
+
+    // Then try matching by contact number
+    const employeeByNumber = employees.find(emp => 
+      emp.personalDetails && emp.personalDetails.contact && 
+      (emp.personalDetails.contact === deviceIdStr || 
+       emp.personalDetails.contact === empNumberStr)
+    );
+
+    if (employeeByNumber) {
+      method = 'full-search-contact';
+      return { employee: employeeByNumber, method };
+    }
+    
+    // No match found
+    return { employee: null, method };
+  };
+
+  // Enhanced function to fetch attendance data with improved mapping
+const fetchAttendanceData = async () => {
+  if (loadingEmployees) {
+    console.log('Waiting for employee data to load before fetching attendance');
+    return;
+  }
+  
+  setLoading(true);
+  
+  // Reset debug counters
+  debugInfo.current = {
+    mappedRecords: 0,
+    unmappedRecords: 0,
+    mappingMethod: {}
+  };
+  
+  try {
+    // Format date for API request (YYYY-MM-DD)
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    console.log(`Fetching attendance records for date: ${dateStr}`);
+    
+    const response = await fetch(`${API_BASE_URL}/api/attendance?date=${dateStr}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch attendance data');
+    }
+
+    const data = await response.json();
+    console.log(`Received ${data.data?.length || 0} attendance records`);
+
+    // Process records to show proper time display and map to employee details
+    const processedRecords = (data.data || []).map(record => {
+      // Format the time for display with timezone consideration
+      let timeDisplay = '';
+      if (record.timeIn) {
+        const timeIn = new Date(record.timeIn);
+        const hours = timeIn.getHours();
+        const minutes = timeIn.getMinutes();
+        
+        // Create time string in 12-hour format
+        let amPm = hours >= 12 ? 'PM' : 'AM';
+        let displayHours = hours % 12;
+        if (displayHours === 0) displayHours = 12; // Handle midnight (0 hours)
+        
+        // Format time display with special indicator for after-midnight check-ins
+        if (hours >= 0 && hours < 8) {
+          // For after-midnight check-ins, add a visual indicator (+1)
+          timeDisplay = `${displayHours}:${minutes.toString().padStart(2, '0')} ${amPm} (+1)`;
+        } else {
+          timeDisplay = `${displayHours}:${minutes.toString().padStart(2, '0')} ${amPm}`;
+        }
+      } else {
+        timeDisplay = '-';
+      }
+
+      // Find the corresponding employee using enhanced mapping function
+      const { employee, method } = findEmployeeByIdOrNumber(record.deviceUserId, record.employeeNumber);
+      
+      // Update debug counters
+      if (employee) {
+        debugInfo.current.mappedRecords++;
+        debugInfo.current.mappingMethod[method] = (debugInfo.current.mappingMethod[method] || 0) + 1;
+      } else {
+        debugInfo.current.unmappedRecords++;
+      }
+
+      // Create a display date for the record that accounts for after-midnight entries
+      // This helps with showing night shift entries properly in the UI
+      const displayDate = new Date(record.date);
+
+      return {
+        ...record,
+        timeDisplay,
+        displayDate,  // Add the logical date for display purposes
+        employeeDetails: employee || null,
+        mappingMethod: method // For debugging
+      };
+    });
+
+    console.log(`Mapping results: ${debugInfo.current.mappedRecords} mapped, ${debugInfo.current.unmappedRecords} unmapped`);
+    console.log('Mapping methods used:', debugInfo.current.mappingMethod);
+    
+    setAttendanceRecords(processedRecords);
+    setError(null);
+  } catch (err) {
+    console.error('Error fetching attendance:', err);
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Function to handle manual sync
   const handleSync = async () => {
@@ -277,6 +465,8 @@ const AttendanceManagement = () => {
 
     setIsSyncing(true);
     try {
+      console.log('Starting manual attendance sync...');
+      
       const response = await fetch(`${API_BASE_URL}/api/attendance/sync`, {
         method: 'POST',
         headers: {
@@ -290,6 +480,7 @@ const AttendanceManagement = () => {
       }
 
       const result = await response.json();
+      console.log('Sync result:', result);
 
       setSyncStatus({
         lastSync: new Date().toLocaleString(),
@@ -298,7 +489,7 @@ const AttendanceManagement = () => {
       });
 
       // Refresh attendance data
-      fetchAttendanceData();
+      await fetchAttendanceData();
     } catch (err) {
       console.error('Sync error:', err);
       setSyncStatus({
@@ -332,17 +523,19 @@ const AttendanceManagement = () => {
     return date.toLocaleDateString('en-US', options);
   };
 
-  // Convert attendance records to CSV
+  // Convert attendance records to CSV with enhanced employee details
   const convertToCSV = (records) => {
     if (!records || records.length === 0) {
       return '';
     }
     
-    // Define the CSV headers
+    // Define the CSV headers with enhanced fields
     const headers = [
       'Employee ID',
       'Employee Name',
+      'Email',
       'Department',
+      'Branch',
       'Date',
       'Time In',
       'Status',
@@ -352,7 +545,7 @@ const AttendanceManagement = () => {
     // Create the CSV header row
     let csvContent = headers.join(',') + '\n';
     
-    // Format each record as a CSV row
+    // Format each record as a CSV row with enhanced employee data
     records.forEach(record => {
       const date = new Date(record.date);
       const formattedDate = date.toLocaleDateString();
@@ -363,10 +556,18 @@ const AttendanceManagement = () => {
         minute: '2-digit'
       }) : '-';
       
+      // Get employee details using the mapped data if available
+      const emp = record.employeeDetails || {};
+      const personal = emp.personalDetails || {};
+      const professional = emp.professionalDetails || {};
+      
+      // Build the row with enhanced employee information
       const row = [
-        record.employeeNumber || record.deviceUserId || '',
-        record.employeeName || 'Unknown',
-        record.department || 'General',
+        personal.id || record.deviceUserId || record.employeeNumber || '',
+        personal.name || record.employeeName || 'Unknown',
+        personal.email || '',
+        professional.department || record.department || 'General',
+        professional.branch || '',
         formattedDate,
         formattedTime,
         (record.status ? record.status.charAt(0).toUpperCase() + record.status.slice(1) : 'Present'),
@@ -430,23 +631,42 @@ const AttendanceManagement = () => {
       const csvContent = convertToCSV(recordsToExport);
       downloadCSV(csvContent, filename);
       
-      // Show success message or notification here if needed
+      console.log(`Exported ${recordsToExport.length} attendance records to CSV`);
     } catch (err) {
       console.error('Export error:', err);
-      // Show error message or notification here if needed
+      setError('Failed to export data: ' + err.message);
     } finally {
       setIsExporting(false);
     }
   };
 
-  // Filter records based on search and department
+  // Enhanced filter for records based on search and department
   const filteredRecords = attendanceRecords.filter(record => {
-    const matchesSearch = searchTerm === '' ||
-      (record.employeeName && record.employeeName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (record.employeeNumber && record.employeeNumber.toString().includes(searchTerm));
+    // Get employee details from the mapping
+    const employee = record.employeeDetails || {};
+    const personal = employee.personalDetails || {};
+    const professional = employee.professionalDetails || {};
+    
+    // Search in all employee fields
+    const searchFields = [
+      personal.name,
+      personal.id,
+      personal.email,
+      personal.contact,
+      professional.department,
+      professional.branch,
+      record.employeeNumber,
+      record.deviceUserId?.toString(),
+      record.employeeName
+    ].filter(Boolean).map(field => field.toString().toLowerCase());
+    
+    // Check if any field contains the search term
+    const matchesSearch = searchTerm === '' || 
+      searchFields.some(field => field.includes(searchTerm.toLowerCase()));
 
-    const matchesDepartment = selectedDepartment === '' ||
-      record.department === selectedDepartment;
+    // Check department - prefer employee mapping if available
+    const recordDepartment = professional.department || record.department || 'General';
+    const matchesDepartment = selectedDepartment === '' || recordDepartment === selectedDepartment;
 
     return matchesSearch && matchesDepartment;
   });
@@ -464,12 +684,64 @@ const AttendanceManagement = () => {
     setCalendarOpen(!calendarOpen);
   };
 
+  // Render detailed employee info
+  const renderEmployeeDetails = (employee) => {
+    if (!employee) return null;
+    
+    const personal = employee.personalDetails || {};
+    const professional = employee.professionalDetails || {};
+    
+    return (
+      <div className="atm-employee-details">
+        <div className="atm-employee-detail-row">
+          <div className="atm-employee-detail-item">
+            <Mail size={14} className="atm-detail-icon" />
+            <span>{personal.email || 'No email'}</span>
+          </div>
+          <div className="atm-employee-detail-item">
+            <Phone size={14} className="atm-detail-icon" />
+            <span>{personal.contact || 'No contact'}</span>
+          </div>
+        </div>
+        <div className="atm-employee-detail-row">
+          <div className="atm-employee-detail-item">
+            <Building size={14} className="atm-detail-icon" />
+            <span>{professional.branch || 'No branch'}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Get employee department stats for the sidebar
+  const getDepartmentStats = () => {
+    const stats = {};
+    
+    // Initialize with all departments
+    departments.forEach(dept => {
+      stats[dept] = 0;
+    });
+    
+    // Count records by department
+    attendanceRecords.forEach(record => {
+      const employee = record.employeeDetails || {};
+      const professional = employee.professionalDetails || {};
+      const dept = professional.department || record.department || 'General';
+      
+      stats[dept] = (stats[dept] || 0) + 1;
+    });
+    
+    return stats;
+  };
+  
+  const departmentStats = getDepartmentStats();
+
   return (
     <div className="atm-container">
       <div className="atm-main-content">
         <div className="atm-header">
           <div className="atm-title-section">
-            <CalendarIcon className="atm-header-icon" size={24} />
+            <Calendar className="atm-header-icon" size={24} />
             <h1>Attendance Management</h1>
           </div>
 
@@ -506,7 +778,7 @@ const AttendanceManagement = () => {
           <div className="atm-date-display">
             <div className="atm-selected-date-container" onClick={toggleCalendar}>
               <span className="atm-selected-date">{formatDate(selectedDate)}</span>
-              <CalendarIcon size={16} className="atm-calendar-toggle-icon" />
+              <Calendar size={16} className="atm-calendar-toggle-icon" />
             </div>
             
             {calendarOpen && (
@@ -539,7 +811,7 @@ const AttendanceManagement = () => {
             <Search className="atm-search-icon" size={16} />
             <input
               type="text"
-              placeholder="Search by name or ID..."
+              placeholder="Search by name, ID or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="atm-search-input"
@@ -570,14 +842,16 @@ const AttendanceManagement = () => {
         </div>
 
         <div className="atm-content">
-          {loading ? (
+          {loading || loadingEmployees ? (
             <div className="atm-loading-container">
               <div className="atm-loading-spinner"></div>
-              <span className="atm-loading-text">Loading attendance records...</span>
+              <span className="atm-loading-text">
+                {loadingEmployees ? 'Loading employee data...' : 'Loading attendance records...'}
+              </span>
             </div>
           ) : error ? (
             <div className="atm-error-container">
-              <span className="atm-error-icon">⚠️</span>
+              <AlertTriangle size={24} className="atm-error-icon" />
               <div className="atm-error-message">{error}</div>
               <button className="atm-retry-button" onClick={fetchAttendanceData}>
                 <RefreshCw size={16} />
@@ -603,39 +877,77 @@ const AttendanceManagement = () => {
                 <table className="atm-table">
                   <thead>
                     <tr>
-                      <th className="atm-col-id">ID</th>
+                      <th className="atm-col-id">User ID</th>
                       <th className="atm-col-name">Name</th>
                       <th className="atm-col-department">Department</th>
+                      <th className="atm-col-branch">Branch</th>
                       <th className="atm-col-time">Time</th>
                       <th className="atm-col-status">Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredRecords.map((record, index) => (
-                      <tr key={index}>
-                        <td>{record.employeeNumber || record.deviceUserId || '-'}</td>
-                        <td>{record.employeeName || 'Unknown'}</td>
-                        <td>{record.department || 'General'}</td>
-                        <td>
-                          {record.timeDisplay || '-'}
-                        </td>
-                        <td>
-                          <div className={`atm-status-badge ${record.status || 'present'}`}>
-                            <Check size={14} className="atm-status-icon" />
-                            <span>{record.status ? record.status.charAt(0).toUpperCase() + record.status.slice(1) : 'Present'}</span>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {filteredRecords.map((record, index) => {
+                      // Get employee details from the mapping
+                      const employee = record.employeeDetails || {};
+                      const personal = employee.personalDetails || {};
+                      const professional = employee.professionalDetails || {};
+                      
+                      // Determine what to display for each field based on employeeDetails
+                      const employeeId = personal.id || record.deviceUserId || record.employeeNumber || '-';
+                      const employeeName = personal.name || record.employeeName || 'Unknown';
+                      const department = professional.department || record.department || 'General';
+                      const branch = professional.branch || '';
+                      
+                      // Check if we have full employee details
+                      const hasDetails = !!employee;
+                      
+                      return (
+                        <tr key={index} className={hasDetails ? 'atm-has-details' : 'atm-no-details'}>
+                          <td className="atm-employee-id">
+                            <div className="atm-employee-id-wrapper">
+                              <User size={14} className="atm-id-icon" />
+                              <span>{employeeId}</span>
+                            </div>
+                          </td>
+                          <td className="atm-employee-name">
+                            <div className="atm-employee-name-wrapper">
+                              <User size={16} className="atm-employee-icon" />
+                              <span>{employeeName}</span>
+                            </div>
+                            {/* Expandable employee details when available */}
+                            {hasDetails && renderEmployeeDetails(employee)}
+                          </td>
+                          <td>{department}</td>
+                          <td>{branch}</td>
+                          <td>
+                            {record.timeDisplay || '-'}
+                          </td>
+                          <td>
+                            <div className={`atm-status-badge ${record.status || 'present'}`}>
+                              <Check size={14} className="atm-status-icon" />
+                              <span>{record.status ? record.status.charAt(0).toUpperCase() + record.status.slice(1) : 'Present'}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
+              </div>
+              
+              {/* Show mapping statistics */}
+              <div className="atm-mapping-stats">
+                <span className="atm-mapping-label">Employee mapping: </span>
+                <span className="atm-mapping-value">
+                  {debugInfo.current.mappedRecords} matched, {debugInfo.current.unmappedRecords} unmatched
+                </span>
               </div>
             </>
           )}
         </div>
       </div>
 
-      {/* Stats Summary */}
+      {/* Stats Summary Sidebar */}
       <div className="atm-stats-sidebar">
         <div className="atm-stats-card">
           <h3 className="atm-stats-title">
@@ -662,6 +974,13 @@ const AttendanceManagement = () => {
                 {attendanceRecords.filter(r => r.status === 'late').length}
               </span>
             </div>
+            
+            <div className="atm-stat-item">
+              <span className="atm-stat-label">Mapped</span>
+              <span className="atm-stat-value">
+                {debugInfo.current.mappedRecords}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -672,15 +991,12 @@ const AttendanceManagement = () => {
           </h3>
 
           <div className="atm-department-list">
-            {departments.map(dept => {
-              const count = attendanceRecords.filter(r => r.department === dept).length;
-              return (
-                <div key={dept} className="atm-department-item">
-                  <span className="atm-dept-name">{dept}</span>
-                  <span className="atm-dept-count">{count}</span>
-                </div>
-              );
-            })}
+            {Object.entries(departmentStats).map(([dept, count]) => (
+              <div key={dept} className="atm-department-item">
+                <span className="atm-dept-name">{dept}</span>
+                <span className="atm-dept-count">{count}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>

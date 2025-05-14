@@ -279,9 +279,16 @@ createAdminUser();
 
 // Routes
 // Sign Up
+// Find this part in your server.js file and replace it with this corrected version:
+
 app.post('/api/signup', async (req, res) => {
   try {
     const { personalDetails, professionalDetails, password } = req.body;
+    
+    console.log('Received signup request with data:', {
+      personalDetails: { ...personalDetails, password: '******' }, // Log without showing password
+      professionalDetails
+    });
 
     // Validate input
     if (!personalDetails || !professionalDetails || !password) {
@@ -326,16 +333,16 @@ app.post('/api/signup', async (req, res) => {
       profilePic: Math.floor(Math.random() * 11) + 1
     });
 
-    // Generate unique employee ID (you can create a more sophisticated method)
+    // Generate unique employee ID for system use
     const generateEmployeeId = () => {
       return `EMP${Date.now()}`;
     };
 
-    // Create corresponding employee record
+    // Create corresponding employee record WITH user-entered ID preserved
     const employee = await Employee.create({
       personalDetails: {
         name: personalDetails.name,
-        id: generateEmployeeId(), // Add employee ID
+        id: personalDetails.id || generateEmployeeId(), // Use user-entered ID if provided, fallback to generated
         contact: personalDetails.contact,
         email: personalDetails.email,
         address: personalDetails.address
@@ -347,6 +354,12 @@ app.post('/api/signup', async (req, res) => {
         status: professionalDetails.status
       },
       userId: user._id // Link employee to user account
+    });
+
+    console.log('User and employee created successfully:', {
+      userId: user._id,
+      employeeId: employee._id,
+      systemGeneratedId: employee.personalDetails.id
     });
 
     res.status(201).json({
@@ -2994,42 +3007,49 @@ app.get('/api/attendance', authenticateToken, async (req, res) => {
 
     let query = {};
 
-    // Filter by date (single day)
+    // Filter by date (single day) with Pakistan timezone correction
     if (date) {
       const queryDate = new Date(date);
       
-      // Create the date range spanning 12pm on the requested date to 12pm the next day
-      // This will include all night shift check-ins that happen after midnight
-      const startOfPeriod = new Date(queryDate);
-      startOfPeriod.setHours(12, 0, 0, 0); // Start at noon on the requested date
+      // Pakistan is UTC+5
+      const pkOffset = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
       
-      const endOfPeriod = new Date(queryDate);
-      endOfPeriod.setDate(endOfPeriod.getDate() + 1); // Go to next day
-      endOfPeriod.setHours(11, 59, 59, 999); // End at 11:59:59.999 AM the next day
+      // Create the date range spanning the day in Pakistan time
+      // Convert to UTC for database query
+      const pkDayStart = new Date(queryDate);
+      pkDayStart.setHours(0, 0, 0, 0);
+      const utcDayStart = new Date(pkDayStart.getTime() - pkOffset);
+      
+      const pkDayEnd = new Date(queryDate);
+      pkDayEnd.setHours(23, 59, 59, 999);
+      const utcDayEnd = new Date(pkDayEnd.getTime() - pkOffset);
 
       console.log('Attendance query date range:', {
-        startOfPeriod: startOfPeriod.toISOString(),
-        endOfPeriod: endOfPeriod.toISOString()
+        pkDayStart: pkDayStart.toISOString(),
+        utcDayStart: utcDayStart.toISOString(),
+        pkDayEnd: pkDayEnd.toISOString(),
+        utcDayEnd: utcDayEnd.toISOString()
       });
 
-      // Find records where timeIn (the actual check-in time) is within this 24-hour window
-      // This will include both day shift (12pm-midnight) and night shift (midnight-12pm next day)
-      query.timeIn = {
-        $gte: startOfPeriod,
-        $lte: endOfPeriod
+      // Find records by the logical date field, not the actual timeIn
+      // This ensures we get all records assigned to this day regardless of actual check-in time
+      query.date = {
+        $gte: pkDayStart,
+        $lte: pkDayEnd
       };
     }
     
     // Filter by date range if provided
     if (startDate && endDate) {
+      const pkOffset = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
+      
       const start = new Date(startDate);
-      start.setHours(12, 0, 0, 0); // Start at noon on start date
+      start.setHours(0, 0, 0, 0);
       
       const end = new Date(endDate);
-      end.setDate(end.getDate() + 1); // Go to next day after end date
-      end.setHours(11, 59, 59, 999); // End at 11:59:59.999 AM
+      end.setHours(23, 59, 59, 999);
       
-      query.timeIn = {
+      query.date = {
         $gte: start,
         $lte: end
       };
@@ -3060,41 +3080,15 @@ app.get('/api/attendance', authenticateToken, async (req, res) => {
       .limit(limitValue)
       .lean();
 
-    // Process records to assign them to the correct day for display
-    const processedRecords = attendanceRecords.map(record => {
-      const recordTime = new Date(record.timeIn);
-      const hours = recordTime.getHours();
-      
-      // Create a display date - if it's after midnight but before noon, 
-      // consider it part of the previous day for display purposes
-      let displayDate = new Date(record.timeIn);
-      if (hours >= 0 && hours < 12) {
-        // Early morning check-in (after midnight, before noon)
-        // Display it as part of previous day
-        displayDate.setDate(displayDate.getDate() - 1);
-      }
-      
-      return {
-        ...record,
-        displayDate: displayDate.toISOString().split('T')[0] // YYYY-MM-DD format
-      };
-    });
-
-    // Filter to only show records that belong to the requested display date
-    const filteredRecords = processedRecords.filter(record => {
-      if (!date) return true; // If no date filter, show all records
-      return record.displayDate === date;
-    });
-
-    console.log(`Found ${filteredRecords.length} attendance records for display date ${date || 'all'}`);
+    console.log(`Found ${attendanceRecords.length} attendance records for display date ${date || 'all'}`);
 
     // Send response
     res.json({
       success: true,
-      count: filteredRecords.length,
+      count: attendanceRecords.length,
       totalRecords: totalCount,
       date: date || 'all',
-      data: filteredRecords
+      data: attendanceRecords
     });
 
   } catch (error) {

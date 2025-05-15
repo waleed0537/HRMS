@@ -1,29 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Building, Plus, Edit2, Save, X, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Building, Plus, Save, X, Info, Trash2, AlertCircle, Users } from 'lucide-react';
 import '../assets/css/BranchManagement.css';
 import API_BASE_URL from '../config/api.js';
 import { useToast } from './common/ToastContent.jsx';
 
 const BranchManagement = () => {
-  const [employees, setEmployees] = useState([]);
   const [branches, setBranches] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [editingBranch, setEditingBranch] = useState(null);
-  const [expandedBranch, setExpandedBranch] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    hrManager: '',
-    t1Member: '',
-    operationalManager: ''
-  });
+  const [formData, setFormData] = useState({ name: '' });
   const [loading, setLoading] = useState(false);
-  
-  // Get toast functions from the context
-  const toast = useToast();
+  const [employees, setEmployees] = useState([]);
+  const [branchEmployees, setBranchEmployees] = useState({});
+  const { success, error } = useToast();
 
   useEffect(() => {
-    fetchEmployees();
     fetchBranches();
+    fetchEmployees();
   }, []);
 
   const fetchEmployees = async () => {
@@ -36,82 +28,99 @@ const BranchManagement = () => {
       if (!response.ok) throw new Error('Failed to fetch employees');
       const data = await response.json();
       setEmployees(data.filter(emp => emp.professionalDetails.status === 'active'));
-    } catch (error) {
-      toast.error('Failed to fetch employees');
+      
+      // Group employees by branch and role
+      const employeesByBranch = {};
+      
+      data.forEach(emp => {
+        const branch = emp.professionalDetails?.branch;
+        const role = emp.professionalDetails?.role;
+        
+        if (branch && role) {
+          if (!employeesByBranch[branch]) {
+            employeesByBranch[branch] = {
+              hr_manager: [],
+              t1_member: [],
+              operational_manager: []
+            };
+          }
+          
+          if (role === 'hr_manager') {
+            employeesByBranch[branch].hr_manager.push(emp);
+          } else if (role === 't1_member') {
+            employeesByBranch[branch].t1_member.push(emp);
+          } else if (role === 'operational_manager') {
+            employeesByBranch[branch].operational_manager.push(emp);
+          }
+        }
+      });
+      
+      setBranchEmployees(employeesByBranch);
+    } catch (err) {
+      console.error('Error fetching employees:', err);
     }
   };
 
   const fetchBranches = async () => {
     try {
+      setLoading(true);
       const response = await fetch(`${API_BASE_URL}/api/branches`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
+
       if (!response.ok) throw new Error('Failed to fetch branches');
       const data = await response.json();
       setBranches(data);
-    } catch (error) {
-      toast.error('Failed to fetch branches');
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      const url = editingBranch 
-        ? `${API_BASE_URL}/api/branches/${editingBranch._id}`
-        : `${API_BASE_URL}/api/branches`;
-      
-      const method = editingBranch ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) throw new Error('Failed to save branch');
-      
-      await fetchBranches();
-      setShowForm(false);
-      setEditingBranch(null);
-      setFormData({
-        name: '',
-        hrManager: '',
-        t1Member: '',
-        operationalManager: ''
-      });
-      
-      toast.success(editingBranch ? 'Branch updated successfully' : 'Branch created successfully');
-    } catch (error) {
-      toast.error(error.message || 'An error occurred while saving the branch');
+    } catch (err) {
+      error('Failed to fetch branches');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRoleChange = async (branchId, role, employeeId) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.name.trim()) {
+      error('Please enter a branch name');
+      return;
+    }
+    
+    setLoading(true);
+    
     try {
-      const response = await fetch(`${API_BASE_URL}/api/branches/${branchId}/role`, {
-        method: 'PUT',
+      // Use an invalid ObjectId instead of a real employee
+      // This is a workaround because the API requires ObjectIds, but we want these to be unassigned
+      // This should be fixed on the server side ideally
+      const PLACEHOLDER_ID = "000000000000000000000000"; // 24 zeros (invalid ObjectId)
+      
+      const response = await fetch(`${API_BASE_URL}/api/branches`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({ role, employeeId })
+        body: JSON.stringify({
+          name: formData.name,
+          hrManager: PLACEHOLDER_ID,
+          t1Member: PLACEHOLDER_ID,
+          operationalManager: PLACEHOLDER_ID
+        })
       });
 
-      if (!response.ok) throw new Error('Failed to update role');
+      if (!response.ok) throw new Error('Failed to create branch');
+      
       await fetchBranches();
-      toast.success(`${role.replace(/([A-Z])/g, ' $1').trim()} updated successfully`);
-    } catch (error) {
-      toast.error(error.message || 'Failed to update role');
+      await fetchEmployees(); // Refresh employee data to update branch assignments
+      setShowForm(false);
+      setFormData({ name: '' });
+      success('Branch created successfully. Please assign team members in Edit Profiles.');
+    } catch (err) {
+      error(err.message || 'Failed to create branch');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -130,22 +139,36 @@ const BranchManagement = () => {
 
       if (!response.ok) throw new Error('Failed to delete branch');
       await fetchBranches();
-      toast.success('Branch deleted successfully');
-    } catch (error) {
-      toast.error(error.message || 'Failed to delete branch');
+      success('Branch deleted successfully');
+    } catch (err) {
+      error(err.message || 'Failed to delete branch');
     }
   };
-
-  const handleEdit = (branch) => {
-    setFormData({
-      name: branch.name,
-      hrManager: branch.hrManager,
-      t1Member: branch.t1Member,
-      operationalManager: branch.operationalManager
-    });
-    setEditingBranch(branch);
-    setShowForm(true);
-    setExpandedBranch(null);
+  
+  const getBranchEmployeesContent = (branchName, roleType) => {
+    const branchData = branchEmployees[branchName];
+    if (!branchData || !branchData[roleType] || branchData[roleType].length === 0) {
+      return {
+        hasEmployees: false,
+        content: (
+          <span className="role-value not-specified">Not Specified</span>
+        )
+      };
+    }
+    
+    return {
+      hasEmployees: true,
+      content: (
+        <div className="role-employees">
+          {branchData[roleType].map((emp, index) => (
+            <span key={emp._id} className="role-employee">
+              {emp.personalDetails?.name}
+              {index < branchData[roleType].length - 1 && ", "}
+            </span>
+          ))}
+        </div>
+      )
+    };
   };
 
   return (
@@ -160,9 +183,25 @@ const BranchManagement = () => {
         )}
       </div>
 
+      {/* Info message about position management */}
+      <div className="branch-info-message">
+        <Info size={20} />
+        <div>
+          <h3>Managing Branch Positions</h3>
+          <p>
+            Branch positions (HR Manager, T1 Member, Operational Manager) should be assigned 
+            through the <strong>Edit Profiles</strong> page. Create branches here, then 
+            assign team members separately.
+          </p>
+        </div>
+      </div>
+
       {showForm && (
         <div className="branch-form">
-          <h3 className="form-title">{editingBranch ? 'Edit Branch' : 'Add New Branch'}</h3>
+          <h3 className="form-title">
+            <Building size={20} />
+            Add New Branch
+          </h3>
           <form onSubmit={handleSubmit}>
             <div className="form-grid">
               <div className="form-field">
@@ -173,58 +212,8 @@ const BranchManagement = () => {
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                   className="form-input"
                   required
+                  placeholder="Enter branch name"
                 />
-              </div>
-
-              <div className="form-field">
-                <label className="form-label">HR Manager</label>
-                <select
-                  value={formData.hrManager}
-                  onChange={(e) => setFormData({...formData, hrManager: e.target.value})}
-                  className="form-select"
-                  required
-                >
-                  <option value="">Select HR Manager</option>
-                  {employees.map(emp => (
-                    <option key={emp._id} value={emp._id}>
-                      {emp.personalDetails.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label className="form-label">T1 Member</label>
-                <select
-                  value={formData.t1Member}
-                  onChange={(e) => setFormData({...formData, t1Member: e.target.value})}
-                  className="form-select"
-                  required
-                >
-                  <option value="">Select T1 Member</option>
-                  {employees.map(emp => (
-                    <option key={emp._id} value={emp._id}>
-                      {emp.personalDetails.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label className="form-label">Operational Manager</label>
-                <select
-                  value={formData.operationalManager}
-                  onChange={(e) => setFormData({...formData, operationalManager: e.target.value})}
-                  className="form-select"
-                  required
-                >
-                  <option value="">Select Operational Manager</option>
-                  {employees.map(emp => (
-                    <option key={emp._id} value={emp._id}>
-                      {emp.personalDetails.name}
-                    </option>
-                  ))}
-                </select>
               </div>
             </div>
 
@@ -233,13 +222,7 @@ const BranchManagement = () => {
                 type="button"
                 onClick={() => {
                   setShowForm(false);
-                  setEditingBranch(null);
-                  setFormData({
-                    name: '',
-                    hrManager: '',
-                    t1Member: '',
-                    operationalManager: ''
-                  });
+                  setFormData({ name: '' });
                 }}
                 className="button button-secondary"
                 disabled={loading}
@@ -253,7 +236,7 @@ const BranchManagement = () => {
                 disabled={loading}
               >
                 <Save size={20} />
-                {loading ? 'Saving...' : editingBranch ? 'Update' : 'Create'} Branch
+                {loading ? 'Creating...' : 'Create Branch'}
               </button>
             </div>
           </form>
@@ -261,114 +244,90 @@ const BranchManagement = () => {
       )}
 
       <div className="branch-grid">
-        {branches.map(branch => (
-          <div key={branch._id} className="branch-card">
-            <div className="branch-header">
-              <div className="branch-name">
-                <Building size={20} />
-                {branch.name}
+        {branches.map(branch => {
+          // Get employees for this branch from our grouped employees
+          const hrContent = getBranchEmployeesContent(branch.name, 'hr_manager');
+          const t1Content = getBranchEmployeesContent(branch.name, 't1_member');
+          const omContent = getBranchEmployeesContent(branch.name, 'operational_manager');
+          
+          return (
+            <div key={branch._id} className="branch-card">
+              <div className="branch-header">
+                <div className="branch-name">
+                  <Building size={20} />
+                  {branch.name}
+                </div>
+                <div className="branch-actions">
+                  <button
+                    onClick={() => handleDelete(branch._id)}
+                    className="delete-button"
+                    title="Delete branch"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               </div>
-              <div className="branch-actions">
-                <button
-                  onClick={() => handleEdit(branch)}
-                  className="edit-button"
-                  title="Edit branch"
-                >
-                  <Edit2 size={20} />
-                </button>
-                <button
-                  onClick={() => handleDelete(branch._id)}
-                  className="delete-button"
-                  title="Delete branch"
-                >
-                  <Trash2 size={20} />
-                </button>
-                <button
-                  onClick={() => setExpandedBranch(expandedBranch === branch._id ? null : branch._id)}
-                  className="toggle-button"
-                  title="Toggle details"
-                >
-                  {expandedBranch === branch._id ? (
-                    <ChevronUp size={20} />
-                  ) : (
-                    <ChevronDown size={20} />
-                  )}
-                </button>
+
+              <div className="branch-content">
+                <div className="role-section">
+                  <div className="role-info">
+                    <span className="role-label">
+                      <Users size={14} /> HR Manager
+                      {hrContent.hasEmployees && hrContent.content.props.children.length > 1 && (
+                        <span className="role-count">{hrContent.content.props.children.length}</span>
+                      )}
+                    </span>
+                    {hrContent.content}
+                  </div>
+                </div>
+
+                <div className="role-section">
+                  <div className="role-info">
+                    <span className="role-label">
+                      <Users size={14} /> T1 Member
+                      {t1Content.hasEmployees && t1Content.content.props.children.length > 1 && (
+                        <span className="role-count">{t1Content.content.props.children.length}</span>
+                      )}
+                    </span>
+                    {t1Content.content}
+                  </div>
+                </div>
+
+                <div className="role-section">
+                  <div className="role-info">
+                    <span className="role-label">
+                      <Users size={14} /> Operational Manager
+                      {omContent.hasEmployees && omContent.content.props.children.length > 1 && (
+                        <span className="role-count">{omContent.content.props.children.length}</span>
+                      )}
+                    </span>
+                    {omContent.content}
+                  </div>
+                </div>
+
+                <div className="branch-edit-info">
+                  <AlertCircle size={16} />
+                  <span>To assign or change positions, please use the Edit Profiles page.</span>
+                </div>
               </div>
             </div>
+          );
+        })}
 
-            <div className="branch-content">
-              <div className="role-section">
-                <div className="role-info">
-                  <span className="role-label">HR Manager</span>
-                  <span className="role-value">
-                    {employees.find(emp => emp._id === branch.hrManager)?.personalDetails.name || 'Not Assigned'}
-                  </span>
-                </div>
-                {expandedBranch === branch._id && (
-                  <select
-                    onChange={(e) => handleRoleChange(branch._id, 'hrManager', e.target.value)}
-                    className="role-select"
-                    value={branch.hrManager || ''}
-                  >
-                    <option value="">Change HR Manager</option>
-                    {employees.map(emp => (
-                      <option key={emp._id} value={emp._id}>
-                        {emp.personalDetails.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              <div className="role-section">
-                <div className="role-info">
-                  <span className="role-label">T1 Member</span>
-                  <span className="role-value">
-                    {employees.find(emp => emp._id === branch.t1Member)?.personalDetails.name || 'Not Assigned'}
-                  </span>
-                </div>
-                {expandedBranch === branch._id && (
-                  <select
-                    onChange={(e) => handleRoleChange(branch._id, 't1Member', e.target.value)}
-                    className="role-select"
-                    value={branch.t1Member || ''}
-                  >
-                    <option value="">Change T1 Member</option>
-                    {employees.map(emp => (
-                      <option key={emp._id} value={emp._id}>
-                        {emp.personalDetails.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              <div className="role-section">
-                <div className="role-info">
-                  <span className="role-label">Operational Manager</span>
-                  <span className="role-value">
-                    {employees.find(emp => emp._id === branch.operationalManager)?.personalDetails.name || 'Not Assigned'}
-                  </span>
-                </div>
-                {expandedBranch === branch._id && (
-                  <select
-                    onChange={(e) => handleRoleChange(branch._id, 'operationalManager', e.target.value)}
-                    className="role-select"
-                    value={branch.operationalManager || ''}
-                  >
-                    <option value="">Change Operational Manager</option>
-                    {employees.map(emp => (
-                      <option key={emp._id} value={emp._id}>
-                        {emp.personalDetails.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            </div>
+        {branches.length === 0 && !loading && (
+          <div className="empty-state">
+            <Building size={64} />
+            <h3>No Branches Found</h3>
+            <p>Create your first branch to start organizing your team.</p>
           </div>
-        ))}
+        )}
+
+        {loading && branches.length === 0 && (
+          <div className="loading-state">
+            <div className="loading-spinner"></div>
+            <p>Loading branches...</p>
+          </div>
+        )}
       </div>
     </div>
   );

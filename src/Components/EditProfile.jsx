@@ -158,7 +158,48 @@ const EditProfile = () => {
       fetchEmployees();
     }
   }, [currentUser, loadingUser]);
-
+  
+  const updateUserSession = async (employeeId, newRole) => {
+    // Only proceed if the employee we're editing is the current logged-in user
+    const currentUserData = JSON.parse(localStorage.getItem('user'));
+    
+    try {
+      // Get the current employee's userId to compare with the current user
+      const employee = employees.find(emp => emp._id === employeeId);
+      
+      // If this is the current user's profile being edited
+      if (employee && employee.userId && currentUserData && employee.userId === currentUserData.id) {
+        console.log('Current user role changed. Updating session...');
+        
+        // Update the user data in localStorage
+        const updatedUserData = {
+          ...currentUserData,
+          role: newRole
+        };
+        
+        // Save the updated data back to localStorage
+        localStorage.setItem('user', JSON.stringify(updatedUserData));
+        
+        // Show notification to user
+        success('Your role has been updated. The page will refresh to apply changes.');
+        
+        // Give a moment for the user to see the message
+        setTimeout(() => {
+          // Reload the page to apply the new role (or redirect to the appropriate dashboard)
+          if (newRole === 'hr_manager') {
+            window.location.href = '/hr-dashboard';
+          } else if (newRole === 'admin' || updatedUserData.isAdmin) {
+            window.location.href = '/admin-dashboard';
+          } else {
+            window.location.href = '/dashboard';
+          }
+        }, 2000);
+      }
+    } catch (err) {
+      console.error('Error updating user session:', err);
+    }
+  };
+  
   const fetchEmployees = async () => {
     try {
       setLoading(true);
@@ -185,8 +226,27 @@ const EditProfile = () => {
       let data = await response.json();
       console.log(`Fetched ${data.length} employees for editing`);
 
-      // No need for client-side filtering as the server now handles it
-      setEmployees(Array.isArray(data) ? data : []);
+      // Filter to only include employees with approved user accounts
+      // This ensures we don't show pending or rejected user requests
+      const filteredEmployees = data.filter(emp => {
+        // Check if employee has associated user details
+        if (emp.userDetails) {
+          return emp.userDetails.status === 'approved';
+        } else if (emp.user && Array.isArray(emp.user) && emp.user.length > 0) {
+          // Check user array format (from the aggregate pipeline)
+          return emp.user[0]?.status === 'approved';
+        } else if (emp.userId && typeof emp.userId === 'object' && emp.userId.status) {
+          // Check populated userId format
+          return emp.userId.status === 'approved';
+        }
+        
+        // If we have no user info, default to showing the employee
+        // This maintains backward compatibility
+        return true;
+      });
+
+      console.log(`Filtered to ${filteredEmployees.length} approved employees`);
+      setEmployees(filteredEmployees);
       setLoading(false);
     } catch (err) {
       console.error("Error fetching employees:", err);
@@ -538,7 +598,6 @@ const EditProfile = () => {
       const formPayload = new FormData();
 
       // Detect role changes and branch transfers and add as automatic milestones
-
       if (GENERATE_AUTO_MILESTONES_CLIENT_SIDE) {
         // Check for role change  
         if (selectedEmployee.professionalDetails?.role !== formData.professionalDetails.role) {
@@ -636,32 +695,40 @@ const EditProfile = () => {
       const responseData = await response.json();
       console.log("Update response:", responseData);
 
-      const milestonesCount = sanitizedFormData.milestones.length;
-      const autoCount = autoMilestones.length;
+      // Check if role was changed
+      const roleChanged = selectedEmployee.professionalDetails?.role !== formData.professionalDetails.role;
+      
+      // If role changed, update the session
+      if (roleChanged) {
+        await updateUserSession(selectedEmployee._id, formData.professionalDetails.role);
+      } else {
+        const milestonesCount = sanitizedFormData.milestones.length;
+        const autoCount = autoMilestones.length;
 
-      // Reset uploaded documents and milestones
-      setUploadedDocuments([]);
-      setDocumentError(null);
-      setFormData(prev => ({
-        ...prev,
-        milestones: []
-      }));
+        // Reset uploaded documents and milestones
+        setUploadedDocuments([]);
+        setDocumentError(null);
+        setFormData(prev => ({
+          ...prev,
+          milestones: []
+        }));
 
-      // Refresh employee data
-      await fetchEmployees();
-      await handleEmployeeSelect(selectedEmployee._id);
+        // Refresh employee data
+        await fetchEmployees();
+        await handleEmployeeSelect(selectedEmployee._id);
 
-      // Show toast with milestone count information
-      let successMessage = 'Employee profile updated successfully.';
-      if (milestonesCount > 0) {
-        successMessage += ` Added ${milestonesCount} history entries`;
-        if (autoCount > 0) {
-          successMessage += ` (${autoCount} automatic, ${milestonesCount - autoCount} manual)`;
+        // Show toast with milestone count information
+        let successMessage = 'Employee profile updated successfully.';
+        if (milestonesCount > 0) {
+          successMessage += ` Added ${milestonesCount} history entries`;
+          if (autoCount > 0) {
+            successMessage += ` (${autoCount} automatic, ${milestonesCount - autoCount} manual)`;
+          }
+          successMessage += '.';
         }
-        successMessage += '.';
-      }
 
-      success(successMessage);
+        success(successMessage);
+      }
 
     } catch (err) {
       console.error("Submit error:", err);

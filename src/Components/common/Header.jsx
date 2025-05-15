@@ -1,23 +1,69 @@
+// Modify the Header.jsx component to always refresh user data from localStorage
+
 import React, { useState, useEffect } from 'react';
 import { Search, Bell, ChevronDown, LogOut, Settings, User } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import '../../assets/css/header.css';
 import NotificationDropdown from '../NotificationDropdown';
 
-const Header = ({ user, onLogout }) => {
+const Header = ({ user: propUser, onLogout }) => {
+  // Add a local state for user data that always reads from localStorage
+  const [localUser, setLocalUser] = useState(propUser);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState(null);
   const location = useLocation();
   
+  // This useEffect will ensure we always have the latest user data from localStorage
+  useEffect(() => {
+    const refreshUserFromStorage = () => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          setLocalUser(userData);
+        } else {
+          setLocalUser(propUser);
+        }
+      } catch (error) {
+        console.error('Error parsing user data from localStorage:', error);
+        setLocalUser(propUser);
+      }
+    };
+
+    // Initial load
+    refreshUserFromStorage();
+
+    // Set up event listener for storage changes
+    const handleStorageChange = (e) => {
+      if (e.key === 'user') {
+        refreshUserFromStorage();
+      }
+    };
+
+    // Set up event listener for custom roleChange event
+    const handleRoleChange = () => {
+      refreshUserFromStorage();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('roleChange', handleRoleChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('roleChange', handleRoleChange);
+    };
+  }, [propUser]);
+
   // Load avatar dynamically based on user profile pic
   useEffect(() => {
     const loadAvatar = async () => {
-      if (user?.profilePic) {
+      // Use localUser instead of props user to ensure we have the latest data
+      if (localUser?.profilePic) {
         try {
           // Use dynamic import to get the avatar
-          const avatarModule = await import(`../../assets/avatars/avatar-${user.profilePic}.jpg`);
+          const avatarModule = await import(`../../assets/avatars/avatar-${localUser.profilePic}.jpg`);
           setAvatarSrc(avatarModule.default);
         } catch (error) {
           console.error('Failed to load avatar:', error);
@@ -29,7 +75,7 @@ const Header = ({ user, onLogout }) => {
     };
     
     loadAvatar();
-  }, [user?.profilePic]);
+  }, [localUser?.profilePic]);
 
   // Get page title from current route
   const getPageTitle = () => {
@@ -60,7 +106,8 @@ const Header = ({ user, onLogout }) => {
   // Function to render either an avatar image or a text-based avatar with user's initial
   const renderAvatar = () => {
     // Extract user name from email (before the @) for display
-    const userName = user?.email ? user.email.split('@')[0] : 'User';
+    // Use localUser instead of propUser
+    const userName = localUser?.email ? localUser.email.split('@')[0] : 'User';
     
     // Get first initial for fallback
     const initial = userName.charAt(0).toUpperCase();
@@ -102,6 +149,10 @@ const Header = ({ user, onLogout }) => {
       </div>
     );
   };
+
+  // Use localUser instead of propUser to get the most updated role
+  const userEmail = localUser?.email || 'User';
+  const userRole = localUser?.role || 'employee';
 
   return (
     <header className="app-header">
@@ -156,9 +207,9 @@ const Header = ({ user, onLogout }) => {
             >
               <div className="app-header__profile-info">
                 <p className="app-header__profile-name">
-                  {user.email ? user.email.split('@')[0] : 'User'}
+                  {userEmail ? userEmail.split('@')[0] : 'User'}
                 </p>
-                <p className="app-header__profile-role">{user.role}</p>
+                <p className="app-header__profile-role">{userRole}</p>
               </div>
               
               {renderAvatar()}

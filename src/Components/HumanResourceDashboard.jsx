@@ -208,10 +208,20 @@ const HrDashboard = () => {
       // Fetch leave requests for this branch
       const allLeaves = await safelyFetchData('/api/leaves');
       const branchEmployeeEmails = employeesData.map(emp => emp.personalDetails?.email);
-      const leavesData = allLeaves.filter(
-        leave => branchEmployeeEmails.includes(leave.employeeEmail)
-      );
-      
+          const leavesData = await safelyFetchData('/api/hr/leaves');
+
+      if (!leavesData || leavesData.length === 0) {
+      console.log('No leaves found using HR endpoint, trying management endpoint...');
+      const managementLeaves = await safelyFetchData('/api/leaves/management');
+      if (managementLeaves && managementLeaves.length > 0) {
+        processLeaveStats(managementLeaves);
+      } else {
+        // Still no data - create empty placeholder data for the chart
+        createEmptyLeaveStats();
+      }
+    } else {
+      processLeaveStats(leavesData);
+    }
       // Fetch applicants for this branch
       const applicantsData = await safelyFetchData('/api/hr/applicants');
       
@@ -237,7 +247,25 @@ const HrDashboard = () => {
       setIsLoading(false);
     }
   };
+const createEmptyLeaveStats = () => {
+  const last6Months = [];
+  const today = new Date();
+  
+  for (let i = 5; i >= 0; i--) {
+    const month = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    last6Months.push(month.toLocaleString('default', { month: 'short' }));
+  }
 
+  const emptyData = last6Months.map(month => ({
+    month,
+    approved: 0,
+    pending: 0,
+    rejected: 0,
+    total: 0
+  }));
+
+  setLeaveStats(emptyData);
+};
   const processEmployeeStats = (employees, leaves) => {
     const active = employees.filter(emp => 
       emp.professionalDetails?.status === 'active'

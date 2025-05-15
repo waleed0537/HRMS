@@ -1134,7 +1134,7 @@
 
 .metric-item {
   display: flex;
-  align-items: center;
+  align-items: start;
   gap: 10px;
   background: #f8fafc;
   border-radius: 8px;

@@ -2523,12 +2523,9 @@ app.get('/api/hr/leaves', authenticateToken, isHrManager, async (req, res) => {
 
     const employeeEmails = branchEmployees.map(emp => emp.personalDetails.email);
 
-    // Then get leave requests for those employees EXCEPT the HR manager's own requests
+    // Get all leave requests for those employees
     const leaves = await Leave.find({
-      employeeEmail: { 
-        $in: employeeEmails,
-        $ne: req.user.email  // This is the key filter - exclude HR manager's email
-      }
+      employeeEmail: { $in: employeeEmails }
     }).sort({ createdAt: -1 });
 
     res.json(leaves);

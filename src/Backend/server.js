@@ -286,7 +286,7 @@ app.post('/api/signup', async (req, res) => {
     const { personalDetails, professionalDetails, password } = req.body;
     
     console.log('Received signup request with data:', {
-      personalDetails: { ...personalDetails, password: '******' }, // Log without showing password
+      personalDetails: { ...personalDetails, password: '******' },
       professionalDetails
     });
 
@@ -342,7 +342,7 @@ app.post('/api/signup', async (req, res) => {
     const employee = await Employee.create({
       personalDetails: {
         name: personalDetails.name,
-        id: personalDetails.id || generateEmployeeId(), // Use user-entered ID if provided, fallback to generated
+        id: personalDetails.id || generateEmployeeId(),
         contact: personalDetails.contact,
         email: personalDetails.email,
         address: personalDetails.address
@@ -353,8 +353,60 @@ app.post('/api/signup', async (req, res) => {
         department: professionalDetails.department,
         status: professionalDetails.status
       },
-      userId: user._id // Link employee to user account
+      userId: user._id
     });
+
+    // Create notifications for admins and HR managers
+    try {
+      // Find all admin users
+      const adminUsers = await User.find({ 
+        isAdmin: true,
+        status: 'approved'
+      });
+      
+      // Find HR managers for this specific branch
+      const hrManagers = await User.find({
+        role: 'hr_manager',
+        branchName: professionalDetails.branch,
+        status: 'approved'
+      });
+      
+      // Create notifications for admins
+      const adminNotifications = adminUsers.map(admin => ({
+        userId: admin._id,
+        title: 'New Staff Request',
+        message: `${personalDetails.name} has requested to join as ${professionalDetails.role} in ${professionalDetails.branch} branch`,
+        type: 'account',
+        metadata: {
+          branchName: professionalDetails.branch,
+          branchId: null, // This could be populated if branch ID is available
+          requestType: 'staff_request'
+        }
+      }));
+      
+      // Create notifications for HR managers of this branch
+      const hrNotifications = hrManagers.map(hr => ({
+        userId: hr._id,
+        title: 'New Staff Request',
+        message: `${personalDetails.name} has requested to join your branch as ${professionalDetails.role}`,
+        type: 'account',
+        metadata: {
+          branchName: professionalDetails.branch,
+          branchId: null,
+          requestType: 'staff_request'
+        }
+      }));
+      
+      // Combine and save all notifications
+      const allNotifications = [...adminNotifications, ...hrNotifications];
+      if (allNotifications.length > 0) {
+        await Notification.insertMany(allNotifications);
+        console.log(`Created ${allNotifications.length} notifications for new staff request`);
+      }
+    } catch (notifError) {
+      // Log but don't fail the signup process
+      console.error('Error creating notifications for new staff request:', notifError);
+    }
 
     console.log('User and employee created successfully:', {
       userId: user._id,
@@ -370,7 +422,7 @@ app.post('/api/signup', async (req, res) => {
     console.error('Signup error:', error);
     res.status(500).json({
       message: 'Error creating user account',
-      error: error.toString() // Use toString to ensure error is serializable
+      error: error.toString()
     });
   }
 });
@@ -668,6 +720,68 @@ app.put('/api/employees/:id', authenticateToken, upload.array('documents', 5), a
       updates,
       { new: true }
     );
+    const updatingUser = await User.findById(req.user.id);
+    const updaterName = updatingUser ? 
+      (updatingUser.name || updatingUser.email.split('@')[0]) : 
+      'An administrator';
+    
+    // Only create notification if employee has a userId (linked user account)
+    if (employee.userId) {
+      // Build notification message based on what was updated
+      let updatedItems = [];
+      
+      if (updateData.personalDetails) updatedItems.push('personal details');
+      if (updateData.professionalDetails) updatedItems.push('professional details');
+      
+      // Check for role changes specifically
+      if (updateData.professionalDetails && 
+          employee.professionalDetails?.role !== updateData.professionalDetails.role) {
+        updatedItems.push(`role changed to ${formatRole(updateData.professionalDetails.role)}`);
+      }
+      
+      // Check for branch transfers
+      if (updateData.professionalDetails && 
+          employee.professionalDetails?.branch !== updateData.professionalDetails.branch) {
+        updatedItems.push(`branch changed to ${updateData.professionalDetails.branch}`);
+      }
+      
+      // Check for documents
+      if (documents && documents.length > 0) {
+        updatedItems.push(`${documents.length} document(s) added`);
+      }
+      
+      // Check for milestones
+      if (updateData.milestones && updateData.milestones.length > 0) {
+        updatedItems.push(`${updateData.milestones.length} milestone(s) added`);
+      }
+      
+      // Create the notification message
+      let notificationMessage = `${updaterName} updated your profile`;
+      if (updatedItems.length > 0) {
+        notificationMessage += `: ${updatedItems.join(', ')}`;
+      }
+      
+      // Create and save the notification
+      try {
+        const notification = new Notification({
+          userId: employee.userId,
+          title: 'Profile Updated',
+          message: notificationMessage,
+          type: 'account',
+          metadata: {
+            updatedBy: req.user.id,
+            updateTime: new Date()
+          }
+        });
+        
+        await notification.save();
+        console.log(`Notification created for user ${employee.userId} about profile update`);
+      } catch (notifError) {
+        // Log but don't fail the update if notification creation fails
+        console.error('Error creating profile update notification:', notifError);
+      }
+    }
+
 
     res.json({
       success: true,
@@ -1024,6 +1138,14 @@ app.post('/api/leaves', authenticateToken, upload.array('documents', 5), async (
       path: file.path
     })) : [];
 
+    // Get employee data to determine their branch
+    const employee = await Employee.findOne({ userId: req.user.id });
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee record not found' });
+    }
+
+    const branchName = employee.professionalDetails.branch;
+
     const leaveRequest = new Leave({
       employeeId: req.user.id,
       employeeName: user.name || user.email,
@@ -1036,6 +1158,72 @@ app.post('/api/leaves', authenticateToken, upload.array('documents', 5), async (
     });
 
     await leaveRequest.save();
+
+    // Create notifications for admins and HR managers
+    try {
+      // Find all admin users
+      const adminUsers = await User.find({ 
+        isAdmin: true,
+        status: 'approved'
+      });
+      
+      // Find HR managers for this specific branch
+      const hrManagers = await User.find({
+        role: 'hr_manager',
+        branchName: branchName,
+        status: 'approved'
+      });
+      
+      // Calculate leave duration for better notification
+      const startDate = new Date(req.body.startDate);
+      const endDate = new Date(req.body.endDate);
+      const diffTime = Math.abs(endDate - startDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+      // Format dates for notifications
+      const formattedStartDate = startDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+      
+      // Create notifications for admins
+      const adminNotifications = adminUsers.map(admin => ({
+        userId: admin._id,
+        title: 'New Leave Request',
+        message: `${user.name || user.email} has requested ${diffDays} ${diffDays === 1 ? 'day' : 'days'} of ${req.body.leaveType} leave from ${branchName} branch`,
+        type: 'leave',
+        metadata: {
+          branchName: branchName,
+          leaveType: req.body.leaveType,
+          requestId: leaveRequest._id
+        }
+      }));
+      
+      // Create notifications for HR managers of this branch
+      const hrNotifications = hrManagers.map(hr => ({
+        userId: hr._id,
+        title: 'New Leave Request',
+        message: `${user.name || user.email} has requested ${diffDays} ${diffDays === 1 ? 'day' : 'days'} of ${req.body.leaveType} leave starting ${formattedStartDate}`,
+        type: 'leave',
+        metadata: {
+          branchName: branchName,
+          leaveType: req.body.leaveType,
+          requestId: leaveRequest._id
+        }
+      }));
+      
+      // Combine and save all notifications
+      const allNotifications = [...adminNotifications, ...hrNotifications];
+      if (allNotifications.length > 0) {
+        await Notification.insertMany(allNotifications);
+        console.log(`Created ${allNotifications.length} notifications for new leave request`);
+      }
+    } catch (notifError) {
+      // Log but don't fail the leave request submission
+      console.error('Error creating notifications for leave request:', notifError);
+    }
+
     res.status(201).json(leaveRequest);
   } catch (error) {
     res.status(500).json({ message: error.message });

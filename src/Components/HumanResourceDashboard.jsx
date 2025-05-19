@@ -16,7 +16,8 @@ import AnnouncementsList from './AnnouncementsList.jsx';
 import API_BASE_URL from '../config/api.js';
 import '../assets/css/HrDashboard.css';
 import EnhancedLeaderboardModal from './EnhancedLeaderboardModal.jsx';
-
+import HrRecentActivity from './HrRecentActivity';
+import '../assets/css/RecentActivity.css';
 // Enhanced color palette
 const COLORS = [
   '#6dbfb8', '#be95be', '#71a3c1', '#75ba75', '#b3be62', 
@@ -986,37 +987,7 @@ const createEmptyLeaveStats = () => {
         </div>
 
         {/* Recent Activity List */}
-        <div className="hr-chart-card recent-activity">
-          <div className="hr-card-header">
-            <h2>Recent Branch Activity</h2>
-          </div>
-          <div className="card-body activity-list">
-            {recentActivity.map((activity, index) => (
-              <div className="activity-item" key={index}>
-                <div className="activity-avatar" style={{ background: activity.avatarColor }}>
-                  {activity.avatar}
-                </div>
-                <div className="activity-content">
-                  <div className="activity-header">
-                    <h4>{activity.title}</h4>
-                    <span className="activity-time">
-                      {getRelativeTime(activity.timestamp)}
-                    </span>
-                  </div>
-                  <p>{activity.description}</p>
-                </div>
-                <div className="activity-status">
-                  {getStatusIcon(activity.status)}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="card-footer">
-            <button className="view-all-btn">
-              View all activity <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
+        <HrRecentActivity />
 
         {/* Announcements */}
         <div className="hr-chart-card announcements">

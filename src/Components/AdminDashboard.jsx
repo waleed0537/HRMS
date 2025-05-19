@@ -24,6 +24,9 @@ import '../assets/css/AdminDashboard.css';
 import API_BASE_URL from '../config/api.js';
 import LeaderboardModal from './EnhancedLeaderboardModal';
 import EnhancedLeaderboardModal from './EnhancedLeaderboardModal.jsx';
+import '../assets/css/RecentActivity.css';
+import EnhancedRecentActivity from './EnhancedRecentActivity';
+
 
 // Enhanced color palette with more vibrant options
 const COLORS = [
@@ -247,6 +250,9 @@ const AdminDashboard = () => {
   const [salesViewMode, setSalesViewMode] = useState('employee');
   const [performanceMetric, setPerformanceMetric] = useState('sales');
   const [showSalesComparisonType, setShowSalesComparisonType] = useState('branches');
+  const [branches, setBranches] = useState([]);
+
+
   const [selectedBranchMetrics, setSelectedBranchMetrics] = useState([
     'sales', 'conversions', 'satisfaction', 'retention', 'growth'
   ]);
@@ -269,7 +275,24 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    fetchBranches(); 
   }, [timeRange]);
+  const fetchBranches = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/branches`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      setBranches(data);
+    }
+  } catch (error) {
+    console.error('Error fetching branches:', error);
+  }
+};
 
   const fetchDashboardData = async () => {
     try {
@@ -1080,65 +1103,47 @@ const AdminDashboard = () => {
           </div>
 
           {/* Recent Activity List */}
-          <div className="chart-card recent-activity">
-            <div className="admin-card-header">
-              <h2>Recent Activity</h2>
-            </div>
-            <div className="card-body activity-list">
-              {recentActivity.map((activity, index) => (
-                <div className="activity-item" key={index}>
-                  <div className="activity-avatar" style={{ background: activity.avatarColor }}>
-                    {activity.avatar}
-                  </div>
-                  <div className="activity-content">
-                    <div className="activity-header">
-                      <h4>{activity.title}</h4>
-                      <span className="activity-time">
-                        {getRelativeTime(activity.timestamp)}
-                      </span>
-                    </div>
-                    <p>{activity.description}</p>
-                  </div>
-                  <div className="activity-status">
-                    {getStatusIcon(activity.status)}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="card-footer">
-              <button className="view-all-btn">
-                View all activity <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
+          <EnhancedRecentActivity />
 
-          {/* Announcements */}
-          <div className="chart-card announcements">
-            <div className="admin-card-header">
-              <h2>Branch Announcements</h2>
-              <button
-                className="create-btn"
-                onClick={() => setIsAnnouncementModalOpen(true)}
-              >
-                <FilePlus size={16} />
-                Create
-              </button>
-            </div>
-            {selectedBranch ? (
-              <AnnouncementsList branchId={selectedBranch} className="announcements-wrapper" />
-            ) : (
-              <div className="empty-state">
-                <AlertTriangle size={32} />
-                <p>No branch selected for announcements</p>
-                <button
-                  className="create-announcement-btn"
-                  onClick={() => setIsAnnouncementModalOpen(true)}
-                >
-                  Create your first announcement
-                </button>
-              </div>
-            )}
-          </div>
+{/* Announcements */}
+<div className="chart-card announcements">
+  <div className="admin-card-header">
+    <h2>Branch Announcements</h2>
+    <div className="announcement-controls">
+      <div className="filter-wrapper">
+        <select 
+          className="branch-selector"
+          value={selectedBranch || "all"}
+          onChange={(e) => setSelectedBranch(e.target.value === "all" ? null : e.target.value)}
+        >
+          <option value="all">All Branches</option>
+          {branches.map(branch => (
+            <option key={branch._id} value={branch._id}>
+              {branch.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <button
+        className="create-btn"
+        onClick={() => setIsAnnouncementModalOpen(true)}
+      >
+        <FilePlus size={16} />
+        Create
+      </button>
+    </div>
+  </div>
+  <div className="card-body announcements-container">
+    {/* Use the EnhancedAnnouncementsList component */}
+    {!selectedBranch ? (
+      /* Show all announcements for admin */
+      <AnnouncementsList showAllForAdmin={true} />
+    ) : (
+      /* Show specific branch announcements */
+      <AnnouncementsList branchId={selectedBranch} />
+    )}
+  </div>
+</div>
         </div>
 
         {/* Revenue and Projects Row */}

@@ -1212,7 +1212,9 @@ const HrDashboard = () => {
           isOpen={isAnnouncementModalOpen}
           onClose={() => setIsAnnouncementModalOpen(false)}
           onSubmit={handleCreateAnnouncement}
+          userBranch={branchId ? { id: branchId, name: userBranch } : null}
         />
+
 
         <EnhancedLeaderboardModal
           isOpen={isLeaderboardModalOpen}
@@ -1224,3 +1226,6 @@ const HrDashboard = () => {
 };
 
 export default HrDashboard;
+
+
+

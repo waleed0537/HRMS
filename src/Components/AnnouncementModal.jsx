@@ -5,7 +5,7 @@ import { useToast } from './common/ToastContent.jsx';
 import '../assets/css/AnnouncementModal.css';
 import API_BASE_URL from '../config/api.js';
 
-const AnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
+const AnnouncementModal = ({ isOpen, onClose, onSubmit, userBranch = null }) => {
   const { success, error, info } = useToast();
   const [branches, setBranches] = useState([]);
   const [formData, setFormData] = useState({
@@ -24,12 +24,22 @@ const AnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
       // Set default expiry date to 7 days from now
       const defaultExpiry = new Date();
       defaultExpiry.setDate(defaultExpiry.getDate() + 7);
-      setFormData(prev => ({
-        ...prev,
-        expiresAt: defaultExpiry.toISOString().split('T')[0]
-      }));
+      
+      // If userBranch is provided (HR manager), automatically set it
+      if (userBranch) {
+        setFormData(prev => ({
+          ...prev,
+          branchId: userBranch.id,
+          expiresAt: defaultExpiry.toISOString().split('T')[0]
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          expiresAt: defaultExpiry.toISOString().split('T')[0]
+        }));
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, userBranch]);
 
   const fetchBranches = async () => {
     try {
@@ -82,7 +92,7 @@ const AnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
       setFormData({
         title: '',
         content: '',
-        branchId: '',
+        branchId: userBranch ? userBranch.id : '',
         priority: 'medium',
         expiresAt: ''
       });
@@ -154,23 +164,35 @@ const AnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
                 </label>
                 <div className="announcement-modal-input-wrapper">
                   <Building size={18} className="announcement-modal-input-icon" />
-                  <select
-                    className={`announcement-modal-select ${fieldErrors.branchId ? 'announcement-modal-input-error' : ''}`}
-                    value={formData.branchId}
-                    onChange={(e) => {
-                      setFormData({ ...formData, branchId: e.target.value });
-                      if (fieldErrors.branchId) {
-                        setFieldErrors({...fieldErrors, branchId: ''});
-                      }
-                    }}
-                  >
-                    <option value="">Select Branch</option>
-                    {branches.map((branch) => (
-                      <option key={branch._id} value={branch._id}>
-                        {branch.name}
-                      </option>
-                    ))}
-                  </select>
+                  {userBranch ? (
+                    // For HR managers: Show their branch as read-only
+                    <input
+                      type="text"
+                      className="announcement-modal-input"
+                      value={userBranch.name}
+                      disabled
+                      style={{ backgroundColor: '#f9fafb', cursor: 'not-allowed' }}
+                    />
+                  ) : (
+                    // For Admins: Show branch selection dropdown
+                    <select
+                      className={`announcement-modal-select ${fieldErrors.branchId ? 'announcement-modal-input-error' : ''}`}
+                      value={formData.branchId}
+                      onChange={(e) => {
+                        setFormData({ ...formData, branchId: e.target.value });
+                        if (fieldErrors.branchId) {
+                          setFieldErrors({...fieldErrors, branchId: ''});
+                        }
+                      }}
+                    >
+                      <option value="">Select Branch</option>
+                      {branches.map((branch) => (
+                        <option key={branch._id} value={branch._id}>
+                          {branch.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               </div>
 

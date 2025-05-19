@@ -2878,7 +2878,9 @@ blockquote .name-designation .designation {
 /************ 20. Dashboard Screenshot Area *********** */
 /****************************************************** */
 .dashboard-screenshot-item {
-    opacity: 0.25;
+    position: relative;
+    height: 1200px;
+    opacity: 1;
     text-align: right;
 }
 

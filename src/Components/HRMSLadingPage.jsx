@@ -24,6 +24,9 @@ import PWhite3 from '../assets1/images/partners/partner-three-white3.png';
 import PWhite4 from '../assets1/images/partners/partner-three-white4.png';
 import PWhite5 from '../assets1/images/partners/partner-three-white5.png';
 import bgDots from '../assets1/images/shapes/solutions-bg-dots.png';
+import AdminDashboard from '../assets1/images/AdminDashboard.png';
+import EmployeeDashboard from '../assets1/images/EmployeeDashboard.png';  
+import HRDashboard from '../assets1/images/HRDashboard.png';
 import Preloader from './Preloader';
 // CSS imports
 import '../assets1/css/flaticon.css';
@@ -100,7 +103,7 @@ const LandingPage = () => {
   const sliderSettings = {
     dots: true,
     infinite: true,
-    speed: 500,
+    speed: 1000,
     slidesToShow: 3,
     slidesToScroll: 1,
     responsive: [
@@ -844,13 +847,13 @@ const LandingPage = () => {
                 </div>
                 <Slider {...sliderSettings}>
                   <div className="dashboard-screenshot-item">
-                    <img src="./assets1/images/dashboard-screenshots/hrms-dashboard1.jpg" alt="Employee Management Dashboard" />
+                    <img src={AdminDashboard} alt="Employee Management Dashboard" />
                   </div>
                   <div className="dashboard-screenshot-item">
-                    <img src="./assets1/images/dashboard-screenshots/hrms-dashboard2.jpg" alt="Performance Analytics Dashboard" />
+                    <img src={EmployeeDashboard} alt="Performance Analytics Dashboard" />
                   </div>
                   <div className="dashboard-screenshot-item">
-                    <img src="./assets1/images/dashboard-screenshots/hrms-dashboard3.jpg" alt="Recruitment & Attendance Dashboard" />
+                    <img src={HRDashboard} alt="Recruitment & Attendance Dashboard" />
                   </div>
                 </Slider>
               </div>

@@ -44,6 +44,48 @@ const csvStorage = multer.diskStorage({
 if (!fs.existsSync('./uploads/attendance-csv')) {
   fs.mkdirSync('./uploads/attendance-csv', { recursive: true });
 }
+async function removeEmailUniqueConstraint() {
+  try {
+    console.log('Checking for unique index on applicant email...');
+    
+    // Wait for mongoose connection to be ready
+    if (mongoose.connection.readyState !== 1) {
+      console.log('Mongoose not connected yet, will check indexes after connection');
+      return;
+    }
+    
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    
+    if (collections.some(col => col.name === 'applicants')) {
+      console.log('Applicants collection exists, checking indexes...');
+      const indexes = await mongoose.connection.db.collection('applicants').indexes();
+      console.log('Current indexes:', indexes);
+      
+      const emailUniqueIndex = indexes.find(idx => 
+        idx.key && 
+        (idx.key['personalDetails.email'] === 1 || idx.unique === true)
+      );
+      
+      if (emailUniqueIndex) {
+        console.log('Found potentially problematic index:', emailUniqueIndex);
+        console.log('Dropping index:', emailUniqueIndex.name);
+        
+        try {
+          await mongoose.connection.db.collection('applicants').dropIndex(emailUniqueIndex.name);
+          console.log('Successfully dropped index on applicants collection');
+        } catch (dropError) {
+          console.error('Error dropping index:', dropError);
+        }
+      } else {
+        console.log('No problematic index found on applicants collection');
+      }
+    } else {
+      console.log('Applicants collection does not exist yet');
+    }
+  } catch (error) {
+    console.error('Error checking/removing email index:', error);
+  }
+}
 
 const csvUpload = multer({
   storage: csvStorage,
@@ -229,7 +271,10 @@ mongoose.connect('mongodb+srv://hrmsmongo:YWCuBGMkletJv65z@cluster0.hrtxh.mongod
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-  .then(() => console.log('Connected to MongoDB'))
+  .then(() => {
+    console.log('Connected to MongoDB');
+    return removeEmailUniqueConstraint();
+  })
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Create admin user if not exists
@@ -1888,16 +1933,88 @@ app.post('/api/notifications', authenticateToken, async (req, res) => {
   }
 });
 
+// Now we need to update the notifications endpoint to handle shared notifications
 app.get('/api/notifications', authenticateToken, async (req, res) => {
   try {
-    const notifications = await Notification.find({
+    // First get this user's direct notifications
+    const userNotifications = await Notification.find({
       userId: req.user.id
-    })
-      .sort({ createdAt: -1 })
-      .limit(20);
+    });
+    
+    // Then find shared notifications for user's role
+    const currentUser = await User.findById(req.user.id);
+    if (!currentUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Determine the current user's role(s)
+    const userRoles = [];
+    if (currentUser.isAdmin) userRoles.push('admin');
+    userRoles.push(currentUser.role); // Add their specific role
+    
+    // Find shared notifications for these roles
+    const sharedNotificationsQuery = {
+      'metadata.isSharedNotification': true,
+      $or: []
+    };
+    
+    // Add condition for admin role if applicable
+    if (currentUser.isAdmin) {
+      sharedNotificationsQuery.$or.push({ 'metadata.forRole': 'admin' });
+    }
+    
+    // Add condition for specific role
+    sharedNotificationsQuery.$or.push({ 'metadata.forRole': currentUser.role });
+    
+    // For HR managers, only show notifications for their branch
+    if (currentUser.role === 'hr_manager') {
+      // Find only shared HR manager notifications for this branch
+      sharedNotificationsQuery.$and = [
+        { 'metadata.branchName': { $regex: new RegExp('^' + currentUser.branchName + '$', 'i') } }
+      ];
+    }
+    
+    let sharedNotifications = [];
+    if (sharedNotificationsQuery.$or.length > 0) {
+      sharedNotifications = await Notification.find(sharedNotificationsQuery);
+    }
+    
+    // Combine and remove duplicates (using Set on applicationId)
+    const uniqueNotificationIds = new Set();
+    const allUniqueNotifications = [];
+    
+    // Process user's direct notifications
+    userNotifications.forEach(notification => {
+      allUniqueNotifications.push(notification);
+      // Track application IDs to avoid duplicates
+      if (notification.metadata?.applicationId) {
+        uniqueNotificationIds.add(notification.metadata.applicationId);
+      }
+    });
+    
+    // Add shared notifications that aren't duplicates
+    sharedNotifications.forEach(notification => {
+      // Skip if we already have a notification for this application
+      if (notification.metadata?.applicationId && 
+          uniqueNotificationIds.has(notification.metadata.applicationId)) {
+        return;
+      }
+      
+      allUniqueNotifications.push(notification);
+      // Track this application ID
+      if (notification.metadata?.applicationId) {
+        uniqueNotificationIds.add(notification.metadata.applicationId);
+      }
+    });
+    
+    // Sort by creation date (newest first) and limit
+    allUniqueNotifications.sort((a, b) => b.createdAt - a.createdAt);
+    const limitedNotifications = allUniqueNotifications.slice(0, 20);
 
-    console.log('Found notifications:', notifications); // Debug log
-    res.json(notifications);
+    console.log(`Found ${userNotifications.length} personal and ${sharedNotifications.length} shared notifications for user ${currentUser.email} (${currentUser.role})`);
+    console.log(`Returning ${limitedNotifications.length} unique notifications after deduplication`);
+    
+    res.json(limitedNotifications);
   } catch (error) {
     console.error('Notification fetch error:', error);
     res.status(500).json({
@@ -2003,19 +2120,7 @@ if (!fs.existsSync('./uploads/resumes')) {
   fs.mkdirSync('./uploads/resumes', { recursive: true });
 }
 
-// Server route handler for applicant submission
-// In server.js, update the /api/applicants POST route
-
-// In server.js, update the applicant submission route
-
-// In server.js
-// In server.js, update the applicant submission endpoint
-
-// In server.js, update the applicant submission route
-// In server.js, update the POST /api/applicants route
-// Update this section of your server.js file where the application is being processed
-// (around line 1808-1813 where the error is occurring)
-
+// Updated application submission endpoint to create role-specific notifications
 app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
   try {
     console.log('Starting application submission');
@@ -2024,23 +2129,6 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
     
     const personalDetails = JSON.parse(req.body.personalDetails);
     const jobDetails = JSON.parse(req.body.jobDetails);
-    
-    console.log('Parsed personal details:', personalDetails);
-    console.log('Parsed job details:', jobDetails);
-    
-    // Inspect position field specifically
-    console.log('Job details position field direct access:', jobDetails.position);
-    
-    // Check all possible locations for position field (case-insensitive)
-    const possiblePositionKeys = Object.keys(jobDetails).filter(key => 
-      key.toLowerCase().includes('position') || 
-      key.toLowerCase().includes('title') || 
-      key.toLowerCase() === 'role' ||
-      key.toLowerCase() === 'job'
-    );
-    
-    console.log('Possible position keys found:', possiblePositionKeys);
-    console.log('Values for possible position keys:', possiblePositionKeys.map(key => `${key}: ${jobDetails[key]}`));
     
     // CRITICAL FIX: Extract branch name consistently, checking all possible locations
     const branchName = 
@@ -2069,12 +2157,18 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
       jobDetails.branchName = branch.name;
     }
 
+    // Add application timestamp and unique ID
+    const applicationTimestamp = new Date();
+    const uniqueApplicationId = `${applicationTimestamp.getTime()}-${Math.random().toString(36).substring(2, 10)}`;
+
     // Save applicant data with standardized branchName
     const applicantData = {
       personalDetails: new Map(Object.entries(personalDetails)),
       jobDetails: new Map(Object.entries(jobDetails)),
       branchName: branch.name, // Store at top level for HR filtering
-      status: 'pending'
+      status: 'pending',
+      applicationId: uniqueApplicationId,
+      applicationTimestamp: applicationTimestamp
     };
 
     if (req.file) {
@@ -2088,22 +2182,6 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
     const applicant = new Applicant(applicantData);
     await applicant.save();
 
-    // Find users to notify (admins, HR managers, and T1 members)
-    const [hrManagers, authorizedUsers] = await Promise.all([
-      User.find({
-        role: 'hr_manager',
-        branchName: { $regex: new RegExp('^' + branch.name + '$', 'i') }
-      }),
-      User.find({
-        $or: [
-          { isAdmin: true },
-          { role: 't1_member' }
-        ]
-      })
-    ]);
-
-    console.log(`Found ${hrManagers.length} HR managers for branch ${branch.name}`);
-
     // Extract applicant name with fallbacks
     const applicantName = 
       personalDetails.name || 
@@ -2113,80 +2191,140 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
 
     // Improved position extraction with case-insensitive searching
     let jobPosition = 'a position';
-    // Try to find any field containing "position" in its name, case-insensitive
-    for (const key of Object.keys(jobDetails)) {
-      if (key.toLowerCase().includes('position') && jobDetails[key]) {
-        jobPosition = jobDetails[key];
-        break;
-      }
-    }
     
-    // If that fails, try other common field names
-    if (jobPosition === 'a position') {
-      jobPosition = 
-        jobDetails.title || 
-        jobDetails.job_title || 
-        jobDetails.jobTitle || 
-        jobDetails.role || 
-        jobDetails.job || 
-        'a position';
+    // First check if position exists in jobDetails
+    if (jobDetails.position) {
+      jobPosition = jobDetails.position;
+    } else if (personalDetails.position) {
+      // Check if it's in personal details (old form format)
+      jobPosition = personalDetails.position;
+    } else {
+      // Try to find any field containing "position" in its name, case-insensitive
+      for (const key of Object.keys(jobDetails)) {
+        if (key.toLowerCase().includes('position') && jobDetails[key]) {
+          jobPosition = jobDetails[key];
+          break;
+        }
+      }
+      
+      // If that fails, try other common field names
+      if (jobPosition === 'a position') {
+        jobPosition = 
+          jobDetails.title || 
+          jobDetails.job_title || 
+          jobDetails.jobTitle || 
+          jobDetails.role || 
+          jobDetails.job || 
+          'a position';
+      }
     }
 
     console.log('Extracted name:', applicantName);
     console.log('Extracted position:', jobPosition);
 
-    // Create notifications
+    // *** FIXED APPROACH: Create representative notifications using target users ***
+    // Instead of using null userId, we'll find one user per role and create a notification for them
+    
+    // Construct the notification message once
+    const notificationMessage = `New application received from ${applicantName} for ${jobPosition} in ${branch.name} branch`;
+    const notificationMetadata = {
+      branchId: branch._id,
+      branchName: branch.name,
+      applicationId: uniqueApplicationId,
+      // Flag this as a shared notification that should be visible to other users with the same role
+      isSharedNotification: true
+    };
+    
+    // Find one representative from each role that should be notified
+    const [branchHRManager, oneAdmin, oneT1Member] = await Promise.all([
+      // Get one HR manager for this branch
+      User.findOne({
+        role: 'hr_manager',
+        branchName: { $regex: new RegExp('^' + branch.name + '$', 'i') },
+        status: 'approved'
+      }),
+      // Get one admin
+      User.findOne({
+        isAdmin: true,
+        status: 'approved'
+      }),
+      // Get one T1 member
+      User.findOne({
+        role: 't1_member',
+        status: 'approved'
+      })
+    ]);
+    
+    // Create notifications only for roles that have representatives
     const notificationPromises = [];
-
-    // Notify admins and T1 members
-    authorizedUsers.forEach(user => {
+    
+    // Create HR manager notification
+    if (branchHRManager) {
       notificationPromises.push(
         new Notification({
-          userId: user._id,
+          userId: branchHRManager._id,
           title: 'New Job Application',
-          message: `New application received from ${applicantName} for ${jobPosition} in ${branch.name} branch`,
+          message: notificationMessage,
           type: 'application',
           metadata: {
-            branchId: branch._id,
-            branchName: branch.name
+            ...notificationMetadata,
+            forRole: 'hr_manager'
           }
         }).save()
       );
-    });
-
-    // Notify HR managers
-    hrManagers.forEach(hr => {
+    }
+    
+    // Create admin notification
+    if (oneAdmin) {
       notificationPromises.push(
         new Notification({
-          userId: hr._id,
+          userId: oneAdmin._id,
           title: 'New Job Application',
-          message: `New application received from ${applicantName} for ${jobPosition}`,
+          message: notificationMessage,
           type: 'application',
           metadata: {
-            branchId: branch._id,
-            branchName: branch.name
+            ...notificationMetadata,
+            forRole: 'admin'
           }
         }).save()
       );
-    });
-
-    // Wait for all notifications
-    await Promise.all(notificationPromises);
+    }
     
-    // Send email notifications to HR managers
-    const emailPromises = [];
+    // Create T1 member notification
+    if (oneT1Member) {
+      notificationPromises.push(
+        new Notification({
+          userId: oneT1Member._id,
+          title: 'New Job Application',
+          message: notificationMessage,
+          type: 'application',
+          metadata: {
+            ...notificationMetadata,
+            forRole: 't1_member'
+          }
+        }).save()
+      );
+    }
     
-    for (const hr of hrManagers) {
+    // Save all notifications
+    if (notificationPromises.length > 0) {
+      await Promise.all(notificationPromises);
+      console.log(`Created ${notificationPromises.length} representative notifications for application ${uniqueApplicationId}`);
+    } else {
+      console.log('No users found to notify about new application');
+    }
+    
+    // Send email notification to branch HR manager if found
+    let emailSent = false;
+    if (branchHRManager) {
       try {
-        // Create email subject and content
         const subject = `New Job Application for ${branch.name} Branch`;
         
-        // Create a nice email template with basic application details
         const emailContent = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
             <h2 style="color: #474787;">New Job Application Received</h2>
             
-            <p>Hello ${hr.email.split('@')[0]},</p>
+            <p>Hello ${branchHRManager.email.split('@')[0]},</p>
             
             <p>A new job application has been submitted for the ${branch.name} branch.</p>
             
@@ -2206,27 +2344,20 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
           </div>
         `;
         
-        // Send the email notification
-        emailPromises.push(sendEmail(hr.email, subject, emailContent));
-        console.log(`Email notification queued for HR manager: ${hr.email}`);
+        const emailResult = await sendEmail(branchHRManager.email, subject, emailContent);
+        emailSent = emailResult;
+        console.log(`Email notification sent to HR manager: ${branchHRManager.email}`);
       } catch (emailError) {
-        console.error(`Failed to prepare email for HR manager ${hr.email}:`, emailError);
-        // Continue the loop even if one email fails
+        console.error(`Failed to send email for HR manager ${branchHRManager.email}:`, emailError);
       }
     }
-    
-    // Send all emails in parallel but don't wait for them to complete
-    Promise.allSettled(emailPromises).then(results => {
-      const sentCount = results.filter(r => r.status === 'fulfilled' && r.value === true).length;
-      console.log(`Sent ${sentCount}/${emailPromises.length} email notifications to HR managers`);
-    });
 
     res.status(201).json({
       success: true,
       message: 'Application submitted successfully',
-      notifications: notificationPromises.length,
-      hrManagersNotified: hrManagers.length,
-      emailsQueued: emailPromises.length
+      applicationId: uniqueApplicationId,
+      notificationsCreated: notificationPromises.length,
+      emailSent: emailSent
     });
 
   } catch (error) {
@@ -2963,45 +3094,84 @@ app.put('/api/hr/edit-profiles/:id', authenticateToken, isHrManager, upload.arra
 
 app.get('/api/hr/notifications', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    console.log('Fetching notifications for user:', {
-      userId: user._id,
-      branchName: user.branchName,
-      role: user.role
-    });
-
-    // Case-insensitive branch name matching
-    const branch = await Branch.findOne({
-      name: { $regex: new RegExp('^' + user.branchName + '$', 'i') }
-    });
-
-    console.log('Found branch:', branch);
-
-    let notifications;
-    if (user.isAdmin || user.role === 't1_member') {
-      // Admins and T1 members see all notifications
-      notifications = await Notification.find()
-        .sort({ createdAt: -1 })
-        .limit(20);
-    } else {
-      // HR managers see:
-      // 1. Their own notifications
-      // 2. Applications for their branch
-      notifications = await Notification.find({
-        $or: [
-          { userId: user._id },
-          {
-            type: 'application',
-            'metadata.branchName': { $regex: new RegExp('^' + user.branchName + '$', 'i') }
-          }
-        ]
-      })
-        .sort({ createdAt: -1 })
-        .limit(20);
+    const currentUser = await User.findById(req.user.id);
+    if (!currentUser) {
+      return res.status(404).json({ error: 'User not found' });
     }
+    
+    console.log('Fetching HR notifications for user:', {
+      userId: currentUser._id,
+      branchName: currentUser.branchName,
+      role: currentUser.role
+    });
+    
+    // Get user's direct notifications
+    const userNotifications = await Notification.find({
+      userId: currentUser._id
+    });
+    
+    // Find shared notifications based on roles
+    const sharedNotificationsQuery = {
+      'metadata.isSharedNotification': true,
+      $or: []
+    };
+    
+    // Add appropriate role conditions
+    if (currentUser.isAdmin) {
+      sharedNotificationsQuery.$or.push({ 'metadata.forRole': 'admin' });
+    }
+    
+    if (currentUser.role === 'hr_manager') {
+      sharedNotificationsQuery.$or.push({ 'metadata.forRole': 'hr_manager' });
+      // For HR managers, only show notifications for their branch
+      sharedNotificationsQuery.$and = [
+        { 'metadata.branchName': { $regex: new RegExp('^' + currentUser.branchName + '$', 'i') } }
+      ];
+    }
+    
+    if (currentUser.role === 't1_member') {
+      sharedNotificationsQuery.$or.push({ 'metadata.forRole': 't1_member' });
+    }
+    
+    let sharedNotifications = [];
+    if (sharedNotificationsQuery.$or.length > 0) {
+      sharedNotifications = await Notification.find(sharedNotificationsQuery);
+    }
+    
+    // Combine and remove duplicates (using Set on applicationId)
+    const uniqueNotificationIds = new Set();
+    const allUniqueNotifications = [];
+    
+    // Process user's direct notifications
+    userNotifications.forEach(notification => {
+      allUniqueNotifications.push(notification);
+      // Track application IDs to avoid duplicates
+      if (notification.metadata?.applicationId) {
+        uniqueNotificationIds.add(notification.metadata.applicationId);
+      }
+    });
+    
+    // Add shared notifications that aren't duplicates
+    sharedNotifications.forEach(notification => {
+      // Skip if we already have a notification for this application
+      if (notification.metadata?.applicationId && 
+          uniqueNotificationIds.has(notification.metadata.applicationId)) {
+        return;
+      }
+      
+      allUniqueNotifications.push(notification);
+      // Track this application ID
+      if (notification.metadata?.applicationId) {
+        uniqueNotificationIds.add(notification.metadata.applicationId);
+      }
+    });
+    
+    // Sort by creation date (newest first) and limit
+    allUniqueNotifications.sort((a, b) => b.createdAt - a.createdAt);
+    const limitedNotifications = allUniqueNotifications.slice(0, 20);
 
-    console.log(`Found ${notifications.length} notifications`);
-    res.json(notifications);
+    console.log(`Found ${limitedNotifications.length} unique notifications for HR user`);
+    res.json(limitedNotifications);
   } catch (error) {
     console.error('Error in HR notifications:', error);
     res.status(500).json({

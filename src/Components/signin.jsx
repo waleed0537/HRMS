@@ -286,7 +286,7 @@ const SignIn = ({ onLogin }) => {
                     <Phone className="field-icon" />
                     <input
                       id="contact"
-                      type="tel"
+                      type="number"
                       className="form-input"
                       placeholder="Your phone number"
                       value={contact}

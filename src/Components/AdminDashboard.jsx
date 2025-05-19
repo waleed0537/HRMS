@@ -1110,20 +1110,7 @@ const AdminDashboard = () => {
   <div className="admin-card-header">
     <h2>Branch Announcements</h2>
     <div className="announcement-controls">
-      <div className="filter-wrapper">
-        <select 
-          className="branch-selector"
-          value={selectedBranch || "all"}
-          onChange={(e) => setSelectedBranch(e.target.value === "all" ? null : e.target.value)}
-        >
-          <option value="all">All Branches</option>
-          {branches.map(branch => (
-            <option key={branch._id} value={branch._id}>
-              {branch.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      
       <button
         className="create-btn"
         onClick={() => setIsAnnouncementModalOpen(true)}

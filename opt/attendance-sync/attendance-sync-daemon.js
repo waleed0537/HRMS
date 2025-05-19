@@ -792,7 +792,7 @@ for (const record of logs) {
           },
           $set: {
             deviceUserId: uid,
-            employeeName: name,
+           
             updatedAt: new Date()
           }
         },
@@ -1092,3 +1092,4 @@ if (require.main === module) {
   };
 }
 // Run command  pm2 start attendance-sync-daemon.js --name attendance-sync
+// Stop command pm2 stop attendance-sync-daemon.js --name attendance-sync

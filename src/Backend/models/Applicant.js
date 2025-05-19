@@ -1,3 +1,4 @@
+// models/Applicant.js - Updated version
 const mongoose = require('mongoose');
 
 const applicantSchema = new mongoose.Schema({
@@ -5,6 +6,7 @@ const applicantSchema = new mongoose.Schema({
     type: Map,
     of: mongoose.Schema.Types.Mixed,
     required: true
+    // No unique constraint here
   },
   jobDetails: {
     type: Map,
@@ -14,6 +16,16 @@ const applicantSchema = new mongoose.Schema({
   branchName: {
     type: String,
     required: false
+  },
+  // Add new fields for tracking multiple applications
+  applicationId: {
+    type: String,
+    required: false,
+    unique: true // This can be unique instead of email
+  },
+  applicationTimestamp: {
+    type: Date,
+    default: Date.now
   },
   resume: {
     filename: String,
@@ -49,9 +61,19 @@ applicantSchema.methods.getAllDetails = function() {
     branchName: this.branchName,
     status: this.status,
     resume: this.resume,
-    createdAt: this.createdAt
+    createdAt: this.createdAt,
+    applicationId: this.applicationId,
+    applicationTimestamp: this.applicationTimestamp
   };
 };
+
+// Explicitly create only the indexes we want
+// DO NOT create an index on personalDetails.email
+// Instead, create an index for applicationId which can be unique
+applicantSchema.index({ applicationId: 1 }, { unique: true, sparse: true });
+applicantSchema.index({ createdAt: -1 }); // Index for sorting by creation date
+applicantSchema.index({ status: 1 }); // Index for filtering by status
+applicantSchema.index({ branchName: 1 }); // Index for filtering by branch
 
 const Applicant = mongoose.model('Applicant', applicantSchema);
 module.exports = Applicant;

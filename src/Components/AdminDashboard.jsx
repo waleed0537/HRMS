@@ -7,6 +7,8 @@ import {
   PolarAngleAxis, PolarRadiusAxis, ScatterChart, ZAxis, Brush,
   ReferenceLine
 } from 'recharts';
+import { useToast } from './common/ToastContent.jsx';
+
 import {
   Bell, CheckCircle, XCircle, Download, Users, Calendar,
   TrendingUp, CreditCard, DollarSign, Activity, Briefcase,
@@ -230,8 +232,7 @@ const MOCK_WEEKLY_SALES = [
 const AdminDashboard = () => {
   const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
-  const [notificationMessage, setNotificationMessage] = useState('');
-  const [notificationType, setNotificationType] = useState('');
+
   const [leaveStats, setLeaveStats] = useState([]);
   const [teamPerformance, setTeamPerformance] = useState([]);
   const [employeeStats, setEmployeeStats] = useState({
@@ -251,6 +252,7 @@ const AdminDashboard = () => {
   const [performanceMetric, setPerformanceMetric] = useState('sales');
   const [showSalesComparisonType, setShowSalesComparisonType] = useState('branches');
   const [branches, setBranches] = useState([]);
+  const { success, error } = useToast();
 
 
   const [selectedBranchMetrics, setSelectedBranchMetrics] = useState([
@@ -263,15 +265,7 @@ const AdminDashboard = () => {
     { title: 'Active Projects', value: 0, change: 0, icon: Briefcase, color: '#4cc9f0' }
   ]);
 
-  useEffect(() => {
-    if (notificationMessage) {
-      const timer = setTimeout(() => {
-        setNotificationMessage('');
-        setNotificationType('');
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [notificationMessage]);
+ 
 
   useEffect(() => {
     fetchDashboardData();
@@ -655,32 +649,32 @@ const AdminDashboard = () => {
   };
 
   const handleCreateAnnouncement = async (announcementData) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/announcements`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(announcementData)
-      });
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/announcements`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(announcementData)
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to create announcement');
-      }
-
-      setNotificationMessage('Announcement created successfully!');
-      setNotificationType('success');
-      setIsAnnouncementModalOpen(false);
-      setSelectedBranch(announcementData.branchId);
-    } catch (error) {
-      console.error('Error details:', error);
-      setNotificationMessage(error.message || 'Failed to create announcement. Please try again.');
-      setNotificationType('error');
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to create announcement');
     }
-  };
+
+    // Use toast notification instead of custom banner
+    success('Announcement created successfully!');
+    setIsAnnouncementModalOpen(false);
+    setSelectedBranch(announcementData.branchId);
+  } catch (err) {
+    console.error('Error details:', err);
+    // Use toast notification for errors
+    error(err.message || 'Failed to create announcement. Please try again.');
+  }
+};
 
   const formatValue = (value, isCurrency = false) => {
     if (isCurrency) {
@@ -776,16 +770,7 @@ const AdminDashboard = () => {
   return (
     <div className="zoom-container">
       <div className="admin-dashboard">
-        {notificationMessage && (
-          <div className={`notification-banner ${notificationType}`}>
-            {notificationType === 'success' ? (
-              <CheckCircle size={20} className="notification-icon" />
-            ) : (
-              <XCircle size={20} className="notification-icon" />
-            )}
-            {notificationMessage}
-          </div>
-        )}
+       
 
         <div className="dashboard-header">
           <div className="header-content">

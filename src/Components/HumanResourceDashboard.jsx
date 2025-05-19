@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
+import {
+  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, RadialBarChart, RadialBar
 } from 'recharts';
-import { 
-  Bell, CheckCircle, XCircle, Download, Users, Calendar, 
+import { useToast } from './common/ToastContent.jsx';
+
+import {
+  Bell, CheckCircle, XCircle, Download, Users, Calendar,
   TrendingUp, CreditCard, DollarSign, Activity, Briefcase,
   ChevronRight, AlertTriangle, FilePlus, Eye, Clock, Archive,
   Award, Code, MessageCircle, Layers, GitPullRequest, Building,
@@ -20,9 +22,9 @@ import HrRecentActivity from './HrRecentActivity';
 import '../assets/css/RecentActivity.css';
 // Enhanced color palette
 const COLORS = [
-  '#6dbfb8', '#be95be', '#71a3c1', '#75ba75', '#b3be62', 
+  '#6dbfb8', '#be95be', '#71a3c1', '#75ba75', '#b3be62',
   '#fec76f', '#f5945c', '#f15bb5', '#00b4d8', '#0077b6'
-]; 
+];
 
 // Avatar backgrounds for activities
 const AVATAR_COLORS = [
@@ -75,10 +77,12 @@ const BRANCH_TOP_PERFORMERS = [
 const HrDashboard = () => {
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
   const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
-  const [notificationMessage, setNotificationMessage] = useState('');
-  const [notificationType, setNotificationType] = useState('');
   const [leaveStats, setLeaveStats] = useState([]);
   const [teamPerformance, setTeamPerformance] = useState([]);
+  const { success, error: toastError } = useToast();
+
+
+
   const [employeeStats, setEmployeeStats] = useState({
     total: 0,
     active: 0,
@@ -101,15 +105,7 @@ const HrDashboard = () => {
     { title: 'Attendance Rate', value: 0, isPercentage: true, change: 0, icon: Clock, color: '#4cc9f0' }
   ]);
 
-  useEffect(() => {
-    if (notificationMessage) {
-      const timer = setTimeout(() => {
-        setNotificationMessage('');
-        setNotificationType('');
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [notificationMessage]);
+
 
   useEffect(() => {
     // First fetch user profile to get the branch
@@ -142,33 +138,33 @@ const HrDashboard = () => {
 
       const profileData = await profileResponse.json();
       const branchName = profileData.professionalDetails?.branch;
-      
+
       if (!branchName) {
         throw new Error('User branch not found');
       }
-      
+
       setUserBranch(branchName);
-      
+
       // Now fetch the branch ID
       const branchesResponse = await fetch(`${API_BASE_URL}/api/branches`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (!branchesResponse.ok) {
         throw new Error('Failed to fetch branches');
       }
-      
+
       const branchesData = await branchesResponse.json();
       const branch = branchesData.find(b => b.name === branchName);
-      
+
       if (!branch) {
         throw new Error('Branch not found');
       }
-      
+
       setBranchId(branch._id);
-      
+
     } catch (err) {
       console.error('Error fetching user branch:', err);
       setError(err.message);
@@ -205,27 +201,27 @@ const HrDashboard = () => {
       const employeesData = allEmployees.filter(
         emp => emp.professionalDetails?.branch === userBranch
       );
-      
+
       // Fetch leave requests for this branch
       const allLeaves = await safelyFetchData('/api/leaves');
       const branchEmployeeEmails = employeesData.map(emp => emp.personalDetails?.email);
-          const leavesData = await safelyFetchData('/api/hr/leaves');
+      const leavesData = await safelyFetchData('/api/hr/leaves');
 
       if (!leavesData || leavesData.length === 0) {
-      console.log('No leaves found using HR endpoint, trying management endpoint...');
-      const managementLeaves = await safelyFetchData('/api/leaves/management');
-      if (managementLeaves && managementLeaves.length > 0) {
-        processLeaveStats(managementLeaves);
+        console.log('No leaves found using HR endpoint, trying management endpoint...');
+        const managementLeaves = await safelyFetchData('/api/leaves/management');
+        if (managementLeaves && managementLeaves.length > 0) {
+          processLeaveStats(managementLeaves);
+        } else {
+          // Still no data - create empty placeholder data for the chart
+          createEmptyLeaveStats();
+        }
       } else {
-        // Still no data - create empty placeholder data for the chart
-        createEmptyLeaveStats();
+        processLeaveStats(leavesData);
       }
-    } else {
-      processLeaveStats(leavesData);
-    }
       // Fetch applicants for this branch
       const applicantsData = await safelyFetchData('/api/hr/applicants');
-      
+
       // Only proceed if we have the minimum required data
       if (Array.isArray(employeesData)) {
         processEmployeeStats(employeesData, leavesData);
@@ -248,27 +244,27 @@ const HrDashboard = () => {
       setIsLoading(false);
     }
   };
-const createEmptyLeaveStats = () => {
-  const last6Months = [];
-  const today = new Date();
-  
-  for (let i = 5; i >= 0; i--) {
-    const month = new Date(today.getFullYear(), today.getMonth() - i, 1);
-    last6Months.push(month.toLocaleString('default', { month: 'short' }));
-  }
+  const createEmptyLeaveStats = () => {
+    const last6Months = [];
+    const today = new Date();
 
-  const emptyData = last6Months.map(month => ({
-    month,
-    approved: 0,
-    pending: 0,
-    rejected: 0,
-    total: 0
-  }));
+    for (let i = 5; i >= 0; i--) {
+      const month = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      last6Months.push(month.toLocaleString('default', { month: 'short' }));
+    }
 
-  setLeaveStats(emptyData);
-};
+    const emptyData = last6Months.map(month => ({
+      month,
+      approved: 0,
+      pending: 0,
+      rejected: 0,
+      total: 0
+    }));
+
+    setLeaveStats(emptyData);
+  };
   const processEmployeeStats = (employees, leaves) => {
-    const active = employees.filter(emp => 
+    const active = employees.filter(emp =>
       emp.professionalDetails?.status === 'active'
     ).length;
 
@@ -302,7 +298,7 @@ const createEmptyLeaveStats = () => {
   const processLeaveStats = (leaves) => {
     const last6Months = [];
     const today = new Date();
-    
+
     for (let i = 5; i >= 0; i--) {
       const month = new Date(today.getFullYear(), today.getMonth() - i, 1);
       last6Months.push(month.toLocaleString('default', { month: 'short' }));
@@ -311,14 +307,14 @@ const createEmptyLeaveStats = () => {
     const monthlyStats = leaves.reduce((acc, leave) => {
       const month = new Date(leave.startDate).toLocaleString('default', { month: 'short' });
       const status = leave.status;
-      
+
       if (!acc[month]) {
         acc[month] = { approved: 0, pending: 0, rejected: 0, total: 0, month };
       }
-      
+
       acc[month][status] = (acc[month][status] || 0) + 1;
       acc[month].total += 1;
-      
+
       return acc;
     }, {});
 
@@ -337,7 +333,7 @@ const createEmptyLeaveStats = () => {
     // For HR dashboard, we'll focus on performance by department within the branch
     const deptPerformance = employees.reduce((acc, emp) => {
       const dept = emp.professionalDetails?.department || 'Unassigned';
-      
+
       if (!acc[dept]) {
         acc[dept] = {
           name: dept,
@@ -371,7 +367,7 @@ const createEmptyLeaveStats = () => {
       if (!name) return '';
       return name.split(' ').map(part => part[0]).join('').toUpperCase();
     };
-    
+
     // Create activity items from real branch data
     const activities = [
       ...leaves.slice(0, 3).map((leave, index) => ({
@@ -397,7 +393,7 @@ const createEmptyLeaveStats = () => {
         icon: Users
       }))
     ];
-    
+
     // Add applicant activities if available
     if (applicants && applicants.length > 0) {
       const applicantActivities = applicants.slice(0, 2).map((applicant, index) => ({
@@ -411,10 +407,10 @@ const createEmptyLeaveStats = () => {
         avatarColor: AVATAR_COLORS[(index + 5) % AVATAR_COLORS.length],
         icon: Archive
       }));
-      
+
       activities.push(...applicantActivities);
     }
-    
+
     // Add some sales/performance related activities
     const salesActivities = [
       {
@@ -440,7 +436,7 @@ const createEmptyLeaveStats = () => {
         icon: ShoppingBag
       }
     ];
-    
+
     // Add some extra HR-related activities
     const mockActivities = [
       {
@@ -466,13 +462,13 @@ const createEmptyLeaveStats = () => {
         icon: Award
       }
     ];
-    
+
     // Combine all activities
     const allActivities = [...activities, ...salesActivities, ...mockActivities];
 
     // Sort by timestamp (newest first)
     allActivities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    
+
     setRecentActivity(allActivities.slice(0, 6));
   };
 
@@ -484,7 +480,7 @@ const createEmptyLeaveStats = () => {
       { name: 'Retention', value: 92 },
       { name: 'Training', value: 65 }
     ];
-    
+
     setKpiData(data);
   };
 
@@ -511,7 +507,7 @@ const createEmptyLeaveStats = () => {
       `Active Employees: ${employeeStats.active}`,
       `Employees on Leave: ${employeeStats.onLeave}\n`,
       'Department Distribution:',
-      ...employeeStats.departments.map(dept => 
+      ...employeeStats.departments.map(dept =>
         `${dept.name}: ${dept.value} employees`
       ),
       '\nDepartment Performance Metrics:',
@@ -540,6 +536,7 @@ const createEmptyLeaveStats = () => {
     document.body.removeChild(a);
   };
 
+  // Fix for HrDashboard.jsx handleCreateAnnouncement function
   const handleCreateAnnouncement = async (announcementData) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/announcements`, {
@@ -550,41 +547,45 @@ const createEmptyLeaveStats = () => {
         },
         body: JSON.stringify(announcementData)
       });
-  
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Failed to create announcement');
       }
-  
-      setNotificationMessage('Announcement created successfully!');
-      setNotificationType('success');
+
+      // Use toast notification for success
+      success('Announcement created successfully!');
       setIsAnnouncementModalOpen(false);
-    } catch (error) {
-      console.error('Error details:', error);
-      setNotificationMessage(error.message || 'Failed to create announcement. Please try again.');
-      setNotificationType('error');
+
+      // If you want to refresh the announcements list after creating a new one
+      // Optionally call fetchDashboardData() instead of trying to use setSelectedBranch
+      fetchDashboardData();
+    } catch (err) {
+      console.error('Error details:', err);
+      // Use toastError instead of error1
+      toastError(err.message || 'Failed to create announcement. Please try again.');
     }
   };
 
   const formatValue = (value, isCurrency = false, isPercentage = false) => {
     if (isCurrency) {
-      return new Intl.NumberFormat('en-US', { 
-        style: 'currency', 
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
         currency: 'USD',
-        maximumFractionDigits: 0 
+        maximumFractionDigits: 0
       }).format(value);
     }
-    
+
     if (isPercentage) {
       return `${value}%`;
     }
-    
+
     return value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value;
   };
 
   const getStatusIcon = (status) => {
-    switch(status) {
+    switch (status) {
       case 'success':
       case 'approved':
         return <CheckCircle size={18} className="status-icon success" />;
@@ -601,7 +602,7 @@ const createEmptyLeaveStats = () => {
     const now = new Date();
     const activityTime = new Date(timestamp);
     const diffInSeconds = Math.floor((now - activityTime) / 1000);
-    
+
     if (diffInSeconds < 60) return 'just now';
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
@@ -619,10 +620,10 @@ const createEmptyLeaveStats = () => {
             <p key={`item-${index}`} className="tooltip-item" style={{ color: entry.color }}>
               <span className="tooltip-key">{entry.name}: </span>
               <span className="tooltip-value">
-                {entry.name.toLowerCase().includes('sales') || 
-                 entry.name === 'Support' || 
-                 entry.name === 'Marketing' || 
-                 entry.name === 'Operations' ?
+                {entry.name.toLowerCase().includes('sales') ||
+                  entry.name === 'Support' ||
+                  entry.name === 'Marketing' ||
+                  entry.name === 'Operations' ?
                   `$${entry.value.toLocaleString()}` :
                   entry.unit === '%' ?
                     `${entry.value}%` :
@@ -659,572 +660,565 @@ const createEmptyLeaveStats = () => {
 
   return (
     <div className="zoom-container">
-    <div className="hr-dashboard">
-      {notificationMessage && (
-        <div className={`notification-banner ${notificationType}`}>
-          {notificationType === 'success' ? (
-            <CheckCircle size={20} className="notification-icon" />
-          ) : (
-            <XCircle size={20} className="notification-icon" />
-          )}
-          {notificationMessage}
-        </div>
-      )}
+      <div className="hr-dashboard">
 
-      <div className="hr-dashboard-header">
-        <div className="header-content">
-          <h1>HR Dashboard - {userBranch} Branch</h1>
-        </div>
-        <div className="hr-dashboard-actions">
-          <button 
-            className="report-button"
-            onClick={generateReport}
-          >
-            <Download size={20} />
-            Download Report
-          </button>
-          <button 
-            className="announcement-button"
-            onClick={() => setIsAnnouncementModalOpen(true)}
-          >
-            <Bell size={20} />
-            Create Announcement
-          </button>
-        </div>
-      </div>
 
-      <div className="hr-summary-cards">
-        {summaryCards.map((card, index) => (
-          <div className="hr-summary-card" key={index}>
-            <div className="card-icon" style={{ backgroundColor: `${card.color}15` }}>
-              <card.icon size={24} color={card.color} />
-            </div>
-            <div className="card-content">
-              <h3>{card.title}</h3>
-              <div className="card-value">{formatValue(card.value, card.isCurrency, card.isPercentage)}</div>
-              <div className={`card-change ${card.change >= 0 ? 'positive' : 'negative'}`}>
-                {card.change >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} className="down" />}
-                {Math.abs(card.change)}% from last {timeRange}
-              </div>
-            </div>
+        <div className="hr-dashboard-header">
+          <div className="header-content">
+            <h1>HR Dashboard - {userBranch} Branch</h1>
           </div>
-        ))}
-      </div>
-
-      <div className="hr-dashboard-grid">
-        {/* Employee Distribution Chart */}
-        <div className="hr-chart-card employee-distribution">
-          <div className="hr-card-header">
-            <h2>Department Distribution</h2>
-          </div>
-          <div className="card-body">
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={employeeStats.departments}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={100}
-                  innerRadius={60}
-                  paddingAngle={2}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}
-                >
-                  {employeeStats.departments.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={COLORS[index % COLORS.length]} 
-                      stroke="transparent"
-                      strokeWidth={2}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  formatter={(value) => [`${value} employees`, 'Count']} 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="card-footer employee-stats-footer">
-            <div className="stat-item">
-              <span className="stat-label">Active</span>
-              <span className="stat-value">{employeeStats.active}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">On Leave</span>
-              <span className="stat-value">{employeeStats.onLeave}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Total</span>
-              <span className="stat-value">{employeeStats.total}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Leave Trends Chart */}
-        <div className="hr-chart-card leave-trends">
-          <div className="hr-card-header">
-            <h2>Leave Trends</h2>
-          </div>
-          <div className="card-body">
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={leaveStats} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorApproved" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6dbfb8" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#6dbfb8" stopOpacity={0.1}/>
-                  </linearGradient>
-                  <linearGradient id="colorPending" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#be95be" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#be95be" stopOpacity={0.1}/>
-                  </linearGradient>
-                  <linearGradient id="colorRejected" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3e4d68" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3e4d68" stopOpacity={0.1}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                <XAxis 
-                  dataKey="month" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 12 }}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 12 }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    borderRadius: '8px', 
-                    border: 'none', 
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    fontSize: '12px'
-                  }} 
-                />
-                <Legend 
-                  iconType="circle" 
-                  iconSize={8} 
-                  wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="approved" 
-                  stackId="1" 
-                  stroke="#6dbfb8" 
-                  fill="url(#colorApproved)" 
-                  strokeWidth={2}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="pending" 
-                  stackId="1" 
-                  stroke="#be95be" 
-                  fill="url(#colorPending)" 
-                  strokeWidth={2}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="rejected" 
-                  stackId="1" 
-                  stroke="#3e4d68" 
-                  fill="url(#colorRejected)" 
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="card-footer leave-legend-footer">
-            <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#6dbfb8' }}></span>
-              <span>Approved</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#be95be' }}></span>
-              <span>Pending</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#3e4d68' }}></span>
-              <span>Rejected</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Department Performance Chart */}
-        <div className="hr-chart-card department-performance">
-          <div className="hr-card-header">
-            <h2>Department Performance</h2>
-          </div>
-          <div className="card-body">
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart 
-                data={teamPerformance}
-                margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
-                barSize={20}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 12 }}
-                  padding={{ left: 10, right: 10 }}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 12 }}
-                />
-                <Tooltip 
-                  cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
-                  contentStyle={{ 
-                    borderRadius: '8px', 
-                    border: 'none', 
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    fontSize: '12px'
-                  }}
-                />
-                <Legend 
-                  iconType="circle" 
-                  iconSize={8}
-                  layout="horizontal"
-                  verticalAlign="bottom"
-                  align="center"
-                  wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
-                />
-                <Bar 
-                  dataKey="rating" 
-                  name="Rating" 
-                  fill="#be95be" 
-                  radius={[4, 4, 0, 0]}
-                  animationDuration={1500}
-                />
-                <Bar 
-                  dataKey="productivity" 
-                  name="Productivity" 
-                  fill="#6dbfb8" 
-                  radius={[4, 4, 0, 0]}
-                  animationDuration={1500}
-                  animationBegin={300}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="card-footer">
-            <button className="view-details-btn">
-              View detailed report <ChevronRight size={16} />
+          <div className="hr-dashboard-actions">
+            <button
+              className="report-button"
+              onClick={generateReport}
+            >
+              <Download size={20} />
+              Download Report
             </button>
-          </div>
-        </div>
-
-        {/* HR KPI Metrics Chart */}
-        <div className="hr-chart-card hr-metrics">
-          <div className="hr-card-header">
-            <h2>HR Performance Metrics</h2>
-          </div>
-          <div className="card-body">
-            <ResponsiveContainer width="100%" height={280}>
-              <RadialBarChart 
-                cx="50%" 
-                cy="50%" 
-                innerRadius="20%" 
-                outerRadius="90%" 
-                barSize={20} 
-                data={kpiData}
-                startAngle={90}
-                endAngle={-270}
-              >
-                <RadialBar
-                  minAngle={15}
-                  background
-                  clockWise
-                  dataKey="value"
-                  cornerRadius={12}
-                  label={{
-                    position: 'insideStart',
-                    fill: '#fff',
-                    fontWeight: 600,
-                    fontSize: 12
-                  }}
-                >
-                  {kpiData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={COLORS[index % COLORS.length]} 
-                    />
-                  ))}
-                </RadialBar>
-                <Legend
-                  iconType="circle"
-                  iconSize={10}
-                  layout="vertical"
-                  verticalAlign="middle"
-                  align="right"
-                  wrapperStyle={{ fontSize: '12px' }}
-                />
-                <Tooltip 
-                  formatter={(value) => [`${value}%`, 'Progress']}
-                  contentStyle={{ 
-                    borderRadius: '8px', 
-                    border: 'none', 
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    fontSize: '12px'
-                  }}  
-                />
-              </RadialBarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="card-footer">
-            <div className="progress-summary">
-              Overall HR performance: 
-              <span className="highlight">{Math.round(kpiData.reduce((sum, item) => sum + item.value, 0) / kpiData.length)}%</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Activity List */}
-        <HrRecentActivity />
-
-        {/* Announcements */}
-        <div className="hr-chart-card announcements">
-          <div className="hr-card-header">
-            <h2>Branch Announcements</h2>
-            <button 
-              className="create-btn"
+            <button
+              className="announcement-button"
               onClick={() => setIsAnnouncementModalOpen(true)}
             >
-              <FilePlus size={16} />
-              Create
+              <Bell size={20} />
+              Create Announcement
             </button>
           </div>
-          {branchId ? (
-            <AnnouncementsList branchId={branchId} className="announcements-wrapper" />
-          ) : (
-            <div className="empty-state">
-              <AlertTriangle size={32} />
-              <p>No branch selected for announcements</p>
-              <button 
-                className="create-announcement-btn"
-                onClick={() => setIsAnnouncementModalOpen(true)}
-              >
-                Create your first announcement
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Revenue and Projects Row */}
-      <div className="revenue-projects-row">
-        {/* Team Revenue Chart */}
-        <div className="chart-card revenue-chart">
-          <div className="admin-card-header">
-            <h2>Revenue Performance by Department</h2>
-            <div className="chart-controls">
-              <div className="view-selector">
-                <button
-                  className={`view-btn ${salesViewMode === 'monthly' ? 'active' : ''}`}
-                  onClick={() => setSalesViewMode('monthly')}
-                >
-                  <Calendar size={14} />
-                  <span>Monthly</span>
-                </button>
-                <button
-                  className={`view-btn ${salesViewMode === 'quarterly' ? 'active' : ''}`}
-                  onClick={() => setSalesViewMode('quarterly')}
-                >
-                  <BarChart2 size={14} />
-                  <span>Quarterly</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="card-body">
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart
-                data={BRANCH_REVENUE_BY_TEAM}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(value) => `$${value / 1000}k`}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Bar dataKey="Sales" stackId="a" fill="#be95be" />
-                <Bar dataKey="Support" stackId="a" fill="#71a3c1" />
-                <Bar dataKey="Marketing" stackId="a" fill="#75ba75" />
-                <Bar dataKey="Operations" stackId="a" fill="#b3be62" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="card-footer">
-            <div className="trend-summary">
-              <span className="highlight-text">+12.7%</span> revenue growth compared to last year
-            </div>
-            <div className="chart-action-buttons">
-              <button className="chart-action-btn">
-                <ArrowRight size={14} />
-                <span>Full Report</span>
-              </button>
-            </div>
-          </div>
         </div>
 
-        {/* Project Stats Container */}
-        <div className="project-stats-container">
-          {/* Projects Card */}
-          <div className="chart-card project-card">
-            <div className="admin-card-header">
-              <h2>Branch Projects Overview</h2>
-            </div>
-            <div className="card-body">
-              <div className="project-metrics">
-                <div className="metric-item">
-                  <div className="metric-icon">
-                    <Briefcase size={18} />
-                  </div>
-                  <div className="metric-details">
-                    <div className="metric-value">{BRANCH_PROJECT_STATUS.totalProjects}</div>
-                    <div className="metric-label">Total Projects</div>
-                  </div>
-                </div>
-                <div className="metric-item">
-                  <div className="metric-icon active-icon">
-                    <Activity size={18} />
-                  </div>
-                  <div className="metric-details">
-                    <div className="metric-value">{BRANCH_PROJECT_STATUS.ongoing}</div>
-                    <div className="metric-label">Ongoing</div>
-                  </div>
-                </div>
-                <div className="metric-item">
-                  <div className="metric-icon completed-icon">
-                    <CheckCircle size={18} />
-                  </div>
-                  <div className="metric-details">
-                    <div className="metric-value">{BRANCH_PROJECT_STATUS.completed}</div>
-                    <div className="metric-label">Completed</div>
-                  </div>
-                </div>
+        <div className="hr-summary-cards">
+          {summaryCards.map((card, index) => (
+            <div className="hr-summary-card" key={index}>
+              <div className="card-icon" style={{ backgroundColor: `${card.color}15` }}>
+                <card.icon size={24} color={card.color} />
               </div>
-            </div>
-          </div>
-
-          {/* Revenue Card */}
-          <div className="chart-card revenue-card">
-            <div className="admin-card-header">
-              <h2>Branch Revenue</h2>
-            </div>
-            <div className="card-body">
-              <div className="revenue-metrics">
-                <div className="revenue-metric">
-                  <div className="revenue-value">{formatValue(BRANCH_PROJECT_STATUS.totalRevenue, true)}</div>
-                  <div className="revenue-label">Total Revenue</div>
-                  <div className="revenue-period">Year to Date</div>
-                </div>
-                <div className="revenue-metric">
-                  <div className="revenue-value">{formatValue(BRANCH_PROJECT_STATUS.monthlyRevenue, true)}</div>
-                  <div className="revenue-label">Monthly Revenue</div>
-                  <div className="revenue-trend positive">
-                    <TrendingUp size={14} />
-                    <span>+4.2%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Top Performers Section */}
-      <div className="top-performers-section">
-        <div className="top-performers-header">
-          <h2>Top Branch Performers</h2>
-          <div className="performer-filters">
-            <div className="time-filter">
-              <button 
-                className={`time-filter-btn ${performerTimeRange === 'month' ? 'active' : ''}`}
-                onClick={() => setPerformerTimeRange('month')}
-              >
-                Month
-              </button>
-              <button 
-                className={`time-filter-btn ${performerTimeRange === 'quarter' ? 'active' : ''}`}
-                onClick={() => setPerformerTimeRange('quarter')}
-              >
-                Quarter
-              </button>
-              <button 
-                className={`time-filter-btn ${performerTimeRange === 'year' ? 'active' : ''}`}
-                onClick={() => setPerformerTimeRange('year')}
-              >
-                Year
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="performer-cards">
-          {BRANCH_TOP_PERFORMERS.map((performer, index) => (
-            <div className="performer-card" key={index}>
-              <div className="performer-avatar" style={{ backgroundColor: COLORS[index % COLORS.length] }}>
-                {performer.avatar}
-              </div>
-              <div className="performer-info">
-                <div className="performer-name">{performer.name}</div>
-                <div className="performer-username">{performer.username}</div>
-                <div className="performer-branch">{performer.department}</div>
-                <div className="performer-progress-container">
-                  <div className="performer-progress-bar">
-                    <div 
-                      className="performer-progress-fill" 
-                      style={{ 
-                        width: `${performer.performance}%`,
-                        backgroundColor: COLORS[index % COLORS.length]
-                      }}
-                    ></div>
-                  </div>
-                  <div className="performer-progress-value">{performer.performance}%</div>
+              <div className="card-content">
+                <h3>{card.title}</h3>
+                <div className="card-value">{formatValue(card.value, card.isCurrency, card.isPercentage)}</div>
+                <div className={`card-change ${card.change >= 0 ? 'positive' : 'negative'}`}>
+                  {card.change >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} className="down" />}
+                  {Math.abs(card.change)}% from last {timeRange}
                 </div>
               </div>
             </div>
           ))}
         </div>
-        
-        {/* Add the View Details button */}
-        <div className="view-details-container">
-          <button 
-            className="view-details-button"
-            onClick={() => setIsLeaderboardModalOpen(true)}
-          >
-            View Branch Leaderboard
-          </button>
+
+        <div className="hr-dashboard-grid">
+          {/* Employee Distribution Chart */}
+          <div className="hr-chart-card employee-distribution">
+            <div className="hr-card-header">
+              <h2>Department Distribution</h2>
+            </div>
+            <div className="card-body">
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={employeeStats.departments}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    innerRadius={60}
+                    paddingAngle={2}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
+                  >
+                    {employeeStats.departments.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                        stroke="transparent"
+                        strokeWidth={2}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value) => [`${value} employees`, 'Count']}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="card-footer employee-stats-footer">
+              <div className="stat-item">
+                <span className="stat-label">Active</span>
+                <span className="stat-value">{employeeStats.active}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">On Leave</span>
+                <span className="stat-value">{employeeStats.onLeave}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Total</span>
+                <span className="stat-value">{employeeStats.total}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Leave Trends Chart */}
+          <div className="hr-chart-card leave-trends">
+            <div className="hr-card-header">
+              <h2>Leave Trends</h2>
+            </div>
+            <div className="card-body">
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={leaveStats} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorApproved" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6dbfb8" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#6dbfb8" stopOpacity={0.1} />
+                    </linearGradient>
+                    <linearGradient id="colorPending" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#be95be" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#be95be" stopOpacity={0.1} />
+                    </linearGradient>
+                    <linearGradient id="colorRejected" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3e4d68" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#3e4d68" stopOpacity={0.1} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis
+                    dataKey="month"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '8px',
+                      border: 'none',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <Legend
+                    iconType="circle"
+                    iconSize={8}
+                    wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="approved"
+                    stackId="1"
+                    stroke="#6dbfb8"
+                    fill="url(#colorApproved)"
+                    strokeWidth={2}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="pending"
+                    stackId="1"
+                    stroke="#be95be"
+                    fill="url(#colorPending)"
+                    strokeWidth={2}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="rejected"
+                    stackId="1"
+                    stroke="#3e4d68"
+                    fill="url(#colorRejected)"
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="card-footer leave-legend-footer">
+              <div className="legend-item">
+                <span className="legend-color" style={{ backgroundColor: '#6dbfb8' }}></span>
+                <span>Approved</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-color" style={{ backgroundColor: '#be95be' }}></span>
+                <span>Pending</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-color" style={{ backgroundColor: '#3e4d68' }}></span>
+                <span>Rejected</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Department Performance Chart */}
+          <div className="hr-chart-card department-performance">
+            <div className="hr-card-header">
+              <h2>Department Performance</h2>
+            </div>
+            <div className="card-body">
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart
+                  data={teamPerformance}
+                  margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
+                  barSize={20}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                    padding={{ left: 10, right: 10 }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                  />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
+                    contentStyle={{
+                      borderRadius: '8px',
+                      border: 'none',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <Legend
+                    iconType="circle"
+                    iconSize={8}
+                    layout="horizontal"
+                    verticalAlign="bottom"
+                    align="center"
+                    wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
+                  />
+                  <Bar
+                    dataKey="rating"
+                    name="Rating"
+                    fill="#be95be"
+                    radius={[4, 4, 0, 0]}
+                    animationDuration={1500}
+                  />
+                  <Bar
+                    dataKey="productivity"
+                    name="Productivity"
+                    fill="#6dbfb8"
+                    radius={[4, 4, 0, 0]}
+                    animationDuration={1500}
+                    animationBegin={300}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="card-footer">
+              <button className="view-details-btn">
+                View detailed report <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* HR KPI Metrics Chart */}
+          <div className="hr-chart-card hr-metrics">
+            <div className="hr-card-header">
+              <h2>HR Performance Metrics</h2>
+            </div>
+            <div className="card-body">
+              <ResponsiveContainer width="100%" height={280}>
+                <RadialBarChart
+                  cx="50%"
+                  cy="50%"
+                  innerRadius="20%"
+                  outerRadius="90%"
+                  barSize={20}
+                  data={kpiData}
+                  startAngle={90}
+                  endAngle={-270}
+                >
+                  <RadialBar
+                    minAngle={15}
+                    background
+                    clockWise
+                    dataKey="value"
+                    cornerRadius={12}
+                    label={{
+                      position: 'insideStart',
+                      fill: '#fff',
+                      fontWeight: 600,
+                      fontSize: 12
+                    }}
+                  >
+                    {kpiData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </RadialBar>
+                  <Legend
+                    iconType="circle"
+                    iconSize={10}
+                    layout="vertical"
+                    verticalAlign="middle"
+                    align="right"
+                    wrapperStyle={{ fontSize: '12px' }}
+                  />
+                  <Tooltip
+                    formatter={(value) => [`${value}%`, 'Progress']}
+                    contentStyle={{
+                      borderRadius: '8px',
+                      border: 'none',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      fontSize: '12px'
+                    }}
+                  />
+                </RadialBarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="card-footer">
+              <div className="progress-summary">
+                Overall HR performance:
+                <span className="highlight">{Math.round(kpiData.reduce((sum, item) => sum + item.value, 0) / kpiData.length)}%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Activity List */}
+          <HrRecentActivity />
+
+          {/* Announcements */}
+          <div className="hr-chart-card announcements">
+            <div className="hr-card-header">
+              <h2>Branch Announcements</h2>
+              <button
+                className="hr-create-btn"
+                onClick={() => setIsAnnouncementModalOpen(true)}
+              >
+                <FilePlus size={16} />
+                Create
+              </button>
+            </div>
+            <div className="card-body announcements-container">
+              {branchId ? (
+                <AnnouncementsList branchId={branchId} />
+              ) : (
+                <div className="hr-empty-state">
+                  <AlertTriangle size={32} />
+                  <p>No branch selected for announcements</p>
+                  <button
+                    className="hr-create-announcement-btn"
+                    onClick={() => setIsAnnouncementModalOpen(true)}
+                  >
+                    Create your first announcement
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
+
+        {/* Revenue and Projects Row */}
+        <div className="revenue-projects-row">
+          {/* Team Revenue Chart */}
+          <div className="chart-card revenue-chart">
+            <div className="admin-card-header">
+              <h2>Revenue Performance by Department</h2>
+              <div className="chart-controls">
+                <div className="view-selector">
+                  <button
+                    className={`view-btn ${salesViewMode === 'monthly' ? 'active' : ''}`}
+                    onClick={() => setSalesViewMode('monthly')}
+                  >
+                    <Calendar size={14} />
+                    <span>Monthly</span>
+                  </button>
+                  <button
+                    className={`view-btn ${salesViewMode === 'quarterly' ? 'active' : ''}`}
+                    onClick={() => setSalesViewMode('quarterly')}
+                  >
+                    <BarChart2 size={14} />
+                    <span>Quarterly</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="card-body">
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart
+                  data={BRANCH_REVENUE_BY_TEAM}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis
+                    dataKey="month"
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(value) => `$${value / 1000}k`}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend />
+                  <Bar dataKey="Sales" stackId="a" fill="#be95be" />
+                  <Bar dataKey="Support" stackId="a" fill="#71a3c1" />
+                  <Bar dataKey="Marketing" stackId="a" fill="#75ba75" />
+                  <Bar dataKey="Operations" stackId="a" fill="#b3be62" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="card-footer">
+              <div className="trend-summary">
+                <span className="highlight-text">+12.7%</span> revenue growth compared to last year
+              </div>
+              <div className="chart-action-buttons">
+                <button className="chart-action-btn">
+                  <ArrowRight size={14} />
+                  <span>Full Report</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Project Stats Container */}
+          <div className="project-stats-container">
+            {/* Projects Card */}
+            <div className="chart-card project-card">
+              <div className="admin-card-header">
+                <h2>Branch Projects Overview</h2>
+              </div>
+              <div className="card-body">
+                <div className="project-metrics">
+                  <div className="metric-item">
+                    <div className="metric-icon">
+                      <Briefcase size={18} />
+                    </div>
+                    <div className="metric-details">
+                      <div className="metric-value">{BRANCH_PROJECT_STATUS.totalProjects}</div>
+                      <div className="metric-label">Total Projects</div>
+                    </div>
+                  </div>
+                  <div className="metric-item">
+                    <div className="metric-icon active-icon">
+                      <Activity size={18} />
+                    </div>
+                    <div className="metric-details">
+                      <div className="metric-value">{BRANCH_PROJECT_STATUS.ongoing}</div>
+                      <div className="metric-label">Ongoing</div>
+                    </div>
+                  </div>
+                  <div className="metric-item">
+                    <div className="metric-icon completed-icon">
+                      <CheckCircle size={18} />
+                    </div>
+                    <div className="metric-details">
+                      <div className="metric-value">{BRANCH_PROJECT_STATUS.completed}</div>
+                      <div className="metric-label">Completed</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Revenue Card */}
+            <div className="chart-card revenue-card">
+              <div className="admin-card-header">
+                <h2>Branch Revenue</h2>
+              </div>
+              <div className="card-body">
+                <div className="revenue-metrics">
+                  <div className="revenue-metric">
+                    <div className="revenue-value">{formatValue(BRANCH_PROJECT_STATUS.totalRevenue, true)}</div>
+                    <div className="revenue-label">Total Revenue</div>
+                    <div className="revenue-period">Year to Date</div>
+                  </div>
+                  <div className="revenue-metric">
+                    <div className="revenue-value">{formatValue(BRANCH_PROJECT_STATUS.monthlyRevenue, true)}</div>
+                    <div className="revenue-label">Monthly Revenue</div>
+                    <div className="revenue-trend positive">
+                      <TrendingUp size={14} />
+                      <span>+4.2%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Top Performers Section */}
+        <div className="top-performers-section">
+          <div className="top-performers-header">
+            <h2>Top Branch Performers</h2>
+            <div className="performer-filters">
+              <div className="time-filter">
+                <button
+                  className={`time-filter-btn ${performerTimeRange === 'month' ? 'active' : ''}`}
+                  onClick={() => setPerformerTimeRange('month')}
+                >
+                  Month
+                </button>
+                <button
+                  className={`time-filter-btn ${performerTimeRange === 'quarter' ? 'active' : ''}`}
+                  onClick={() => setPerformerTimeRange('quarter')}
+                >
+                  Quarter
+                </button>
+                <button
+                  className={`time-filter-btn ${performerTimeRange === 'year' ? 'active' : ''}`}
+                  onClick={() => setPerformerTimeRange('year')}
+                >
+                  Year
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="performer-cards">
+            {BRANCH_TOP_PERFORMERS.map((performer, index) => (
+              <div className="performer-card" key={index}>
+                <div className="performer-avatar" style={{ backgroundColor: COLORS[index % COLORS.length] }}>
+                  {performer.avatar}
+                </div>
+                <div className="performer-info">
+                  <div className="performer-name">{performer.name}</div>
+                  <div className="performer-username">{performer.username}</div>
+                  <div className="performer-branch">{performer.department}</div>
+                  <div className="performer-progress-container">
+                    <div className="performer-progress-bar">
+                      <div
+                        className="performer-progress-fill"
+                        style={{
+                          width: `${performer.performance}%`,
+                          backgroundColor: COLORS[index % COLORS.length]
+                        }}
+                      ></div>
+                    </div>
+                    <div className="performer-progress-value">{performer.performance}%</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Add the View Details button */}
+          <div className="view-details-container">
+            <button
+              className="view-details-button"
+              onClick={() => setIsLeaderboardModalOpen(true)}
+            >
+              View Branch Leaderboard
+            </button>
+          </div>
+        </div>
+
+        <AnnouncementModal
+          isOpen={isAnnouncementModalOpen}
+          onClose={() => setIsAnnouncementModalOpen(false)}
+          onSubmit={handleCreateAnnouncement}
+        />
+
+        <EnhancedLeaderboardModal
+          isOpen={isLeaderboardModalOpen}
+          onClose={() => setIsLeaderboardModalOpen(false)}
+        />
       </div>
-
-      <AnnouncementModal
-        isOpen={isAnnouncementModalOpen}
-        onClose={() => setIsAnnouncementModalOpen(false)}
-        onSubmit={handleCreateAnnouncement}
-      />
-
-      <EnhancedLeaderboardModal 
-        isOpen={isLeaderboardModalOpen} 
-        onClose={() => setIsLeaderboardModalOpen(false)} 
-      />
-    </div>
     </div>
   );
 };

@@ -12,12 +12,9 @@ const Header = ({ user: propUser, onLogout }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState(null);
-  const location = useLocation();
-  
-  // Add state for notifications and unread count
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+  const location = useLocation();
   
   // This useEffect will ensure we always have the latest user data from localStorage
   useEffect(() => {
@@ -60,83 +57,6 @@ const Header = ({ user: propUser, onLogout }) => {
     };
   }, [propUser]);
 
-  // Fetch notifications
-  useEffect(() => {
-    fetchNotifications();
-    
-    // Set up a timer to refresh notifications every 2 minutes
-    const intervalId = setInterval(() => {
-      fetchNotifications();
-    }, 120000);
-    
-    return () => clearInterval(intervalId);
-  }, [localUser]);
-
-  // Fetch notifications from API
-  const fetchNotifications = async () => {
-    try {
-      setIsLoadingNotifications(true);
-      const endpoint = localUser?.role === 'hr_manager' 
-        ? `/api/hr/notifications` 
-        : `/api/notifications`;
-
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Accept': 'application/json'
-        }
-      });
-  
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-  
-      const data = await response.json();
-      setNotifications(data);
-      
-      // Calculate unread count
-      const unread = data.filter(notification => !notification.read).length;
-      setUnreadCount(unread);
-      
-      setIsLoadingNotifications(false);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-      setIsLoadingNotifications(false);
-    }
-  };
-
-  // Mark notification as read
-  const handleMarkAsRead = async (id) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Accept': 'application/json'
-        }
-      });
-  
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-  
-      const updatedNotification = await response.json();
-      
-      // Update the notifications list
-      const updatedNotifications = notifications.map(notif => 
-        notif._id === id ? { ...notif, read: true } : notif
-      );
-      
-      setNotifications(updatedNotifications);
-      
-      // Recalculate unread count
-      const unread = updatedNotifications.filter(notification => !notification.read).length;
-      setUnreadCount(unread);
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-    }
-  };
-
   // Load avatar dynamically based on user profile pic
   useEffect(() => {
     const loadAvatar = async () => {
@@ -158,6 +78,70 @@ const Header = ({ user: propUser, onLogout }) => {
     loadAvatar();
   }, [localUser?.profilePic]);
 
+  // Fetch notifications and calculate unread count
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const endpoint = localUser?.role === 'hr_manager' 
+          ? `/api/hr/notifications` 
+          : `/api/notifications`;
+
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setNotifications(data);
+        
+        // Calculate unread notifications count
+        const unreadNotifications = data.filter(notification => !notification.read);
+        setUnreadCount(unreadNotifications.length);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    };
+
+    if (localUser) {
+      fetchNotifications();
+    }
+  }, [localUser]);
+
+  // Handle marking a notification as read
+  const handleMarkAsRead = async (id) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Update local notifications state
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notif => 
+          notif._id === id ? { ...notif, read: true } : notif
+        )
+      );
+
+      // Update unread count
+      setUnreadCount(prevCount => Math.max(0, prevCount - 1));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
   // Get page title from current route
   const getPageTitle = () => {
     const path = location.pathname;
@@ -177,16 +161,6 @@ const Header = ({ user: propUser, onLogout }) => {
 
   const toggleNotifications = () => {
     setShowNotifications(!showNotifications);
-    
-    // When opening the notifications dropdown, mark all as seen
-    if (!showNotifications) {
-      // We're not marking them as read in the database yet,
-      // just remembering that the user has seen them
-      // When they actually click, we'll mark as read in the database
-      // This way the badge goes away when they open the dropdown
-      fetchNotifications();
-    }
-    
     if (showProfileDropdown) setShowProfileDropdown(false);
   };
 
@@ -278,9 +252,7 @@ const Header = ({ user: propUser, onLogout }) => {
             >
               <Bell size={20} color="white" />
               {unreadCount > 0 && (
-                <span className="app-header__notification-badge">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
+                <span className="app-header__notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
               )}
             </button>
             
@@ -291,8 +263,8 @@ const Header = ({ user: propUser, onLogout }) => {
                   onClick={() => setShowNotifications(false)}
                 ></div>
                 <NotificationDropdown 
-                  notifications={notifications}
-                  onMarkAsRead={handleMarkAsRead}
+                  notifications={notifications} 
+                  onMarkAsRead={handleMarkAsRead} 
                 />
               </>
             )}

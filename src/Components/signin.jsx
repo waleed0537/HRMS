@@ -18,6 +18,7 @@ const SignIn = ({ onLogin }) => {
   const [department, setDepartment] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [animation, setAnimation] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
   const { success, error: toastError } = useToast();
 
@@ -27,6 +28,24 @@ const SignIn = ({ onLogin }) => {
     const timer = setTimeout(() => setAnimation(false), 600);
     return () => clearTimeout(timer);
   }, [isSignIn]);
+
+  // Validation functions
+  const validatePhoneNumber = (value) => {
+    // Only allow digits, plus sign, hyphens and spaces
+    return value.replace(/[^\d\s+-]/g, '');
+  };
+
+  const validateTextOnly = (value) => {
+    // Only allow letters, spaces, and some punctuation for names
+    return value.replace(/[^a-zA-Z\s.,'-]/g, '');
+  };
+
+  const capitalizeFirstLetter = (string) => {
+    if (!string) return '';
+    return string.split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -67,7 +86,6 @@ const SignIn = ({ onLogin }) => {
     }
   };
 
-  // FIXED SIGNUP FUNCTION WITH DEBUGGING
   const handleSignUp = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -75,10 +93,13 @@ const SignIn = ({ onLogin }) => {
     try {
       console.log('Starting signup with data:', { name, userId, email, role, branch });
       
+      // Apply formatting to ensure proper capitalization before sending
+      const formattedBranch = capitalizeFirstLetter(branch);
+      
       // Create user data object with required structure
       const userData = {
         personalDetails: {
-          name: name,
+          name: capitalizeFirstLetter(name),
           id: userId, // This is where the User ID is set - KEEP THIS FORMAT
           userId: userId, // Add an extra copy of the userId to ensure it's saved
           email,
@@ -87,7 +108,7 @@ const SignIn = ({ onLogin }) => {
         },
         professionalDetails: {
           role,
-          branch,
+          branch: formattedBranch,
           department: department || 'General',
           status: 'active'
         },
@@ -159,6 +180,27 @@ const SignIn = ({ onLogin }) => {
     }, 300);
   };
 
+  // Handlers for input validation
+  const handleContactChange = (e) => {
+    const validated = validatePhoneNumber(e.target.value);
+    setContact(validated);
+  };
+
+  const handleBranchChange = (e) => {
+    const value = validateTextOnly(e.target.value);
+    setBranch(value);
+  };
+
+  const handleDepartmentChange = (e) => {
+    // No validation for department as requested
+    setDepartment(e.target.value);
+  };
+
+  const handleNameChange = (e) => {
+    const value = validateTextOnly(e.target.value);
+    setName(value);
+  };
+
   return (
     <div className="auth-container">
       <div className={`auth-card ${animation ? 'animate' : ''} ${isSignIn ? 'signin-mode' : 'signup-mode'}`}>
@@ -224,7 +266,7 @@ const SignIn = ({ onLogin }) => {
                       className="form-input"
                       placeholder="e.g Ali Hassan"
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={handleNameChange}
                       required
                     />
                   </div>
@@ -286,11 +328,13 @@ const SignIn = ({ onLogin }) => {
                     <Phone className="field-icon" />
                     <input
                       id="contact"
-                      type="number"
+                      type="tel"
                       className="form-input"
                       placeholder="Your phone number"
                       value={contact}
-                      onChange={(e) => setContact(e.target.value)}
+                      onChange={handleContactChange}
+                      pattern="[0-9+\s-]+"
+                      title="Enter a valid phone number (digits, spaces, + and - only)"
                       required
                     />
                   </div>
@@ -326,12 +370,16 @@ const SignIn = ({ onLogin }) => {
                       id="branch"
                       type="text"
                       className="form-input"
-                      placeholder="Your branch"
+                      placeholder="e.g Lahore"
                       value={branch}
-                      onChange={(e) => setBranch(e.target.value)}
+                      onChange={handleBranchChange}
                       required
                     />
                   </div>
+                  <small className="form-helper-text">
+                    {branch && branch !== capitalizeFirstLetter(branch) ? 
+                      `Will be saved as: ${capitalizeFirstLetter(branch)}` : ''}
+                  </small>
                 </div>
 
                 <div className="form-field">
@@ -342,9 +390,9 @@ const SignIn = ({ onLogin }) => {
                       id="department"
                       type="text"
                       className="form-input"
-                      placeholder="Your department"
+                      placeholder="e.g CS"
                       value={department}
-                      onChange={(e) => setDepartment(e.target.value)}
+                      onChange={handleDepartmentChange}
                     />
                   </div>
                 </div>
@@ -353,7 +401,7 @@ const SignIn = ({ onLogin }) => {
               <div className="form-field">
                 <label htmlFor="address">Address</label>
                 <div className="input-with-icon textarea-icon">
-                  <MapPin className="field-icon" />
+                  <div className="field-icon" />
                   <textarea
                     id="address"
                     className="form-textarea"

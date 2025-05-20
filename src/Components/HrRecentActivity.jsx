@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { RefreshCw, CheckCircle, AlertCircle, Building } from 'lucide-react';
 import API_BASE_URL from '../config/api.js';
 import '../assets/css/RecentActivity.css';
+import AllActivitiesModal from './AllActivitiesModal';
 
 const HrRecentActivity = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userBranch, setUserBranch] = useState('');
+  const [isAllActivitiesModalOpen, setIsAllActivitiesModalOpen] = useState(false);
 
   useEffect(() => {
     // First load the HR manager's branch, then fetch branch-specific notifications
@@ -289,9 +291,7 @@ const HrRecentActivity = () => {
 
   // Handle view all click
   const handleViewAll = () => {
-    // Navigate to notifications page or expand the list
-    console.log('View all notifications clicked');
-    // You can implement navigation here if needed
+    setIsAllActivitiesModalOpen(true);
   };
 
   return (
@@ -366,6 +366,13 @@ const HrRecentActivity = () => {
           <CheckCircle size={14} />
         </button>
       </div>
+
+      {/* All Activities Modal */}
+      <AllActivitiesModal 
+        isOpen={isAllActivitiesModalOpen} 
+        onClose={() => setIsAllActivitiesModalOpen(false)}
+        isHrView={true} // This is for HR view
+      />
     </div>
   );
 };

@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import API_BASE_URL from '../config/api.js';
 import '../assets/css/RecentActivity.css';
+import AllActivitiesModal from './AllActivitiesModal';
 
 const EnhancedRecentActivity = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAllActivitiesModalOpen, setIsAllActivitiesModalOpen] = useState(false);
 
   useEffect(() => {
     fetchNotifications();
@@ -27,22 +29,6 @@ const EnhancedRecentActivity = () => {
       }
 
       const data = await response.json();
-      
-      // For testing - add a mock employee profile edit notification if needed
-      // Uncomment this to test if none exist in your system
-      /*
-      data.unshift({
-        _id: 'mock-profile-edit',
-        type: 'account',
-        title: 'Profile Updated',
-        message: 'John Smith\'s employee profile was edited',
-        read: false,
-        createdAt: new Date().toISOString(),
-        metadata: {
-          branchName: 'Main Branch'
-        }
-      });
-      */
       
       setNotifications(data);
       setError(null);
@@ -243,9 +229,7 @@ const EnhancedRecentActivity = () => {
 
   // Handle view all click
   const handleViewAll = () => {
-    // Navigate to notifications page or expand the list
-    console.log('View all notifications clicked');
-    // You can implement navigation here if needed
+    setIsAllActivitiesModalOpen(true);
   };
 
   return (
@@ -314,6 +298,13 @@ const EnhancedRecentActivity = () => {
           <CheckCircle size={14} />
         </button>
       </div>
+
+      {/* All Activities Modal */}
+      <AllActivitiesModal 
+        isOpen={isAllActivitiesModalOpen} 
+        onClose={() => setIsAllActivitiesModalOpen(false)}
+        isHrView={false} // This is for Admin view
+      />
     </div>
   );
 };

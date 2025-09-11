@@ -246,7 +246,7 @@ function checkFileType(file, cb) {
 
 // Middleware
 app.use(cors({
-  origin: ['https://hrms-sxi4.onrender.com', 'http://localhost:5173', 'https://www.hrrive.com', 'https://hrrive.com','https://hrms-backend-flfy.onrender.com','https://hrms-seab.onrender.com'],
+  origin: ['https://hrms-sxi4.onrender.com', 'http://localhost:5173', 'https://www.hrrive.com', 'https://hrrive.com','https://hrms-backend-flfy.onrender.com','https://hrms-seab.onrender.com','https://hrms-uqy9.onrender.com','https://hrms-backend-qoir.onrender.com'],
   credentials: true
 }));
 

@@ -3,7 +3,7 @@ import {
   Mail, Phone, Download, FilterIcon, Grid, List, LayoutGrid, 
   Search, User, Building, Tag, Calendar, MoreHorizontal, ChevronDown,
   ExternalLink, Star, AlertTriangle, Briefcase, ShieldCheck, UserX,
-  Clock, ArrowUpDown, ChevronUp, X
+  Clock, ArrowUpDown, ChevronUp, X, IdCard
 } from 'lucide-react';
 import '../assets/css/EmployeeCards.css';
 import EmployeeDetails from './EmployeeDetails';
@@ -211,6 +211,7 @@ const EmployeeCards = () => {
       'Employee List:',
       ...filteredEmps.map(emp => [
         `\nName: ${emp.personalDetails.name}`,
+        `User ID: ${emp.personalDetails.id || 'N/A'}`,
         `Email: ${emp.personalDetails.email}`,
         `Contact: ${emp.personalDetails.contact}`,
         `Role: ${emp.professionalDetails.role}`,
@@ -253,7 +254,8 @@ const EmployeeCards = () => {
           emp.personalDetails.name.toLowerCase().includes(term) ||
           emp.personalDetails.email.toLowerCase().includes(term) ||
           emp.personalDetails.contact.toLowerCase().includes(term) ||
-          emp.professionalDetails.role.toLowerCase().includes(term)
+          emp.professionalDetails.role.toLowerCase().includes(term) ||
+          (emp.personalDetails.id && emp.personalDetails.id.toLowerCase().includes(term))
       );
     }
 
@@ -301,6 +303,9 @@ const EmployeeCards = () => {
         } else if (sortConfig.key === 'role') {
           aValue = a.professionalDetails.role;
           bValue = b.professionalDetails.role;
+        } else if (sortConfig.key === 'userId') {
+          aValue = a.personalDetails.id || '';
+          bValue = b.personalDetails.id || '';
         } else if (sortConfig.key === 'rating') {
           // Handle potential undefined ratings
           aValue = a.rating || 0;
@@ -574,6 +579,7 @@ const EmployeeCards = () => {
                   >
                     <option value="name">Name</option>
                     <option value="email">Email</option>
+                    <option value="userId">User ID</option>
                     <option value="status">Status</option>
                     <option value="branch">Branch</option>
                     <option value="department">Department</option>
@@ -626,6 +632,10 @@ const EmployeeCards = () => {
                         {renderAvatar(emp, 'grid')}
                         <div className="employee-header-info">
                           <h3 className="employee-name">{emp.personalDetails.name}</h3>
+                          <div className="employee-id-badge">
+                            <IdCard size={14} className="id-badge-icon" />
+                            <span>ID: {emp.personalDetails.id || 'N/A'}</span>
+                          </div>
                           <div className="employee-role-badge">
                             <span className={`role-badge ${getRoleBadgeColor(emp.professionalDetails.role)}`}>
                               {formatRole(emp.professionalDetails.role)}
@@ -691,6 +701,12 @@ const EmployeeCards = () => {
                         <ChevronDown className={`sort-icon ${sortConfig.direction === 'desc' ? 'rotated' : ''}`} size={16} />
                       )}
                     </div>
+                    <div className="list-header-cell flex-small" onClick={() => requestSort('userId')}>
+                      <span>User ID</span>
+                      {sortConfig.key === 'userId' && (
+                        <ChevronDown className={`sort-icon ${sortConfig.direction === 'desc' ? 'rotated' : ''}`} size={16} />
+                      )}
+                    </div>
                     <div className="list-header-cell flex-medium" onClick={() => requestSort('email')}>
                       <span>Contact</span>
                       {sortConfig.key === 'email' && (
@@ -727,6 +743,12 @@ const EmployeeCards = () => {
                         <div className="list-name-info">
                           <span className="list-name">{emp.personalDetails.name}</span>
                           <span className="list-department">{emp.professionalDetails.department || 'General'}</span>
+                        </div>
+                      </div>
+                      <div className="list-cell flex-small">
+                        <div className="user-id-tag">
+                          <IdCard size={14} className="id-icon" />
+                          <span>{emp.personalDetails.id || 'N/A'}</span>
                         </div>
                       </div>
                       <div className="list-cell flex-medium employee-contact-cell">
@@ -786,6 +808,10 @@ const EmployeeCards = () => {
                       </div>
                       <div className="compact-employee-info">
                         <h3 className="compact-name">{emp.personalDetails.name}</h3>
+                        <div className="compact-user-id">
+                          <IdCard size={12} />
+                          <span>{emp.personalDetails.id || 'N/A'}</span>
+                        </div>
                         <div className="compact-role">
                           <span className={`role-badge-sm ${getRoleBadgeColor(emp.professionalDetails.role)}`}>
                             {formatRole(emp.professionalDetails.role)}

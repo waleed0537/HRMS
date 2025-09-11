@@ -32,16 +32,77 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  // Add this function to refresh user data from localStorage
+  const refreshUserData = () => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
 
     if (token && userData) {
+      const parsedUserData = JSON.parse(userData);
+      setUser(parsedUserData);
       setIsAuthenticated(true);
-      setUser(JSON.parse(userData));
+      
+      // Check if route needs to be updated based on role
+      checkAndRedirectBasedOnRole(parsedUserData);
+    } else {
+      setUser(null);
+      setIsAuthenticated(false);
+      navigate('/');
     }
+  };
+
+  // Add this function to check and redirect based on role
+  const checkAndRedirectBasedOnRole = (userData) => {
+    const currentPath = window.location.pathname;
+    
+    // Logic to check if user should be on a different dashboard
+    if (userData.role === 'hr_manager' && currentPath === '/dashboard') {
+      navigate('/hr-dashboard');
+    } else if (userData.isAdmin && !currentPath.includes('admin-dashboard')) {
+      navigate('/admin-dashboard');
+    } else if (userData.role !== 'hr_manager' && userData.role !== 'admin' && 
+              !userData.isAdmin && currentPath === '/hr-dashboard') {
+      navigate('/dashboard');
+    }
+  };
+  // Replace your existing useEffect in App.jsx with this:
+useEffect(() => {
+  const refreshUserData = () => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+
+    if (token && userData) {
+      const parsedUserData = JSON.parse(userData);
+      setUser(parsedUserData);
+      setIsAuthenticated(true);
+      
+      // Check if route needs to be updated based on role
+      checkAndRedirectBasedOnRole(parsedUserData);
+    } else {
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+    
     setLoading(false);
-  }, []);
+  };
+  
+  // Initial data load
+  refreshUserData();
+  
+  // Add event listeners for updates
+  const handleStorageChange = () => {
+    refreshUserData();
+  };
+  
+  window.addEventListener('storage', handleStorageChange);
+  window.addEventListener('roleChange', handleStorageChange);
+  
+  // Clean up event listeners on unmount
+  return () => {
+    window.removeEventListener('storage', handleStorageChange);
+    window.removeEventListener('roleChange', handleStorageChange);
+  };
+}, []);
 
   const handleLogin = (userData) => {
     setUser(userData);

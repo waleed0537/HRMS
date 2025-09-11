@@ -1,26 +1,30 @@
-// NotificationDropdown.jsx
 import React, { useState, useEffect } from 'react';
-import { Bell, CheckCircle, UserCheck, Calendar, UserPlus } from 'lucide-react';
+import { Bell, UserCheck, Calendar, UserPlus } from 'lucide-react';
 import '../assets/css/NotificationDropdown.css';
 import API_BASE_URL from '../config/api.js';
 
-const NotificationDropdown = ({ onClose }) => {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
+const NotificationDropdown = ({ notifications, onMarkAsRead }) => {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // If notifications are not provided, fetch them
+  const [localNotifications, setLocalNotifications] = useState(notifications || []);
+
   useEffect(() => {
-    fetchNotifications();
-  }, []);
+    if (notifications) {
+      setLocalNotifications(notifications);
+    } else {
+      fetchNotifications();
+    }
+  }, [notifications]);
 
   const fetchNotifications = async () => {
     try {
+      setLoading(true);
       const user = JSON.parse(localStorage.getItem('user'));
       const endpoint = user.role === 'hr_manager' 
         ? `/api/hr/notifications` 
         : `/api/notifications`;
-
-      console.log('Fetching notifications from endpoint:', endpoint);
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
@@ -34,8 +38,7 @@ const NotificationDropdown = ({ onClose }) => {
       }
   
       const data = await response.json();
-      console.log('Received notifications:', data);
-      setNotifications(data);
+      setLocalNotifications(data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -44,7 +47,14 @@ const NotificationDropdown = ({ onClose }) => {
     }
   };
 
-  const markAsRead = async (id) => {
+  const handleMarkAsRead = async (id) => {
+    // If an external handler is provided, use it
+    if (onMarkAsRead) {
+      await onMarkAsRead(id);
+      return;
+    }
+    
+    // Otherwise, handle it internally
     try {
       const response = await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
         method: 'PUT',
@@ -59,7 +69,7 @@ const NotificationDropdown = ({ onClose }) => {
       }
   
       const updatedNotification = await response.json();
-      setNotifications(notifications.map(notif => 
+      setLocalNotifications(localNotifications.map(notif => 
         notif._id === id ? { ...notif, read: true } : notif
       ));
     } catch (error) {
@@ -76,14 +86,14 @@ const NotificationDropdown = ({ onClose }) => {
       <div className="notification-content">
         {loading ? (
           <div className="notification-loading">Loading...</div>
-        ) : notifications.length === 0 ? (
+        ) : localNotifications.length === 0 ? (
           <div className="notification-empty">No notifications</div>
         ) : (
-          notifications.map((notification) => (
+          localNotifications.map((notification) => (
             <div
               key={notification._id}
               className={`notification-item ${!notification.read ? 'unread' : ''}`}
-              onClick={() => markAsRead(notification._id)}
+              onClick={() => handleMarkAsRead(notification._id)}
             >
               <div className="notification-item-content">
                 {getIcon(notification.type)}

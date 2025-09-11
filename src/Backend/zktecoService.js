@@ -1,5 +1,6 @@
 // zktecoService.js - Modified to only get data from database, no direct device connection
-const Attendance = require('./models/Attendance');
+const mongoose = require('mongoose');
+let Attendance;
 const Notification = require('./models/Notification');
 const User = require('./models/Users');
 const SyncStatus = require('./models/SyncStatus'); // Add this model to your project if needed
@@ -96,26 +97,66 @@ const getSyncStatus = async () => {
 };
 
 // Get attendance data from database only
+// Updated date handling in zktecoService.js
+
+// Update the getAttendanceData function in zktecoService.js:
+
+// Update the getAttendanceData function in zktecoService.js:
+
 const getAttendanceData = async (options = {}) => {
   try {
     console.log('Fetching attendance data from database...');
 
+    // Make sure Attendance model is properly loaded
+    if (!Attendance) {
+      try {
+        Attendance = mongoose.model('Attendance');
+      } catch (e) {
+        Attendance = require('./models/Attendance');
+      }
+    }
+
     // Build query based on options
     const query = {};
 
-    // Filter by date if provided
+    // Filter by date if provided - IMPROVED DATE HANDLING
     if (options.date) {
       const queryDate = new Date(options.date);
+      
+      // Set up the date range to cover the full logical day
+      // For example, May 14 should include records from:
+      // May 14 00:00:00 to May 15 00:00:00
       const startOfDay = new Date(queryDate);
       startOfDay.setUTCHours(0, 0, 0, 0);
 
       const endOfDay = new Date(queryDate);
-      endOfDay.setUTCHours(23, 59, 59, 999);
-
+      endOfDay.setDate(endOfDay.getDate() + 1);  // Next day
+      endOfDay.setUTCHours(0, 0, 0, 0);  // 00:00:00 of next day
+      
+      // IMPORTANT: We have two ways to query - using either timeIn or date
+      // Depending on how your records are stored, one might be more reliable
+      
+      // Option 1: Query by timeIn (actual check-in time)
+      // This will return all check-ins that happened during this calendar day
+      query.timeIn = {
+        $gte: startOfDay,
+        $lt: endOfDay
+      };
+      
+      // Option 2: Query by date field 
+      // If you prefer to use the date field, uncomment this and comment out the timeIn query
+      /*
       query.date = {
         $gte: startOfDay,
-        $lte: endOfDay
+        $lt: endOfDay
       };
+      */
+      
+      console.log(`Date range for ${options.date}:`, {
+        startTime: startOfDay.toISOString(),
+        endTime: endOfDay.toISOString(),
+        queryField: query.timeIn ? 'timeIn' : 'date'
+      });
     }
 
     // Apply any other filters
@@ -127,22 +168,53 @@ const getAttendanceData = async (options = {}) => {
       query.department = options.department;
     }
 
+    console.log('Executing database query:', JSON.stringify(query, null, 2));
+    
     // Get attendance records
-    const attendanceRecords = await Attendance.find(query)
-      .sort({ timeIn: -1 })
-      .limit(options.limit || 500)
-      .lean();
+    let attendanceRecords;
+    try {
+      // Get attendance records
+      attendanceRecords = await Attendance.find(query)
+        .sort({ timeIn: -1 })
+        .limit(options.limit || 500)
+        .lean();
+    } catch (dbError) {
+      console.error('Database query error:', dbError);
+      
+      // Return empty array on database error
+      return [];
+    }
 
     console.log(`Retrieved ${attendanceRecords.length} attendance records from database`);
-    return attendanceRecords;
+    
+    // Process records to deduplicate them (if needed)
+    // NOTE: You can comment this out if you want to see all check-ins
+    const uniqueEmployees = {};
+    
+    // Keep only the earliest check-in per employee
+    attendanceRecords.forEach(record => {
+      const key = record.employeeNumber;
+      if (!uniqueEmployees[key] || 
+          new Date(record.timeIn) < new Date(uniqueEmployees[key].timeIn)) {
+        uniqueEmployees[key] = record;
+      }
+    });
+    
+    const uniqueRecords = Object.values(uniqueEmployees);
+    console.log(`Returning ${uniqueRecords.length} unique attendance records (after deduplication)`);
+    
+    // If you want to see ALL records instead of just one per employee,
+    // return attendanceRecords instead of uniqueRecords
+    return uniqueRecords;
   } catch (error) {
     console.error('Error fetching attendance data from database:', error);
-    throw error;
+    // Return empty array instead of throwing
+    return [];
   }
 };
-
 // Simulate a sync operation - this only returns the current status
 // but doesn't actually do any syncing as that's handled by the daemon
+// Update this section in zktecoService.js - around line 263-264 in the syncAttendanceLogs function
 // Update this section in zktecoService.js - around line 263-264 in the syncAttendanceLogs function
 const syncAttendanceLogs = async (options = {}) => {
   console.log('Starting attendance synchronization...');
@@ -201,23 +273,23 @@ const syncAttendanceLogs = async (options = {}) => {
           continue;
         }
 
-        // Get the time in hours and minutes
-        const hours = recordTimestamp.getHours();
-        const minutes = recordTimestamp.getMinutes();
-        
-        // CRITICAL UPDATE: Create a date object for the appropriate day
-        // If time is after midnight and before noon (assuming night shift ends by noon)
-        // we treat it as previous day's attendance
+        // FIXED: Don't adjust morning check-ins to previous day
+        // Keep the actual date from the timestamp
         const recordDate = new Date(recordTimestamp);
         
-        // Check if this is a late night/early morning check-in (between 12:00 AM and 11:59 AM)
-        // and adjust the date to previous day
-        if (hours >= 0 && hours < 12) {
-          // This is early morning attendance (after midnight, e.g., 1:05 AM)
-          // Subtract one day to make it part of the previous day's records
-          recordDate.setDate(recordDate.getDate() - 1);
-          console.log(`Adjusted date for early morning attendance: ${recordTimestamp} → ${recordDate}`);
-        }
+        // Optional: If you still need special handling for certain night shifts,
+        // you could add more specific logic here, like:
+        // - Only adjust specific hours (e.g., 12am-4am)
+        // - Only adjust for specific departments or shifts
+        // - Add a flag to the record indicating it was an off-hours check-in
+        
+        // For example:
+        // const isNightShiftCheckIn = hours >= 0 && hours < 4 && 
+        //                           (log.department === 'Night Shift');
+        // if (isNightShiftCheckIn) {
+        //   recordDate.setDate(recordDate.getDate() - 1);
+        //   console.log(`Adjusted date for night shift: ${recordTimestamp} → ${recordDate}`);
+        // }
 
         // Get user ID and name exactly like Python script
         const uid = log.uid || log.id; // Ensure we get the correct user ID field
@@ -231,13 +303,13 @@ const syncAttendanceLogs = async (options = {}) => {
           employeeNumber: uid.toString(), // Store as string for compatibility
           deviceUserId: uid, // Important: store the actual device ID
           department: log.department || 'General', // Default department
-          date: recordDate, // Use the adjusted date (previous day for after-midnight check-ins)
+          date: recordDate, // Use the actual date without adjustment
           timeIn: recordTimestamp, // Keep the actual timestamp for clock-in time
           location: options.ip || CONFIG.ip,
           verifyMethod: log.type?.toString() || '0'
         };
         
-        // For database filtering, get the day range for the adjusted date
+        // For database filtering, get the day range for the actual date
         const dateStart = new Date(recordDate);
         dateStart.setHours(0, 0, 0, 0);
         const dateEnd = new Date(recordDate);
@@ -257,7 +329,7 @@ const syncAttendanceLogs = async (options = {}) => {
               $setOnInsert: {
                 employeeNumber: record.employeeNumber,
                 department: record.department,
-                date: record.date, // The adjusted date
+                date: record.date, // The actual date without adjustment
                 timeIn: record.timeIn, // The actual check-in time
                 location: record.location,
                 verifyMethod: record.verifyMethod,

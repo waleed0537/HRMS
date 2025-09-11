@@ -1,0 +1,281 @@
+/* RecentActivity.css - Fixed height with scroller */
+
+.recent-activity-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+  max-height: 518px; /* Fixed height to control container size */
+}
+
+.recent-activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+.recent-activity-header h2 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  position: relative;
+  padding-left: 12px;
+}
+
+.recent-activity-header h2:before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 16px;
+  background: #3b82f6;
+  border-radius: 2px;
+}
+
+.refresh-button {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f9fafb;
+  border: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refresh-button:hover {
+  background: #f3f4f6;
+  color: #3b82f6;
+  transform: rotate(180deg);
+}
+
+/* Content area - this is where we add the scroller */
+.recent-activity-content {
+  flex: 1;
+  overflow-y: auto; /* This creates the scroll */
+  height: 350px; /* Fixed height for scroll area */
+  min-height: 250px; /* Minimum height */
+  padding: 0;
+  position: relative;
+}
+
+.recent-activity-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.recent-activity-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.recent-activity-content::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 20px;
+}
+
+/* Notification list */
+.notification-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.notification-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #f9fafb;
+  transition: background-color 0.15s ease;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item:hover {
+  background-color: #f9fafb;
+}
+
+/* Avatar */
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-right: 14px;
+}
+
+/* Notification content */
+.notification-content {
+  flex: 1;
+  min-width: 0; /* Ensure text truncation works */
+}
+
+.notification-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.notification-description {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Notification metadata */
+.notification-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  margin-left: 12px;
+  flex-shrink: 0;
+}
+
+.notification-time {
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+/* Status indicators */
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.status-indicator.success {
+  background-color: #10b981;
+}
+
+.status-indicator.error {
+  background-color: #ef4444;
+}
+
+.status-indicator.pending {
+  background-color: #f59e0b;
+}
+
+/* Footer */
+.recent-activity-footer {
+  padding: 12px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0; /* Prevent footer from shrinking */
+}
+
+.view-all-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.view-all-button:hover {
+  background-color: #eff6ff;
+}
+
+/* Loading, error and empty states */
+.loading-state,
+.error-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #6b7280;
+  text-align: center;
+  height: 100%;
+}
+
+.loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+.error-state {
+  color: #ef4444;
+}
+
+.retry-button {
+  margin-top: 12px;
+  padding: 8px 16px;
+  background-color: #eff6ff;
+  color: #3b82f6;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.retry-button:hover {
+  background-color: #dbeafe;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .notification-item {
+    padding: 12px 16px;
+  }
+  
+  .avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+    margin-right: 10px;
+  }
+  
+  .notification-title {
+    font-size: 13px;
+  }
+  
+  .notification-description {
+    font-size: 12px;
+  }
+}

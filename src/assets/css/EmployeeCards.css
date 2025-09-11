@@ -16,6 +16,46 @@
   flex-wrap: wrap;
   gap: 1rem;
 }
+.employee-id-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+}
+
+.id-badge-icon {
+  color: #64748b;
+}
+
+.user-id-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f1f5f9;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.id-icon {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.compact-user-id {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 6px;
+}
 
 .employee-section-title {
 
@@ -614,7 +654,7 @@
   align-items: center;
   gap: 0.5rem;
 
-  color: white;
+  color: black;
   border: none;
   border-radius: 0.375rem;
   padding: 0.5rem 0.75rem;

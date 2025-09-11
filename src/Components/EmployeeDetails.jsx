@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Mail, Phone, MapPin, Building, Briefcase, ArrowLeft, Calendar, 
   FileText, Award, Clock, RefreshCw, User, GitBranch, FileCheck, 
-  ExternalLink, AlertTriangle 
+  ExternalLink, AlertTriangle, IdCard 
 } from 'lucide-react';
 import '../assets/css/EmployeeDetails.css';
 import API_BASE_URL from '../config/api.js';
@@ -192,6 +192,9 @@ const EmployeeDetails = ({ employee, onClose }) => {
     ? `${employee.firstName} ${employee.lastName || ''}`
     : employee.personalDetails?.name || 'Unknown';
 
+  // Get the user-entered USER ID from personalDetails.id
+  const userId = employee.personalDetails?.id || 'N/A';
+
   return (
     <div className="employee-detail-container">
       <div className="employee-detail-header">
@@ -203,20 +206,24 @@ const EmployeeDetails = ({ employee, onClose }) => {
       
       <div className="employee-detail-content">
         <div className="employee-profile-card">
-        <div className="employee-avatar">
-  {!avatarError ? (
-    <img 
-      src={new URL(`../assets/avatars/avatar-${getProfilePicNumber()}.jpg`, import.meta.url).href}
-      alt={employeeName}
-      style={{ width: '100%', height: '100%', borderRadius: '12px', objectFit: 'cover' }}
-      onError={handleAvatarError}
-    />
-  ) : (
-    <span>{getInitials(employeeName)}</span>
-  )}
-</div>
+          <div className="employee-avatar">
+            {!avatarError ? (
+              <img 
+                src={new URL(`../assets/avatars/avatar-${getProfilePicNumber()}.jpg`, import.meta.url).href}
+                alt={employeeName}
+                style={{ width: '100%', height: '100%', borderRadius: '12px', objectFit: 'cover' }}
+                onError={handleAvatarError}
+              />
+            ) : (
+              <span>{getInitials(employeeName)}</span>
+            )}
+          </div>
           <div className="employee-profile-info">
             <h2>{employeeName}</h2>
+            <div className="employee-id-badge">
+              <IdCard size={16} className="id-badge-icon" />
+              <span>ID: {userId}</span>
+            </div>
             <p className="employee-role">
               {formatRole(employee.role || employee.professionalDetails?.role) || 'Employee'}
             </p>
@@ -251,6 +258,16 @@ const EmployeeDetails = ({ employee, onClose }) => {
               <div className="section-card">
                 <h3 className="section-title">Contact Information</h3>
                 <div className="info-grid">
+                  <div className="info-item">
+                    <div className="info-label">
+                      <IdCard size={16} />
+                      <span>User ID</span>
+                    </div>
+                    <div className="info-value">
+                      {userId}
+                    </div>
+                  </div>
+                  
                   <div className="info-item">
                     <div className="info-label">
                       <Mail size={16} />

@@ -3,21 +3,68 @@ import { Search, Bell, ChevronDown, LogOut, Settings, User } from 'lucide-react'
 import { useLocation } from 'react-router-dom';
 import '../../assets/css/header.css';
 import NotificationDropdown from '../NotificationDropdown';
+import API_BASE_URL from '../../config/api.js';
 
-const Header = ({ user, onLogout }) => {
+const Header = ({ user: propUser, onLogout }) => {
+  // Add a local state for user data that always reads from localStorage
+  const [localUser, setLocalUser] = useState(propUser);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const location = useLocation();
   
+  // This useEffect will ensure we always have the latest user data from localStorage
+  useEffect(() => {
+    const refreshUserFromStorage = () => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          setLocalUser(userData);
+        } else {
+          setLocalUser(propUser);
+        }
+      } catch (error) {
+        console.error('Error parsing user data from localStorage:', error);
+        setLocalUser(propUser);
+      }
+    };
+
+    // Initial load
+    refreshUserFromStorage();
+
+    // Set up event listener for storage changes
+    const handleStorageChange = (e) => {
+      if (e.key === 'user') {
+        refreshUserFromStorage();
+      }
+    };
+
+    // Set up event listener for custom roleChange event
+    const handleRoleChange = () => {
+      refreshUserFromStorage();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('roleChange', handleRoleChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('roleChange', handleRoleChange);
+    };
+  }, [propUser]);
+
   // Load avatar dynamically based on user profile pic
   useEffect(() => {
     const loadAvatar = async () => {
-      if (user?.profilePic) {
+      // Use localUser instead of props user to ensure we have the latest data
+      if (localUser?.profilePic) {
         try {
           // Use dynamic import to get the avatar
-          const avatarModule = await import(`../../assets/avatars/avatar-${user.profilePic}.jpg`);
+          const avatarModule = await import(`../../assets/avatars/avatar-${localUser.profilePic}.jpg`);
           setAvatarSrc(avatarModule.default);
         } catch (error) {
           console.error('Failed to load avatar:', error);
@@ -29,7 +76,71 @@ const Header = ({ user, onLogout }) => {
     };
     
     loadAvatar();
-  }, [user?.profilePic]);
+  }, [localUser?.profilePic]);
+
+  // Fetch notifications and calculate unread count
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const endpoint = localUser?.role === 'hr_manager' 
+          ? `/api/hr/notifications` 
+          : `/api/notifications`;
+
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setNotifications(data);
+        
+        // Calculate unread notifications count
+        const unreadNotifications = data.filter(notification => !notification.read);
+        setUnreadCount(unreadNotifications.length);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    };
+
+    if (localUser) {
+      fetchNotifications();
+    }
+  }, [localUser]);
+
+  // Handle marking a notification as read
+  const handleMarkAsRead = async (id) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Update local notifications state
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notif => 
+          notif._id === id ? { ...notif, read: true } : notif
+        )
+      );
+
+      // Update unread count
+      setUnreadCount(prevCount => Math.max(0, prevCount - 1));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
 
   // Get page title from current route
   const getPageTitle = () => {
@@ -60,7 +171,8 @@ const Header = ({ user, onLogout }) => {
   // Function to render either an avatar image or a text-based avatar with user's initial
   const renderAvatar = () => {
     // Extract user name from email (before the @) for display
-    const userName = user?.email ? user.email.split('@')[0] : 'User';
+    // Use localUser instead of propUser
+    const userName = localUser?.email ? localUser.email.split('@')[0] : 'User';
     
     // Get first initial for fallback
     const initial = userName.charAt(0).toUpperCase();
@@ -103,6 +215,10 @@ const Header = ({ user, onLogout }) => {
     );
   };
 
+  // Use localUser instead of propUser to get the most updated role
+  const userEmail = localUser?.email || 'User';
+  const userRole = localUser?.role || 'employee';
+
   return (
     <header className="app-header">
       <div className="app-header__container">
@@ -135,7 +251,9 @@ const Header = ({ user, onLogout }) => {
               onClick={toggleNotifications}
             >
               <Bell size={20} color="white" />
-              <span className="app-header__notification-badge">3</span>
+              {unreadCount > 0 && (
+                <span className="app-header__notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+              )}
             </button>
             
             {showNotifications && (
@@ -144,7 +262,10 @@ const Header = ({ user, onLogout }) => {
                   className="app-header__dropdown-overlay"
                   onClick={() => setShowNotifications(false)}
                 ></div>
-                <NotificationDropdown />
+                <NotificationDropdown 
+                  notifications={notifications} 
+                  onMarkAsRead={handleMarkAsRead} 
+                />
               </>
             )}
           </div>
@@ -156,9 +277,9 @@ const Header = ({ user, onLogout }) => {
             >
               <div className="app-header__profile-info">
                 <p className="app-header__profile-name">
-                  {user.email ? user.email.split('@')[0] : 'User'}
+                  {userEmail ? userEmail.split('@')[0] : 'User'}
                 </p>
-                <p className="app-header__profile-role">{user.role}</p>
+                <p className="app-header__profile-role">{userRole}</p>
               </div>
               
               {renderAvatar()}

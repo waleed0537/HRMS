@@ -10,7 +10,7 @@ const SignIn = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [userId, setUserId] = useState(''); // New field for user ID
+  const [userId, setUserId] = useState(''); // User ID field
   const [contact, setContact] = useState('');
   const [address, setAddress] = useState('');
   const [role, setRole] = useState('employee');
@@ -18,6 +18,7 @@ const SignIn = ({ onLogin }) => {
   const [department, setDepartment] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [animation, setAnimation] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
   const { success, error: toastError } = useToast();
 
@@ -27,6 +28,24 @@ const SignIn = ({ onLogin }) => {
     const timer = setTimeout(() => setAnimation(false), 600);
     return () => clearTimeout(timer);
   }, [isSignIn]);
+
+  // Validation functions
+  const validatePhoneNumber = (value) => {
+    // Only allow digits, plus sign, hyphens and spaces
+    return value.replace(/[^\d\s+-]/g, '');
+  };
+
+  const validateTextOnly = (value) => {
+    // Only allow letters, spaces, and some punctuation for names
+    return value.replace(/[^a-zA-Z\s.,'-]/g, '');
+  };
+
+  const capitalizeFirstLetter = (string) => {
+    if (!string) return '';
+    return string.split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -72,24 +91,33 @@ const SignIn = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
+      console.log('Starting signup with data:', { name, userId, email, role, branch });
+      
+      // Apply formatting to ensure proper capitalization before sending
+      const formattedBranch = capitalizeFirstLetter(branch);
+      
       // Create user data object with required structure
       const userData = {
         personalDetails: {
-          name: name,
-          id: userId, // Include the user ID field
+          name: capitalizeFirstLetter(name),
+          id: userId, // This is where the User ID is set - KEEP THIS FORMAT
+          userId: userId, // Add an extra copy of the userId to ensure it's saved
           email,
           contact,
           address
         },
         professionalDetails: {
           role,
-          branch,
+          branch: formattedBranch,
           department: department || 'General',
           status: 'active'
         },
         password
       };
 
+      console.log('Sending request to server');
+      
+      // Make sure the API endpoint is correct
       const response = await fetch(`${API_BASE_URL}/api/signup`, {
         method: 'POST',
         headers: {
@@ -97,8 +125,18 @@ const SignIn = ({ onLogin }) => {
         },
         body: JSON.stringify(userData),
       });
-
-      const data = await response.json();
+      
+      console.log('Received response:', response.status, response.statusText);
+      
+      // Safely parse JSON with error handling
+      let data;
+      try {
+        data = await response.json();
+        console.log('Response data:', data);
+      } catch (jsonError) {
+        console.error('Error parsing response:', jsonError);
+        throw new Error('Invalid response from server. Please try again.');
+      }
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to sign up');
@@ -127,10 +165,11 @@ const SignIn = ({ onLogin }) => {
       }, 1000);
       
     } catch (err) {
-      // Show error using toast
-      toastError(err.message);
+      console.error('Signup error:', err);
+      toastError(err.message || 'An error occurred during signup');
     } finally {
-      setIsLoading(false);
+      console.log('Setting loading state to false');
+      setIsLoading(false); // CRITICAL: Ensure this runs to stop the spinner
     }
   };
 
@@ -139,6 +178,27 @@ const SignIn = ({ onLogin }) => {
     setTimeout(() => {
       setIsSignIn(!isSignIn);
     }, 300);
+  };
+
+  // Handlers for input validation
+  const handleContactChange = (e) => {
+    const validated = validatePhoneNumber(e.target.value);
+    setContact(validated);
+  };
+
+  const handleBranchChange = (e) => {
+    const value = validateTextOnly(e.target.value);
+    setBranch(value);
+  };
+
+  const handleDepartmentChange = (e) => {
+    // No validation for department as requested
+    setDepartment(e.target.value);
+  };
+
+  const handleNameChange = (e) => {
+    const value = validateTextOnly(e.target.value);
+    setName(value);
   };
 
   return (
@@ -206,7 +266,7 @@ const SignIn = ({ onLogin }) => {
                       className="form-input"
                       placeholder="e.g Ali Hassan"
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={handleNameChange}
                       required
                     />
                   </div>
@@ -220,7 +280,7 @@ const SignIn = ({ onLogin }) => {
                       id="userId"
                       type="text"
                       className="form-input"
-                      placeholder="e.g 12"
+                      placeholder="e.g 67"
                       value={userId}
                       onChange={(e) => setUserId(e.target.value)}
                       required
@@ -272,7 +332,9 @@ const SignIn = ({ onLogin }) => {
                       className="form-input"
                       placeholder="Your phone number"
                       value={contact}
-                      onChange={(e) => setContact(e.target.value)}
+                      onChange={handleContactChange}
+                      pattern="[0-9+\s-]+"
+                      title="Enter a valid phone number (digits, spaces, + and - only)"
                       required
                     />
                   </div>
@@ -308,12 +370,16 @@ const SignIn = ({ onLogin }) => {
                       id="branch"
                       type="text"
                       className="form-input"
-                      placeholder="Your branch"
+                      placeholder="e.g Lahore"
                       value={branch}
-                      onChange={(e) => setBranch(e.target.value)}
+                      onChange={handleBranchChange}
                       required
                     />
                   </div>
+                  <small className="form-helper-text">
+                    {branch && branch !== capitalizeFirstLetter(branch) ? 
+                      `Will be saved as: ${capitalizeFirstLetter(branch)}` : ''}
+                  </small>
                 </div>
 
                 <div className="form-field">
@@ -324,9 +390,9 @@ const SignIn = ({ onLogin }) => {
                       id="department"
                       type="text"
                       className="form-input"
-                      placeholder="Your department"
+                      placeholder="e.g CS"
                       value={department}
-                      onChange={(e) => setDepartment(e.target.value)}
+                      onChange={handleDepartmentChange}
                     />
                   </div>
                 </div>
@@ -335,7 +401,7 @@ const SignIn = ({ onLogin }) => {
               <div className="form-field">
                 <label htmlFor="address">Address</label>
                 <div className="input-with-icon textarea-icon">
-                  <MapPin className="field-icon" />
+                  <div className="field-icon" />
                   <textarea
                     id="address"
                     className="form-textarea"

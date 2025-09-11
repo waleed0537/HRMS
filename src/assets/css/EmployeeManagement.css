@@ -29,7 +29,7 @@
 }
 
 .tab-button.active {
-  background-color: #474787;
+    background: linear-gradient(-135deg, #899FD4 0%, #A389D4 100%);
   color: white;
 }
 

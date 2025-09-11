@@ -2878,7 +2878,7 @@ blockquote .name-designation .designation {
 /************ 20. Dashboard Screenshot Area *********** */
 /****************************************************** */
 .dashboard-screenshot-item {
-    opacity: 0.25;
+    opacity: 1;
     text-align: right;
 }
 
@@ -2890,9 +2890,11 @@ blockquote .name-designation .designation {
 
 .dashboard-screenshot-item img {
     transform: translate(calc(100% - 144px));
+
     display: inline-block;
     border-radius: 25px;
     width: 80%;
+
 }
 
 .dashboard-screenshot-item.slick-active img {

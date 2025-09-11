@@ -82,17 +82,17 @@ function log(level, message, data = null) {
   // Only log errors, warnings, and important info messages
   if (level === 'debug') {
     // Omit most debug messages except for essential ones
-    if (!message.includes('Connection successful') && 
-        !message.includes('Today\'s attendance') &&
-        !message.includes('NEW ATTENDANCE RECORDS')) {
+    if (!message.includes('Connection successful') &&
+      !message.includes('Today\'s attendance') &&
+      !message.includes('NEW ATTENDANCE RECORDS')) {
       return;
     }
   }
 
   // Skip detailed data dumps for routine operations
-  if (message.includes('Processing record:') || 
-      message.includes('Found users:') || 
-      message.includes('Retrieved') && message.includes('attendance records')) {
+  if (message.includes('Processing record:') ||
+    message.includes('Found users:') ||
+    message.includes('Retrieved') && message.includes('attendance records')) {
     data = null; // Skip detailed data
   }
 
@@ -149,16 +149,16 @@ function cleanLogFile() {
   try {
     const now = new Date();
     const hoursSinceLastCleanup = (now - lastLogCleanup) / (1000 * 60 * 60);
-    
+
     // Check if an hour has passed
     if (hoursSinceLastCleanup >= 1) {
       // Clear the log file and start fresh
       fs.writeFileSync(logFile, `=== Log cleared at ${now.toISOString()} ===\n`);
-      
+
       // Log summary stats before clearing
       fs.appendFileSync(logFile, `[SUMMARY] Today's attendance: ${syncStats.todayRecords} records\n`);
       fs.appendFileSync(logFile, `[SUMMARY] Successful syncs: ${syncStats.successfulSyncs}, Failed syncs: ${syncStats.failedSyncs}\n`);
-      
+
       log('info', `Log file cleared. Starting fresh log at ${now.toISOString()}`);
       lastLogCleanup = now;
     }
@@ -349,7 +349,7 @@ function createZkInstance() {
     timeout: CONFIG.device.timeout,
     attendanceParser: CONFIG.device.attendanceParser
   };
-  
+
   // Reduce logging - don't log instance creation details
   return new ZKLib(zkOptions);
 }
@@ -411,7 +411,7 @@ async function connectToDevice(retry = 0) {
       });
     } catch (error) {
       clearTimeout(connectionTimeout);
-      
+
       // Only log the final error, not intermediate retries
       if (retry === CONFIG.device.connectionTries - 1) {
         log('error', `Connection attempt error: ${error.message}`);
@@ -522,7 +522,7 @@ async function getAttendanceData() {
         pkToday.setUTCHours(0, 0, 0, 0);
         const pkTomorrow = new Date(pkToday);
         pkTomorrow.setDate(pkToday.getDate() + 1);
-        
+
         const todayRecords = data.filter(record => {
           const recordDate = new Date(record.timestamp);
           return recordDate >= pkToday && recordDate < pkTomorrow;
@@ -624,23 +624,37 @@ async function updateUserCache(users) {
 // Get today's attendance count
 async function getTodayAttendanceCount() {
   try {
-    // Define today's date range
+    // Define today's date range in Pakistan time (UTC+5)
     const now = new Date();
     const pkOffset = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
-    const pkToday = new Date(now.getTime() + pkOffset);
-    pkToday.setUTCHours(0, 0, 0, 0);
+
+    // Convert current UTC time to Pakistan time
+    const pkNow = new Date(now.getTime() + pkOffset);
+
+    // Get the start of today in Pakistan time
+    const pkToday = new Date(pkNow);
+    pkToday.setHours(0, 0, 0, 0);
+
+    // Convert back to UTC for database query (subtract the offset)
+    const utcTodayStart = new Date(pkToday.getTime() - pkOffset);
+
+    // Calculate the end of the day (tomorrow at 00:00 Pakistan time)
     const pkTomorrow = new Date(pkToday);
     pkTomorrow.setDate(pkToday.getDate() + 1);
 
-    // Query database
+    // Convert back to UTC for database query
+    const utcTomorrowStart = new Date(pkTomorrow.getTime() - pkOffset);
+
+    // Query database using UTC time boundaries that correspond to Pakistan day
     const count = await Attendance.countDocuments({
-      date: {
-        $gte: pkToday,
-        $lt: pkTomorrow
+      timeIn: {
+        $gte: utcTodayStart,
+        $lt: utcTomorrowStart
       }
     });
 
     log('info', `Today's attendance count: ${count} records`);
+    log('debug', `Using date range: ${utcTodayStart.toISOString()} to ${utcTomorrowStart.toISOString()}`);
     return count;
   } catch (error) {
     log('error', `Error getting today's attendance count: ${error.message}`);
@@ -674,7 +688,7 @@ async function syncAttendanceLogs() {
 
     // 1. Get users from the device
     const users = await getUsersFromDevice();
-    
+
     syncStatus.deviceInfo.users = users.length;
 
     // 2. Build user_id → user.name mapping
@@ -722,74 +736,73 @@ async function syncAttendanceLogs() {
     pkToday.setUTCHours(0, 0, 0, 0);
     const pkTomorrow = new Date(pkToday);
     pkTomorrow.setDate(pkToday.getDate() + 1);
-    
+
     // Process each attendance record - don't log individual records
-    for (const record of logs) {
-      try {
-        // Check if timestamp exists before trying to use it
-        if (!record.timestamp) {
-          continue;
-        }
-        
-        // Format the data
-        const recordDate = new Date(record.timestamp);
-        
-        // Skip invalid dates
-        if (isNaN(recordDate.getTime())) {
-          continue;
-        }
+    // Update the syncAttendanceLogs function in attendance-sync-daemon.js
+// Find this section in the function where it processes attendance records:
 
-        // Check if record is from today
-        const isToday = recordDate >= pkToday && recordDate < pkTomorrow;
-        if (isToday) {
-          todayRecordsCount++;
-        }
-
-        // Get user ID and name
-        const uid = record.uid || record.id; // Ensure we get the correct user ID field
-        const name = nameMap[uid] || 'Unknown';
-
-        // Don't log each record - too verbose
-        // log('debug', `Processing record: ${uid}\t${name}\t${recordDate}`);
-
-        // Create date without time for uniqueness check
-        const dateStart = new Date(recordDate);
-        dateStart.setHours(0, 0, 0, 0);
-
-        // Prepare upsert operation
-        bulkOps.push({
-          updateOne: {
-            filter: {
-              deviceUserId: uid,
-              date: {
-                $gte: dateStart,
-                $lt: new Date(dateStart.getTime() + 24 * 60 * 60 * 1000)
-              }
-            },
-            update: {
-              $setOnInsert: {
-                employeeNumber: uid.toString(),
-                department: 'General',
-                date: recordDate,
-                timeIn: recordDate,
-                location: CONFIG.device.ip,
-                verifyMethod: record.type?.toString() || '0',
-                status: 'present',
-                createdAt: new Date()
-              },
-              $set: {
-                deviceUserId: uid,
-                employeeName: name,
-                updatedAt: new Date()
-              }
-            },
-            upsert: true
-          }
-        });
-      } catch (recordError) {
-        log('error', `Error processing attendance record: ${recordError.message}`);
-      }
+// Process each attendance record - don't log individual records
+for (const record of logs) {
+  try {
+    // Check if timestamp exists before trying to use it
+    if (!record.timestamp) {
+      continue;
     }
+    
+    // Format the data - this is the device's UTC timestamp
+    const recordTimestamp = new Date(record.timestamp);
+    
+    // Skip invalid dates
+    if (isNaN(recordTimestamp.getTime())) {
+      continue;
+    }
+
+    // CORRECT DATE ASSIGNMENT:
+    // We'll use the actual timestamp for both date and timeIn
+    // This means a 3:23 AM check-in on May 14 will be treated as May 14
+    // (not May 13)
+    const recordDate = new Date(recordTimestamp);
+    
+    // Set the time to 00:00:00 for the date field while keeping the
+    // timeIn field with the actual check-in time
+    const dateOnly = new Date(recordDate);
+    dateOnly.setHours(0, 0, 0, 0);
+    
+    // Get user ID and name
+    const uid = record.uid || record.id; // Ensure we get the correct user ID field
+    const name = nameMap[uid] || 'Unknown';
+    
+    // Prepare upsert operation
+    bulkOps.push({
+      updateOne: {
+        filter: {
+          deviceUserId: uid,
+          date: dateOnly  // Use the date part (midnight) for filtering
+        },
+        update: {
+          $setOnInsert: {
+            employeeNumber: uid.toString(),
+            department: 'General',
+            date: dateOnly,  // Store the date at midnight for consistency
+            timeIn: recordTimestamp,  // Keep the actual check-in time
+            location: CONFIG.device.ip,
+            verifyMethod: record.type?.toString() || '0',
+            status: 'present',
+            createdAt: new Date()
+          },
+          $set: {
+            deviceUserId: uid,
+           
+            updatedAt: new Date()
+          }
+        },
+        upsert: true
+      }
+    });
+  } catch (recordError) {
+    log('error', `Error processing attendance record: ${recordError.message}`);
+  }
+}
 
     // Execute bulk operations
     let newRecords = 0;
@@ -799,7 +812,7 @@ async function syncAttendanceLogs() {
       log('info', `Executing ${bulkOps.length} database operations...`);
       try {
         const bulkResult = await Attendance.bulkWrite(bulkOps);
-        
+
         // Only log concise results, not the full details
         newRecords = bulkResult.upsertedCount || 0;
 
@@ -1008,7 +1021,7 @@ process.on('SIGINT', async () => {
     clearInterval(syncIntervalId);
     syncIntervalId = null;
   }
-  
+
   if (logCleanupIntervalId) {
     clearInterval(logCleanupIntervalId);
     logCleanupIntervalId = null;
@@ -1032,7 +1045,7 @@ process.on('SIGTERM', async () => {
     clearInterval(syncIntervalId);
     syncIntervalId = null;
   }
-  
+
   if (logCleanupIntervalId) {
     clearInterval(logCleanupIntervalId);
     logCleanupIntervalId = null;
@@ -1079,3 +1092,4 @@ if (require.main === module) {
   };
 }
 // Run command  pm2 start attendance-sync-daemon.js --name attendance-sync
+// Stop command pm2 stop attendance-sync-daemon.js --name attendance-sync

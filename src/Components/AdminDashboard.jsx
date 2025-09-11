@@ -7,6 +7,8 @@ import {
   PolarAngleAxis, PolarRadiusAxis, ScatterChart, ZAxis, Brush,
   ReferenceLine
 } from 'recharts';
+import { useToast } from './common/ToastContent.jsx';
+
 import {
   Bell, CheckCircle, XCircle, Download, Users, Calendar,
   TrendingUp, CreditCard, DollarSign, Activity, Briefcase,
@@ -24,6 +26,9 @@ import '../assets/css/AdminDashboard.css';
 import API_BASE_URL from '../config/api.js';
 import LeaderboardModal from './EnhancedLeaderboardModal';
 import EnhancedLeaderboardModal from './EnhancedLeaderboardModal.jsx';
+import '../assets/css/RecentActivity.css';
+import EnhancedRecentActivity from './EnhancedRecentActivity';
+
 
 // Enhanced color palette with more vibrant options
 const COLORS = [
@@ -227,8 +232,7 @@ const MOCK_WEEKLY_SALES = [
 const AdminDashboard = () => {
   const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
-  const [notificationMessage, setNotificationMessage] = useState('');
-  const [notificationType, setNotificationType] = useState('');
+
   const [leaveStats, setLeaveStats] = useState([]);
   const [teamPerformance, setTeamPerformance] = useState([]);
   const [employeeStats, setEmployeeStats] = useState({
@@ -247,6 +251,10 @@ const AdminDashboard = () => {
   const [salesViewMode, setSalesViewMode] = useState('employee');
   const [performanceMetric, setPerformanceMetric] = useState('sales');
   const [showSalesComparisonType, setShowSalesComparisonType] = useState('branches');
+  const [branches, setBranches] = useState([]);
+  const { success, error } = useToast();
+
+
   const [selectedBranchMetrics, setSelectedBranchMetrics] = useState([
     'sales', 'conversions', 'satisfaction', 'retention', 'growth'
   ]);
@@ -257,19 +265,28 @@ const AdminDashboard = () => {
     { title: 'Active Projects', value: 0, change: 0, icon: Briefcase, color: '#4cc9f0' }
   ]);
 
-  useEffect(() => {
-    if (notificationMessage) {
-      const timer = setTimeout(() => {
-        setNotificationMessage('');
-        setNotificationType('');
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [notificationMessage]);
+ 
 
   useEffect(() => {
     fetchDashboardData();
+    fetchBranches(); 
   }, [timeRange]);
+  const fetchBranches = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/branches`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      setBranches(data);
+    }
+  } catch (error) {
+    console.error('Error fetching branches:', error);
+  }
+};
 
   const fetchDashboardData = async () => {
     try {
@@ -632,32 +649,32 @@ const AdminDashboard = () => {
   };
 
   const handleCreateAnnouncement = async (announcementData) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/announcements`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(announcementData)
-      });
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/announcements`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(announcementData)
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to create announcement');
-      }
-
-      setNotificationMessage('Announcement created successfully!');
-      setNotificationType('success');
-      setIsAnnouncementModalOpen(false);
-      setSelectedBranch(announcementData.branchId);
-    } catch (error) {
-      console.error('Error details:', error);
-      setNotificationMessage(error.message || 'Failed to create announcement. Please try again.');
-      setNotificationType('error');
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to create announcement');
     }
-  };
+
+    // Use toast notification instead of custom banner
+    success('Announcement created successfully!');
+    setIsAnnouncementModalOpen(false);
+    setSelectedBranch(announcementData.branchId);
+  } catch (err) {
+    console.error('Error details:', err);
+    // Use toast notification for errors
+    error(err.message || 'Failed to create announcement. Please try again.');
+  }
+};
 
   const formatValue = (value, isCurrency = false) => {
     if (isCurrency) {
@@ -753,16 +770,7 @@ const AdminDashboard = () => {
   return (
     <div className="zoom-container">
       <div className="admin-dashboard">
-        {notificationMessage && (
-          <div className={`notification-banner ${notificationType}`}>
-            {notificationType === 'success' ? (
-              <CheckCircle size={20} className="notification-icon" />
-            ) : (
-              <XCircle size={20} className="notification-icon" />
-            )}
-            {notificationMessage}
-          </div>
-        )}
+       
 
         <div className="dashboard-header">
           <div className="header-content">
@@ -1080,65 +1088,34 @@ const AdminDashboard = () => {
           </div>
 
           {/* Recent Activity List */}
-          <div className="chart-card recent-activity">
-            <div className="admin-card-header">
-              <h2>Recent Activity</h2>
-            </div>
-            <div className="card-body activity-list">
-              {recentActivity.map((activity, index) => (
-                <div className="activity-item" key={index}>
-                  <div className="activity-avatar" style={{ background: activity.avatarColor }}>
-                    {activity.avatar}
-                  </div>
-                  <div className="activity-content">
-                    <div className="activity-header">
-                      <h4>{activity.title}</h4>
-                      <span className="activity-time">
-                        {getRelativeTime(activity.timestamp)}
-                      </span>
-                    </div>
-                    <p>{activity.description}</p>
-                  </div>
-                  <div className="activity-status">
-                    {getStatusIcon(activity.status)}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="card-footer">
-              <button className="view-all-btn">
-                View all activity <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
+          <EnhancedRecentActivity />
 
-          {/* Announcements */}
-          <div className="chart-card announcements">
-            <div className="admin-card-header">
-              <h2>Branch Announcements</h2>
-              <button
-                className="create-btn"
-                onClick={() => setIsAnnouncementModalOpen(true)}
-              >
-                <FilePlus size={16} />
-                Create
-              </button>
-            </div>
-            {selectedBranch ? (
-              <AnnouncementsList branchId={selectedBranch} className="announcements-wrapper" />
-            ) : (
-              <div className="empty-state">
-                <AlertTriangle size={32} />
-                <p>No branch selected for announcements</p>
-                <button
-                  className="create-announcement-btn"
-                  onClick={() => setIsAnnouncementModalOpen(true)}
-                >
-                  Create your first announcement
-                </button>
-              </div>
-            )}
-          </div>
+{/* Announcements */}
+<div className="chart-card announcements">
+  <div className="admin-card-header">
+    <h2>Branch Announcements</h2>
+    <div className="announcement-controls">
+      
+      <button
+        className="create-btn"
+        onClick={() => setIsAnnouncementModalOpen(true)}
+      >
+        <FilePlus size={16} />
+        Create
+      </button>
+    </div>
+  </div>
+  <div className="card-body announcements-container">
+    {/* Use the EnhancedAnnouncementsList component */}
+    {!selectedBranch ? (
+      /* Show all announcements for admin */
+      <AnnouncementsList showAllForAdmin={true} />
+    ) : (
+      /* Show specific branch announcements */
+      <AnnouncementsList branchId={selectedBranch} />
+    )}
+  </div>
+</div>
         </div>
 
         {/* Revenue and Projects Row */}

@@ -520,19 +520,41 @@ const handleNewsletterSubmit = (e) => {
                         Built for scalability, security, and efficiency.
                       </p>
                       <form className="newsletter-form mt-40" onSubmit={handleNewsletterSubmit}>
-                        <div className="newsletter-email wow fadeInUp delay-0-6s">
-                          <input
-                            type="email"
-                            placeholder="Enter Email Address"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            style={{ color: 'white' }}
-                          />
-                          <button type="submit">
-                            Request a Demo <i className="fas fa-arrow-right"></i>
-                          </button>
-                        </div>
+<div className="hero-cta mt-40">
+  <div className="cta-button wow fadeInUp delay-0-6s" style={{ textAlign: 'left' }}>
+    <button 
+      type="button" 
+      onClick={scrollToContactForm}
+      style={{
+        padding: '15px 35px',
+        backgroundColor: '#4e61ff',
+        color: '#ffffff',
+        border: 'none',
+        borderRadius: '8px',
+        fontSize: '16px',
+        fontWeight: '600',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+        boxShadow: '0 4px 15px rgba(78, 97, 255, 0.3)',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '10px'
+      }}
+      onMouseOver={(e) => {
+        e.target.style.backgroundColor = '#3d4ecc';
+        e.target.style.transform = 'translateY(-2px)';
+        e.target.style.boxShadow = '0 6px 20px rgba(78, 97, 255, 0.4)';
+      }}
+      onMouseOut={(e) => {
+        e.target.style.backgroundColor = '#4e61ff';
+        e.target.style.transform = 'translateY(0)';
+        e.target.style.boxShadow = '0 4px 15px rgba(78, 97, 255, 0.3)';
+      }}
+    >
+      Request a Demo <i className="fas fa-arrow-right"></i>
+    </button>
+  </div>
+</div>
                         <div className="newsletter-radios wow fadeInUp delay-0-8s">
                           <div className="custom-control custom-radio">
 

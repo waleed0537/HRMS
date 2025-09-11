@@ -1,0 +1,13 @@
+Shift management
+Payslip
+Attendance score
+HR reminders
+Habitual Late Employees
+Roles can be changed
+Salary Breakdown (Complete information month wise etc)
+Clickable Numbers
+Employee Herarichy Chart
+Performance reports not dashboard
+Auto Screening
+Manual Screening
+Offer Letter Generation

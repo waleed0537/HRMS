@@ -671,9 +671,7 @@ const ApplicantsManagement = () => {
                         {renderAvatar(applicant, 'medium')}
                         <div className="applicants-managements-details">
                             <h3>{applicant.personalDetails?.name || 'Not provided'}</h3>
-                            <p className="applicants-managements-position">
-                                {applicant.jobDetails?.position || 'Position not specified'}
-                            </p>
+                            
                             <div className="applicants-managements-status">
                                 {getStatusIcon(applicant.status)}
                                 <span className={`applicants-managements-status-badge ${applicant.status || 'pending'}`}>
@@ -761,7 +759,7 @@ const ApplicantsManagement = () => {
                         <div className="applicants-managements-list-details">
                             <h3>{applicant.personalDetails?.name || 'Not provided'}</h3>
                             <div className="applicants-managements-list-meta">
-                                <span className="applicants-managements-list-position">{applicant.jobDetails?.position || 'Position not specified'}</span>
+                              
                                 <span className="applicants-managements-meta-divider">•</span>
                                 <span className="applicants-managements-list-branch">{applicant.jobDetails?.branch || applicant.branchName || 'Branch not specified'}</span>
                                 <span className="applicants-managements-meta-divider">•</span>
@@ -836,7 +834,7 @@ const ApplicantsManagement = () => {
 
                     <div className="applicants-managements-compact-body">
                         <h3 className="applicants-managements-compact-name">{applicant.personalDetails?.name || 'Not provided'}</h3>
-                        <p className="applicants-managements-compact-position">{applicant.jobDetails?.position || 'Position not specified'}</p>
+               
                     </div>
 
                     <div className="applicants-managements-compact-actions">
@@ -1080,7 +1078,7 @@ const ApplicantsManagement = () => {
                             <div className="applicants-managements-modal-title">
                                 <h2>{selectedApplicant.personalDetails?.name || 'Applicant Details'}</h2>
                                 <p className="applicants-managements-modal-subtitle">
-                                    {selectedApplicant.jobDetails?.position || 'Position not specified'}
+                                  
                                 </p>
                                 <div className={`applicants-managements-modal-status ${selectedApplicant.status || 'pending'}`}>
                                     {getStatusIcon(selectedApplicant.status)}

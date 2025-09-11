@@ -67,16 +67,21 @@ const resumeStorage = multer.diskStorage({
   }
 });
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
   auth: {
-    user: 'smartrichads@gmail.com',
-    pass: 'rqtp zuyg xkvn nmym'
+    user: 'hrmsmongo@gmail.com',
+    pass: 'abtf fgsv muyt odxz'  // The actual password, not "hrms"
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
 const sendEmail = async (to, subject, content) => {
   try {
     const mailOptions = {
-      from: 'smartrichads@gmail.com',
+      from: 'hrmsmongo@gmail.com',
       to: to,
       subject: subject,
       html: content
@@ -3103,6 +3108,57 @@ app.get('/api/attendance', authenticateToken, async (req, res) => {
       success: false,
       message: 'Error fetching attendance records',
       error: error.message
+    });
+  }
+});
+
+// Add this simple email test route to your server.js
+app.get('/api/test-email-now', async (req, res) => {
+  try {
+    console.log('Testing email system...');
+    
+    // Test the connection first
+    await transporter.verify();
+    console.log('SMTP connection verified');
+    
+    // Send a test email using your existing sendEmail function
+    const testResult = await sendEmail(
+      'hrmsmongo@gmail.com', // Send to yourself for testing
+      'HRMS Email Test - ' + new Date().toLocaleString(),
+      `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2 style="color: #474787;">✅ Email Test Successful!</h2>
+          <p>Your HRMS email system is working correctly.</p>
+          <p><strong>Test Details:</strong></p>
+          <ul>
+            <li>Sent at: ${new Date().toLocaleString()}</li>
+            <li>SMTP: Gmail</li>
+            <li>From:hrmsmongo@gmail.com</li>
+          </ul>
+          <p>If you received this email, your nodemailer configuration is working perfectly for production!</p>
+        </div>
+      `
+    );
+    
+    res.json({
+      success: true,
+      message: 'Email test completed successfully',
+      connectionStatus: 'Connected to Gmail SMTP',
+      emailSent: testResult,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Email test failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Email test failed',
+      error: error.message,
+      suggestions: [
+        'Check your Gmail app password',
+        'Verify 2FA is enabled on Gmail',
+        'Ensure Gmail allows less secure apps'
+      ]
     });
   }
 });

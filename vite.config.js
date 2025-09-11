@@ -13,6 +13,6 @@ export default defineConfig({
     host: '0.0.0.0', // Ensures Vite binds to all network interfaces
     port: process.env.PORT || 5173, // Uses Render's assigned port or defaults to 5173
     strictPort: true,
-    allowedHosts: ['hrrive.com', 'www.hrrive.com', 'hrms-sxi4.onrender.com','hrms-seab.onrender.com','hrms-backend-flfy.onrender.com']
+    allowedHosts: ['hrrive.com', 'www.hrrive.com', 'hrms-sxi4.onrender.com','hrms-seab.onrender.com','hrms-backend-flfy.onrender.com','hrms-uqy9.onrender.com']
   }
 })

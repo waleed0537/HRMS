@@ -3542,6 +3542,101 @@ app.get('/api/test-email-now', async (req, res) => {
   }
 });
 
+// Add this route to your existing server.js file
+
+// Contact form endpoint
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email, number, company, subject, website, message } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !message) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, email, and message are required fields.'
+      });
+    }
+
+    // Create email content
+    const mailOptions = {
+      from: 'hrmsmongo@gmail.com', // Your Gmail address
+      to: 'hrmsmongo@gmail.com',
+      subject: `HRMS Contact Form - ${subject || 'New Inquiry'}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #4254f4; border-bottom: 2px solid #4254f4; padding-bottom: 10px;">
+            New HRMS Contact Form Submission
+          </h2>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #333;">Contact Information</h3>
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+            ${number ? `<p><strong>Phone:</strong> ${number}</p>` : ''}
+            ${company ? `<p><strong>Company:</strong> ${company}</p>` : ''}
+            ${website ? `<p><strong>Website:</strong> <a href="${website}" target="_blank">${website}</a></p>` : ''}
+          </div>
+
+          ${subject ? `
+          <div style="margin: 20px 0;">
+            <h3 style="color: #333;">Subject</h3>
+            <p style="background-color: #e9ecef; padding: 15px; border-radius: 5px;">${subject}</p>
+          </div>
+          ` : ''}
+
+          <div style="margin: 20px 0;">
+            <h3 style="color: #333;">Message</h3>
+            <div style="background-color: #ffffff; padding: 20px; border: 1px solid #dee2e6; border-radius: 5px;">
+              ${message.replace(/\n/g, '<br>')}
+            </div>
+          </div>
+
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #6c757d; font-size: 14px;">
+            <p>This email was sent from the HRMS contact form on ${new Date().toLocaleString()}</p>
+          </div>
+        </div>
+      `
+    };
+
+    // Send email
+    await transporter.sendMail(mailOptions);
+
+    // Optional: Send confirmation email to the user
+    const confirmationMail = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Thank you for contacting HRMS',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #4254f4;">Thank you for your inquiry!</h2>
+          <p>Dear ${name},</p>
+          <p>We have received your message and will get back to you within 24-48 hours.</p>
+          <p>Your inquiry details:</p>
+          <ul>
+            <li><strong>Subject:</strong> ${subject || 'General Inquiry'}</li>
+            <li><strong>Message:</strong> ${message.substring(0, 100)}${message.length > 100 ? '...' : ''}</li>
+          </ul>
+          <p>Best regards,<br>HRMS Team</p>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(confirmationMail);
+
+    res.status(200).json({
+      success: true,
+      message: 'Your message has been sent successfully!'
+    });
+
+  } catch (error) {
+    console.error('Contact form error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send message. Please try again later.'
+    });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

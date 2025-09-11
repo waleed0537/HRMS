@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+
 
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
@@ -25,7 +26,7 @@ import PWhite4 from '../assets1/images/partners/partner-three-white4.png';
 import PWhite5 from '../assets1/images/partners/partner-three-white5.png';
 import bgDots from '../assets1/images/shapes/solutions-bg-dots.png';
 import AdminDashboard from '../assets1/images/AdminDashboard.png';
-import EmployeeDashboard from '../assets1/images/EmployeeDashboard.png';  
+import EmployeeDashboard from '../assets1/images/EmployeeDashboard.png';
 import HRDashboard from '../assets1/images/HRDashboard.png';
 import Preloader from './Preloader';
 // CSS imports
@@ -37,6 +38,7 @@ import '../assets1/css/spacing.min.css';
 import '../assets1/css/menu.css';
 import '../assets1/css/style.css';
 import '../assets1/css/responsive.css';
+import API_BASE_URL from '../config/api.js';
 const LandingPage = () => {
   const imagesArray = [
     HRMSLogo,
@@ -66,6 +68,15 @@ const LandingPage = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [updateFrequency, setUpdateFrequency] = useState('weekly');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState('');
+  const contactFormRef = useRef(null);
+  const scrollToContactForm = () => {
+    contactFormRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  };
   const [contactForm, setContactForm] = useState({
     name: '',
     email: '',
@@ -81,15 +92,60 @@ const LandingPage = () => {
     new WOW().init();
   }, []);
 
-  const handleContactSubmit = (e) => {
-    e.preventDefault();
-    console.log('Contact form submitted:', contactForm);
-  };
+  // Updated handleContactSubmit function
+const handleContactSubmit = async (e) => {
+  e.preventDefault();
+  setIsSubmitting(true);
+  setSubmitStatus('');
 
-  const handleNewsletterSubmit = (e) => {
-    e.preventDefault();
-    console.log('Newsletter submitted:', { email, updateFrequency });
-  };
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/contact`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(contactForm),
+    });
+
+    // Check if response is ok before parsing JSON
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.success) {
+      setSubmitStatus('success');
+      // Reset form
+      setContactForm({
+        name: '',
+        email: '',
+        number: '',
+        company: '',
+        subject: '',
+        website: '',
+        message: ''
+      });
+    } else {
+      setSubmitStatus('error');
+      console.error('Form submission failed:', data.message);
+    }
+  } catch (error) {
+    console.error('Error submitting form:', error);
+    setSubmitStatus('error');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+// Also update your newsletter submit to still scroll to contact form
+const handleNewsletterSubmit = (e) => {
+  e.preventDefault();
+  // Scroll to contact form when "Request a Demo" is clicked
+  scrollToContactForm();
+};
+
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -133,166 +189,166 @@ const LandingPage = () => {
             {/* Header Section */}
             {/* Header Section */}
             <header className="main-header header-three">
-  <div className="header-upper">
-    <div className="container">
-      <div className="header-inner py-3 px-4" style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        position: 'relative'
-      }}>
-        <div className="logo-outer">
-          <div className="logo">
-            <a href="/">
-              <img
-                src={HRMSLogo}
-                alt="Logo"
-                style={{ 
-                  width: "150px", 
-                  height: "auto",
-                  transition: 'transform 0.3s ease'
-                }}
-                onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
-                onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
-              />
-            </a>
-          </div>
-        </div>
+              <div className="header-upper">
+                <div className="container">
+                  <div className="header-inner py-3 px-4" style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    position: 'relative'
+                  }}>
+                    <div className="logo-outer">
+                      <div className="logo">
+                        <a href="/">
+                          <img
+                            src={HRMSLogo}
+                            alt="Logo"
+                            style={{
+                              width: "150px",
+                              height: "auto",
+                              transition: 'transform 0.3s ease'
+                            }}
+                            onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+                            onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+                          />
+                        </a>
+                      </div>
+                    </div>
 
-        {/* Navigation Section */}
-        <div className="nav-outer clearfix" style={{color: 'white'}}>
-          {/* Desktop Menu */}
-          <nav className="main-menu navbar-expand-lg d-none d-lg-block">
-            <div className="navbar-collapse">
-              <ul className="navigation" style={{
-                display: 'flex',
-                listStyle: 'none',
-                margin: '0',
-                padding: '0'
-              }}>
-                <li style={{margin: '0 15px'}}><a href="/" className="text-white1" style={{
-                  color: '#ffffff',
-                  textDecoration: 'none',
-                  fontSize: '16px',
-                  fontWeight: '500',
-                  padding: '8px 5px',
-                  position: 'relative',
-                  transition: 'all 0.3s ease'
-                }}>Home</a></li>
-                <li style={{margin: '0 15px'}}><a href="/about" className="text-white1" style={{
-                  color: '#ffffff',
-                  textDecoration: 'none',
-                  fontSize: '16px',
-                  fontWeight: '500',
-                  padding: '8px 5px',
-                  position: 'relative',
-                  transition: 'all 0.3s ease'
-                }}>About</a></li>
-                <li style={{margin: '0 15px'}}><a href="/services" className="text-white1" style={{
-                  color: '#ffffff',
-                  textDecoration: 'none',
-                  fontSize: '16px',
-                  fontWeight: '500',
-                  padding: '8px 5px',
-                  position: 'relative',
-                  transition: 'all 0.3s ease'
-                }}>Services</a></li>
-                <li style={{margin: '0 15px'}}><a href="/contact" className="text-white1" style={{
-                  color: '#ffffff',
-                  textDecoration: 'none',
-                  fontSize: '16px',
-                  fontWeight: '500',
-                  padding: '8px 5px',
-                  position: 'relative',
-                  transition: 'all 0.3s ease'
-                }}>Contact</a></li>
-              </ul>
-            </div>
-          </nav>
+                    {/* Navigation Section */}
+                    <div className="nav-outer clearfix" style={{ color: 'white' }}>
+                      {/* Desktop Menu */}
+                      <nav className="main-menu navbar-expand-lg d-none d-lg-block">
+                        <div className="navbar-collapse">
+                          <ul className="navigation" style={{
+                            display: 'flex',
+                            listStyle: 'none',
+                            margin: '0',
+                            padding: '0'
+                          }}>
+                            <li style={{ margin: '0 15px' }}><a href="/" className="text-white1" style={{
+                              color: '#ffffff',
+                              textDecoration: 'none',
+                              fontSize: '16px',
+                              fontWeight: '500',
+                              padding: '8px 5px',
+                              position: 'relative',
+                              transition: 'all 0.3s ease'
+                            }}>Home</a></li>
+                            <li style={{ margin: '0 15px' }}><a href="/about" className="text-white1" style={{
+                              color: '#ffffff',
+                              textDecoration: 'none',
+                              fontSize: '16px',
+                              fontWeight: '500',
+                              padding: '8px 5px',
+                              position: 'relative',
+                              transition: 'all 0.3s ease'
+                            }}>About</a></li>
+                            <li style={{ margin: '0 15px' }}><a href="/services" className="text-white1" style={{
+                              color: '#ffffff',
+                              textDecoration: 'none',
+                              fontSize: '16px',
+                              fontWeight: '500',
+                              padding: '8px 5px',
+                              position: 'relative',
+                              transition: 'all 0.3s ease'
+                            }}>Services</a></li>
+                            <li style={{ margin: '0 15px' }}><a href="/contact" className="text-white1" style={{
+                              color: '#ffffff',
+                              textDecoration: 'none',
+                              fontSize: '16px',
+                              fontWeight: '500',
+                              padding: '8px 5px',
+                              position: 'relative',
+                              transition: 'all 0.3s ease'
+                            }}>Contact</a></li>
+                          </ul>
+                        </div>
+                      </nav>
 
-          {/* Mobile Navigation */}
-          <div className="d-flex d-lg-none align-items-center">
-                
-            <button
-              type="button"
-              className="navbar-toggle"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '5px',
-                width: '40px',
-                height: '40px'
-              }}
-            >
-              <span style={{
-                display: 'block',
-                height: '2px',
-                width: '24px',
-                marginBottom: '5px',
-                backgroundColor: '#ffffff',
-                transition: 'all 0.3s ease',
-                transform: isMenuOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none'
-              }}></span>
-              <span style={{
-                display: 'block',
-                height: '2px',
-                width: '24px',
-                marginBottom: '5px',
-                backgroundColor: '#ffffff',
-                transition: 'all 0.3s ease',
-                opacity: isMenuOpen ? 0 : 1
-              }}></span>
-              <span style={{
-                display: 'block',
-                height: '2px',
-                width: '24px',
-                backgroundColor: '#ffffff',
-                transition: 'all 0.3s ease',
-                transform: isMenuOpen ? 'rotate(-45deg) translate(5px, -5px)' : 'none'
-              }}></span>
-            </button>
-          </div>
-        </div>
+                      {/* Mobile Navigation */}
+                      <div className="d-flex d-lg-none align-items-center">
 
-        {/* Desktop Buttons */}
-        <div className="menu-right d-none d-lg-flex align-items-center">
-          <button
-            onClick={() => navigate('/signin')}
-            className="theme-btn"
-            style={{
-              padding: '10px 20px',
-              marginRight: '15px',
-              borderRadius: '6px',
-              background: 'rgba(78, 97, 255, 0.9)',
-              color: '#ffffff',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '15px',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center'
-            }}
-            onMouseOver={(e) => {
-              e.target.style.background = 'rgba(78, 97, 255, 1)';
-              e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = '0 4px 8px rgba(78, 97, 255, 0.3)';
-            }}
-            onMouseOut={(e) => {
-              e.target.style.background = 'rgba(78, 97, 255, 0.9)';
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = 'none';
-            }}
-          >
-            Login <i className="fas fa-lock ms-1"></i>
-          </button>
-          {/* <a href="/signup" 
+                        <button
+                          type="button"
+                          className="navbar-toggle"
+                          onClick={() => setIsMenuOpen(!isMenuOpen)}
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '5px',
+                            width: '40px',
+                            height: '40px'
+                          }}
+                        >
+                          <span style={{
+                            display: 'block',
+                            height: '2px',
+                            width: '24px',
+                            marginBottom: '5px',
+                            backgroundColor: '#ffffff',
+                            transition: 'all 0.3s ease',
+                            transform: isMenuOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none'
+                          }}></span>
+                          <span style={{
+                            display: 'block',
+                            height: '2px',
+                            width: '24px',
+                            marginBottom: '5px',
+                            backgroundColor: '#ffffff',
+                            transition: 'all 0.3s ease',
+                            opacity: isMenuOpen ? 0 : 1
+                          }}></span>
+                          <span style={{
+                            display: 'block',
+                            height: '2px',
+                            width: '24px',
+                            backgroundColor: '#ffffff',
+                            transition: 'all 0.3s ease',
+                            transform: isMenuOpen ? 'rotate(-45deg) translate(5px, -5px)' : 'none'
+                          }}></span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Desktop Buttons */}
+                    <div className="menu-right d-none d-lg-flex align-items-center">
+                      <button
+                        onClick={() => navigate('/signin')}
+                        className="theme-btn"
+                        style={{
+                          padding: '10px 20px',
+                          marginRight: '15px',
+                          borderRadius: '6px',
+                          background: 'rgba(78, 97, 255, 0.9)',
+                          color: '#ffffff',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          fontSize: '15px',
+                          transition: 'all 0.3s ease',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                        onMouseOver={(e) => {
+                          e.target.style.background = 'rgba(78, 97, 255, 1)';
+                          e.target.style.transform = 'translateY(-2px)';
+                          e.target.style.boxShadow = '0 4px 8px rgba(78, 97, 255, 0.3)';
+                        }}
+                        onMouseOut={(e) => {
+                          e.target.style.background = 'rgba(78, 97, 255, 0.9)';
+                          e.target.style.transform = 'translateY(0)';
+                          e.target.style.boxShadow = 'none';
+                        }}
+                      >
+                        Login <i className="fas fa-lock ms-1"></i>
+                      </button>
+                      {/* <a href="/signup" 
             className="theme-btn" 
             style={{
               padding: '10px 20px',
@@ -320,133 +376,133 @@ const LandingPage = () => {
           >
             Sign Up <i className="fas fa-arrow-right ms-1"></i>
           </a> */}
-        </div>
-      </div>
+                    </div>
+                  </div>
 
-      {/* Mobile Menu */}
-      <div
-        className={`mobile-menu ${isMenuOpen ? 'show' : ''}`}
-        style={{
-          position: "absolute",
-          top: "100%",
-          left: "0",
-          right: "0",
-          
-                backgroundColor:'rgb(34, 43, 64)',
-          padding: isMenuOpen ? "20px" : "0",
-          maxHeight: isMenuOpen ? "400px" : "0",
-          overflow: "hidden",
-          transition: "all 0.3s ease-in-out",
-          opacity: isMenuOpen ? "1" : "0",
-          visibility: isMenuOpen ? "visible" : "hidden",
-          zIndex: "1000",
-          boxShadow: isMenuOpen ? "0 6px 12px rgba(0, 0, 0, 0.15)" : "none",
-          borderTop: isMenuOpen ? "1px solid rgba(255, 255, 255, 0.1)" : "none"
-        }}
-      >
-        <ul className="navigation clearfix text-center" style={{
-          listStyle: 'none',
-          margin: '0',
-          padding: '0'
-        }}>
-          <li style={{
-            textAlign: 'center',
-            padding: '12px 0',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-          }}>
-            <a href="/" className="text-white" style={{
-              color: '#ffffff',
-              textDecoration: 'none',
-              fontSize: '16px',
-              fontWeight: '500',
-              display: 'block',
-              padding: '5px'
-            }}>Home</a>
-          </li>
-          <li style={{
-            textAlign: 'center',
-            padding: '12px 0',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-          }}>
-            <a href="/about" className="text-white" style={{
-              color: '#ffffff',
-              textDecoration: 'none',
-              fontSize: '16px',
-              fontWeight: '500',
-              display: 'block',
-              padding: '5px'
-            }}>About</a>
-          </li>
-          <li style={{
-            textAlign: 'center',
-            padding: '12px 0',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-          }}>
-            <a href="/services" className="text-white" style={{
-              color: '#ffffff',
-              textDecoration: 'none',
-              fontSize: '16px',
-              fontWeight: '500',
-              display: 'block',
-              padding: '5px'
-            }}>Services</a>
-          </li>
-          <li style={{
-            textAlign: 'center',
-            padding: '12px 0'
-          }}>
-            <a href="/contact" className="text-white" style={{
-              color: '#ffffff',
-              textDecoration: 'none',
-              fontSize: '16px',
-              fontWeight: '500',
-              display: 'block',
-              padding: '5px'
-            }}>Contact</a>
-          </li>
-          <li className="mt-3" style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: '10px',
-            padding: '20px 0 5px'
-          }}>
-            <Link to="/signin" className="theme-btn d-inline-block" style={{
-              padding: '10px 20px',
-              borderRadius: '6px',
-              background: 'rgba(78, 97, 255, 0.9)',
-              color: '#ffffff',
-              border: 'none',
-              textDecoration: 'none',
-              fontWeight: '600',
-              fontSize: '14px',
-              width: '110px',
-              textAlign: 'center'
-            }}>
-              Login
-            </Link>
-            <a href="/signup" className="theme-btn d-inline-block" style={{
-              padding: '10px 20px',
-              borderRadius: '6px',
-              background: 'transparent',
-              color: '#ffffff',
-              border: '2px solid rgba(78, 97, 255, 0.9)',
-              textDecoration: 'none',
-              fontWeight: '600',
-              fontSize: '14px',
-              width: '110px',
-              textAlign: 'center'
-            }}>
-              Sign Up
-            </a>
-          </li>
-        </ul>
-      </div>
+                  {/* Mobile Menu */}
+                  <div
+                    className={`mobile-menu ${isMenuOpen ? 'show' : ''}`}
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: "0",
+                      right: "0",
 
-      {/* Search Overlay */}
-  
-    </div>
-  </div>
-</header>
+                      backgroundColor: 'rgb(34, 43, 64)',
+                      padding: isMenuOpen ? "20px" : "0",
+                      maxHeight: isMenuOpen ? "400px" : "0",
+                      overflow: "hidden",
+                      transition: "all 0.3s ease-in-out",
+                      opacity: isMenuOpen ? "1" : "0",
+                      visibility: isMenuOpen ? "visible" : "hidden",
+                      zIndex: "1000",
+                      boxShadow: isMenuOpen ? "0 6px 12px rgba(0, 0, 0, 0.15)" : "none",
+                      borderTop: isMenuOpen ? "1px solid rgba(255, 255, 255, 0.1)" : "none"
+                    }}
+                  >
+                    <ul className="navigation clearfix text-center" style={{
+                      listStyle: 'none',
+                      margin: '0',
+                      padding: '0'
+                    }}>
+                      <li style={{
+                        textAlign: 'center',
+                        padding: '12px 0',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <a href="/" className="text-white" style={{
+                          color: '#ffffff',
+                          textDecoration: 'none',
+                          fontSize: '16px',
+                          fontWeight: '500',
+                          display: 'block',
+                          padding: '5px'
+                        }}>Home</a>
+                      </li>
+                      <li style={{
+                        textAlign: 'center',
+                        padding: '12px 0',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <a href="/about" className="text-white" style={{
+                          color: '#ffffff',
+                          textDecoration: 'none',
+                          fontSize: '16px',
+                          fontWeight: '500',
+                          display: 'block',
+                          padding: '5px'
+                        }}>About</a>
+                      </li>
+                      <li style={{
+                        textAlign: 'center',
+                        padding: '12px 0',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <a href="/services" className="text-white" style={{
+                          color: '#ffffff',
+                          textDecoration: 'none',
+                          fontSize: '16px',
+                          fontWeight: '500',
+                          display: 'block',
+                          padding: '5px'
+                        }}>Services</a>
+                      </li>
+                      <li style={{
+                        textAlign: 'center',
+                        padding: '12px 0'
+                      }}>
+                        <a href="/contact" className="text-white" style={{
+                          color: '#ffffff',
+                          textDecoration: 'none',
+                          fontSize: '16px',
+                          fontWeight: '500',
+                          display: 'block',
+                          padding: '5px'
+                        }}>Contact</a>
+                      </li>
+                      <li className="mt-3" style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: '10px',
+                        padding: '20px 0 5px'
+                      }}>
+                        <Link to="/signin" className="theme-btn d-inline-block" style={{
+                          padding: '10px 20px',
+                          borderRadius: '6px',
+                          background: 'rgba(78, 97, 255, 0.9)',
+                          color: '#ffffff',
+                          border: 'none',
+                          textDecoration: 'none',
+                          fontWeight: '600',
+                          fontSize: '14px',
+                          width: '110px',
+                          textAlign: 'center'
+                        }}>
+                          Login
+                        </Link>
+                        <a href="/signup" className="theme-btn d-inline-block" style={{
+                          padding: '10px 20px',
+                          borderRadius: '6px',
+                          background: 'transparent',
+                          color: '#ffffff',
+                          border: '2px solid rgba(78, 97, 255, 0.9)',
+                          textDecoration: 'none',
+                          fontWeight: '600',
+                          fontSize: '14px',
+                          width: '110px',
+                          textAlign: 'center'
+                        }}>
+                          Sign Up
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Search Overlay */}
+
+                </div>
+              </div>
+            </header>
 
             {/* Hero Section */}
             <section className="hero-section-three rel z-2 pt-235 rpt-150 pb-130 rpb-100" style={{
@@ -471,6 +527,7 @@ const LandingPage = () => {
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            style={{ color: 'white' }}
                           />
                           <button type="submit">
                             Request a Demo <i className="fas fa-arrow-right"></i>
@@ -564,170 +621,170 @@ const LandingPage = () => {
 
 
             <section className="about-section-three rel z-1 pt-130 rpt-100" style={{ backgroundColor: '#222b40', color: 'white', padding: '60px 0' }}>
-  <div className="container">
-    <div className="row align-items-center">
-      <div className="col-xl-7 col-lg-6">
-        <div className="about-image rmb-55 wow fadeInLeft delay-0-2s" style={{ marginBottom: '30px', textAlign: 'center' }}>
-          <img 
-            src={HRMSImage2} 
-            alt="About HRMS" 
-            style={{ 
-              maxWidth: '100%', 
-              height: 'auto', 
-              borderRadius: '8px', 
+              <div className="container">
+                <div className="row align-items-center">
+                  <div className="col-xl-7 col-lg-6">
+                    <div className="about-image rmb-55 wow fadeInLeft delay-0-2s" style={{ marginBottom: '30px', textAlign: 'center' }}>
+                      <img
+                        src={HRMSImage2}
+                        alt="About HRMS"
+                        style={{
+                          maxWidth: '100%',
+                          height: 'auto',
+                          borderRadius: '8px',
 
-            }} 
-          />
-        </div>
-      </div>
-      <div className="col-xl-5 col-lg-6">
-        <div className="about-content-three wow fadeInRight delay-0-2s" style={{ padding: '0 15px' }}>
-          <div className="section-title mb-25" style={{ marginBottom: '20px' }}>
-            <h2 style={{ 
-              color: 'white', 
-              fontSize: '32px', 
-              lineHeight: '1.3', 
-              marginBottom: '20px',
-              '@media (max-width: 767px)': { fontSize: '26px' } 
-            }}>Transform Workforce Management with Our HRMS</h2>
-          </div>
-          <p style={{ 
-            fontSize: '16px', 
-            lineHeight: '1.6', 
-            marginBottom: '25px' 
-          }}>Our HRMS streamlines employee management, recruitment, performance tracking, and communication. Designed for efficiency, scalability, and seamless integration, it empowers businesses to optimize their workforce operations.</p>
-          <ul className="list-style-one mt-25 mb-35" style={{ 
-            listStyle: 'none', 
-            padding: '0', 
-            margin: '25px 0 35px' 
-          }}>
-            {['Employee & Branch Management', 'Performance Tracking & Analytics', 'Recruitment & Onboarding', 'Messaging & Communication'].map((item, index) => (
-              <li key={index} style={{ 
-                color: 'white', 
-                position: 'relative', 
-                paddingLeft: '30px', 
-                marginBottom: '12px',
-                fontSize: '16px'
-              }}>
-                <i className="fas fa-check" style={{ 
-                  color: '#4e61ff', 
-                  position: 'absolute', 
-                  left: '0', 
-                  top: '5px' 
-                }}></i>
-                {item}
-              </li>
-            ))}
-          </ul>
-          <a href="about.html" className="theme-btn style-three" style={{
-            display: 'inline-block',
-            padding: '12px 25px',
-            backgroundColor: '#4e61ff',
-            color: 'white',
-            borderRadius: '5px',
-            textDecoration: 'none',
-            fontWeight: '600',
-            transition: 'all 0.3s ease'
-          }}>Get Started <i className="fas fa-arrow-right" style={{ marginLeft: '8px' }}></i></a>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section className="browser-support-section rel z-1 py-130 rpy-100" style={{ 
-  backgroundColor: '#222b40', 
-  color: 'white', 
-  padding: '60px 0',
-
-}}>
-  <div className="container">
-    <div className="row align-items-center">
-      <div className="col-xl-5 col-lg-6 order-lg-1 order-2">
-        <div className="browser-support-content rmb-55 wow fadeInRight delay-0-2s" style={{ 
-          padding: '0 15px',
-          marginBottom: '30px'
-        }}>
-          <div className="section-title" style={{ marginBottom: '30px' }}>
-            <h2 style={{ 
-              color: 'white', 
-              fontSize: '32px', 
-              lineHeight: '1.3', 
-              marginBottom: '20px' 
-            }}>Access Your HRMS Anytime, Anywhere</h2>
-          </div>
-          <div className="row">
-            {[
-              {
-                icon: 'fas fa-check',
-                title: 'Cross-Platform Compatibility',
-                desc: 'Access HRMS on any device—desktop, tablet, or mobile—ensuring seamless employee and branch management on the go.'
-              },
-              {
-                icon: 'fas fa-check',
-                title: 'Secure & Role-Based Access',
-                desc: 'Ensure data security with granular access controls, allowing employees to access only what they need based on their role.'
-              }
-            ].map((item, index) => (
-              <div key={index} className="col-md-6" style={{ marginBottom: '25px' }}>
-                <div className={`solution-item-two ${index === 1 ? 'color-two' : ''}`} style={{
-                  padding: '20px',
-                  borderRadius: '8px',
-                  height: '320px',
-                  transition: 'all 0.3s ease',
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}>
-                  <div style={{ marginBottom: '15px' }}>
-                    <i className={item.icon} style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      backgroundColor: index === 0 ? '#4e61ff' : '#FFB200',
-                      color: 'white',
-                      fontSize: '16px'
-                    }}></i>
+                        }}
+                      />
+                    </div>
                   </div>
-                  <h4 style={{ 
-                    color: 'white', 
-                    fontSize: '20px', 
-                    marginBottom: '10px',
-                    wordBreak: 'break-word' // Prevents text from overflowing
-                  }}>{item.title}</h4>
-                  <p style={{ 
-                  
-                    fontSize: '15px', 
-                    lineHeight: '1.6',
-                    wordBreak: 'break-word', // Ensures text wraps properly
-                    flex: '1' // Takes remaining space
-                  }}>{item.desc}</p>
+                  <div className="col-xl-5 col-lg-6">
+                    <div className="about-content-three wow fadeInRight delay-0-2s" style={{ padding: '0 15px' }}>
+                      <div className="section-title mb-25" style={{ marginBottom: '20px' }}>
+                        <h2 style={{
+                          color: 'white',
+                          fontSize: '32px',
+                          lineHeight: '1.3',
+                          marginBottom: '20px',
+                          '@media (max-width: 767px)': { fontSize: '26px' }
+                        }}>Transform Workforce Management with Our HRMS</h2>
+                      </div>
+                      <p style={{
+                        fontSize: '16px',
+                        lineHeight: '1.6',
+                        marginBottom: '25px'
+                      }}>Our HRMS streamlines employee management, recruitment, performance tracking, and communication. Designed for efficiency, scalability, and seamless integration, it empowers businesses to optimize their workforce operations.</p>
+                      <ul className="list-style-one mt-25 mb-35" style={{
+                        listStyle: 'none',
+                        padding: '0',
+                        margin: '25px 0 35px'
+                      }}>
+                        {['Employee & Branch Management', 'Performance Tracking & Analytics', 'Recruitment & Onboarding', 'Messaging & Communication'].map((item, index) => (
+                          <li key={index} style={{
+                            color: 'white',
+                            position: 'relative',
+                            paddingLeft: '30px',
+                            marginBottom: '12px',
+                            fontSize: '16px'
+                          }}>
+                            <i className="fas fa-check" style={{
+                              color: '#4e61ff',
+                              position: 'absolute',
+                              left: '0',
+                              top: '5px'
+                            }}></i>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                      <a href="about.html" className="theme-btn style-three" style={{
+                        display: 'inline-block',
+                        padding: '12px 25px',
+                        backgroundColor: '#4e61ff',
+                        color: 'white',
+                        borderRadius: '5px',
+                        textDecoration: 'none',
+                        fontWeight: '600',
+                        transition: 'all 0.3s ease'
+                      }}>Get Started <i className="fas fa-arrow-right" style={{ marginLeft: '8px' }}></i></a>
+                    </div>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="col-xl-7 col-lg-6 order-lg-2 order-1" style={{ marginBottom: '30px' }}>
-        <div className="browser-support-image text-center text-lg-right">
-          <img 
-            src={HRMSImage3} 
-            alt="HRMS Accessibility" 
-            style={{ 
-              maxWidth: '100%', 
-              height: 'auto', 
-              borderRadius: '8px',
-            
-              display: 'inline-block'
-            }} 
-          />
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+            </section>
+
+            <section className="browser-support-section rel z-1 py-130 rpy-100" style={{
+              backgroundColor: '#222b40',
+              color: 'white',
+              padding: '60px 0',
+
+            }}>
+              <div className="container">
+                <div className="row align-items-center">
+                  <div className="col-xl-5 col-lg-6 order-lg-1 order-2">
+                    <div className="browser-support-content rmb-55 wow fadeInRight delay-0-2s" style={{
+                      padding: '0 15px',
+                      marginBottom: '30px'
+                    }}>
+                      <div className="section-title" style={{ marginBottom: '30px' }}>
+                        <h2 style={{
+                          color: 'white',
+                          fontSize: '32px',
+                          lineHeight: '1.3',
+                          marginBottom: '20px'
+                        }}>Access Your HRMS Anytime, Anywhere</h2>
+                      </div>
+                      <div className="row">
+                        {[
+                          {
+                            icon: 'fas fa-check',
+                            title: 'Cross-Platform Compatibility',
+                            desc: 'Access HRMS on any device—desktop, tablet, or mobile—ensuring seamless employee and branch management on the go.'
+                          },
+                          {
+                            icon: 'fas fa-check',
+                            title: 'Secure & Role-Based Access',
+                            desc: 'Ensure data security with granular access controls, allowing employees to access only what they need based on their role.'
+                          }
+                        ].map((item, index) => (
+                          <div key={index} className="col-md-6" style={{ marginBottom: '25px' }}>
+                            <div className={`solution-item-two ${index === 1 ? 'color-two' : ''}`} style={{
+                              padding: '20px',
+                              borderRadius: '8px',
+                              height: '320px',
+                              transition: 'all 0.3s ease',
+                              display: 'flex',
+                              flexDirection: 'column'
+                            }}>
+                              <div style={{ marginBottom: '15px' }}>
+                                <i className={item.icon} style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: '40px',
+                                  height: '40px',
+                                  borderRadius: '50%',
+                                  backgroundColor: index === 0 ? '#4e61ff' : '#FFB200',
+                                  color: 'white',
+                                  fontSize: '16px'
+                                }}></i>
+                              </div>
+                              <h4 style={{
+                                color: 'white',
+                                fontSize: '20px',
+                                marginBottom: '10px',
+                                wordBreak: 'break-word' // Prevents text from overflowing
+                              }}>{item.title}</h4>
+                              <p style={{
+
+                                fontSize: '15px',
+                                lineHeight: '1.6',
+                                wordBreak: 'break-word', // Ensures text wraps properly
+                                flex: '1' // Takes remaining space
+                              }}>{item.desc}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-xl-7 col-lg-6 order-lg-2 order-1" style={{ marginBottom: '30px' }}>
+                    <div className="browser-support-image text-center text-lg-right">
+                      <img
+                        src={HRMSImage3}
+                        alt="HRMS Accessibility"
+                        style={{
+                          maxWidth: '100%',
+                          height: 'auto',
+                          borderRadius: '8px',
+
+                          display: 'inline-block'
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
 
             <section className="newsletter-section-two mt-30 rmt-0 rel z-2" style={{ background: ' #222b40' }}>
               <div className="container"  >
@@ -895,7 +952,7 @@ const LandingPage = () => {
               </div>
             </div> */}
             {/* Contact Section */}
-            <section style={{
+            <section ref={contactFormRef} style={{
               padding: '115px 0 130px',
               position: 'relative',
               zIndex: 1,
@@ -918,11 +975,43 @@ const LandingPage = () => {
                   }}>Contact Us</h2>
                 </div>
 
+                {/* Status Messages */}
+                {submitStatus === 'success' && (
+                  <div style={{
+                    maxWidth: '800px',
+                    margin: '0 auto 30px',
+                    padding: '15px',
+                    backgroundColor: '#d4edda',
+                    color: '#155724',
+                    border: '1px solid #c3e6cb',
+                    borderRadius: '8px',
+                    textAlign: 'center'
+                  }}>
+                    Thank you! Your message has been sent successfully. We'll get back to you soon.
+                  </div>
+                )}
+
+                {submitStatus === 'error' && (
+                  <div style={{
+                    maxWidth: '800px',
+                    margin: '0 auto 30px',
+                    padding: '15px',
+                    backgroundColor: '#f8d7da',
+                    color: '#721c24',
+                    border: '1px solid #f5c6cb',
+                    borderRadius: '8px',
+                    textAlign: 'center'
+                  }}>
+                    Sorry, there was an error sending your message. Please try again.
+                  </div>
+                )}
+
                 <div style={{
                   display: 'flex',
                   justifyContent: 'center'
                 }}>
                   <form
+                    onSubmit={handleContactSubmit}
                     style={{
                       width: '100%',
                       maxWidth: '800px',
@@ -931,7 +1020,6 @@ const LandingPage = () => {
                       borderRadius: '15px',
                       background: '#131b2c',
                       boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)',
-
                     }}
                   >
                     <div style={{
@@ -942,8 +1030,12 @@ const LandingPage = () => {
                       <div>
                         <input
                           type="text"
+                          name="name"
                           placeholder="Full Name"
                           required
+                          value={contactForm.name}
+                          onChange={handleInputChange}
+                          disabled={isSubmitting}
                           style={{
                             width: '100%',
                             padding: '12px 20px',
@@ -952,15 +1044,20 @@ const LandingPage = () => {
                             borderRadius: '8px',
                             color: '#333',
                             fontSize: '16px',
-                            transition: 'all 0.3s ease'
+                            transition: 'all 0.3s ease',
+                            opacity: isSubmitting ? 0.7 : 1
                           }}
                         />
                       </div>
                       <div>
                         <input
                           type="email"
+                          name="email"
                           placeholder="Email Address"
                           required
+                          value={contactForm.email}
+                          onChange={handleInputChange}
+                          disabled={isSubmitting}
                           style={{
                             width: '100%',
                             padding: '12px 20px',
@@ -969,14 +1066,19 @@ const LandingPage = () => {
                             borderRadius: '8px',
                             color: '#333',
                             fontSize: '16px',
-                            transition: 'all 0.3s ease'
+                            transition: 'all 0.3s ease',
+                            opacity: isSubmitting ? 0.7 : 1
                           }}
                         />
                       </div>
                       <div>
                         <input
                           type="text"
+                          name="number"
                           placeholder="Phone Number"
+                          value={contactForm.number}
+                          onChange={handleInputChange}
+                          disabled={isSubmitting}
                           style={{
                             width: '100%',
                             padding: '12px 20px',
@@ -985,14 +1087,19 @@ const LandingPage = () => {
                             borderRadius: '8px',
                             color: '#333',
                             fontSize: '16px',
-                            transition: 'all 0.3s ease'
+                            transition: 'all 0.3s ease',
+                            opacity: isSubmitting ? 0.7 : 1
                           }}
                         />
                       </div>
                       <div>
                         <input
                           type="text"
+                          name="company"
                           placeholder="Company"
+                          value={contactForm.company}
+                          onChange={handleInputChange}
+                          disabled={isSubmitting}
                           style={{
                             width: '100%',
                             padding: '12px 20px',
@@ -1001,14 +1108,19 @@ const LandingPage = () => {
                             borderRadius: '8px',
                             color: '#333',
                             fontSize: '16px',
-                            transition: 'all 0.3s ease'
+                            transition: 'all 0.3s ease',
+                            opacity: isSubmitting ? 0.7 : 1
                           }}
                         />
                       </div>
                       <div>
                         <input
                           type="text"
+                          name="subject"
                           placeholder="Subject"
+                          value={contactForm.subject}
+                          onChange={handleInputChange}
+                          disabled={isSubmitting}
                           style={{
                             width: '100%',
                             padding: '12px 20px',
@@ -1017,14 +1129,19 @@ const LandingPage = () => {
                             borderRadius: '8px',
                             color: '#333',
                             fontSize: '16px',
-                            transition: 'all 0.3s ease'
+                            transition: 'all 0.3s ease',
+                            opacity: isSubmitting ? 0.7 : 1
                           }}
                         />
                       </div>
                       <div>
                         <input
                           type="url"
+                          name="website"
                           placeholder="Website"
+                          value={contactForm.website}
+                          onChange={handleInputChange}
+                          disabled={isSubmitting}
                           style={{
                             width: '100%',
                             padding: '12px 20px',
@@ -1033,15 +1150,20 @@ const LandingPage = () => {
                             borderRadius: '8px',
                             color: '#333',
                             fontSize: '16px',
-                            transition: 'all 0.3s ease'
+                            transition: 'all 0.3s ease',
+                            opacity: isSubmitting ? 0.7 : 1
                           }}
                         />
                       </div>
                       <div style={{ gridColumn: '1 / -1' }}>
                         <textarea
+                          name="message"
                           placeholder="Message"
                           required
                           rows="4"
+                          value={contactForm.message}
+                          onChange={handleInputChange}
+                          disabled={isSubmitting}
                           style={{
                             width: '100%',
                             padding: '12px 20px',
@@ -1051,85 +1173,44 @@ const LandingPage = () => {
                             color: '#333',
                             fontSize: '16px',
                             resize: 'vertical',
-                            transition: 'all 0.3s ease'
+                            transition: 'all 0.3s ease',
+                            opacity: isSubmitting ? 0.7 : 1
                           }}
                         ></textarea>
                       </div>
                       <div style={{ gridColumn: '1 / -1', textAlign: 'center' }}>
                         <button
                           type="submit"
+                          disabled={isSubmitting}
                           style={{
                             padding: '12px 40px',
-                            backgroundColor: '#4254f4', // Matching the blue from login/sign up buttons
+                            backgroundColor: isSubmitting ? '#6c757d' : '#4254f4',
                             color: 'white',
                             border: 'none',
                             borderRadius: '8px',
                             fontSize: '16px',
                             fontWeight: '500',
-                            cursor: 'pointer',
+                            cursor: isSubmitting ? 'not-allowed' : 'pointer',
                             transition: 'all 0.3s ease',
-                            marginTop: '20px'
+                            marginTop: '20px',
+                            opacity: isSubmitting ? 0.7 : 1
                           }}
                         >
-                          Submit <i className="fas fa-arrow-right" style={{ marginLeft: '8px' }}></i>
+                          {isSubmitting ? (
+                            <>
+                              <i className="fas fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              Submit <i className="fas fa-arrow-right" style={{ marginLeft: '8px' }}></i>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
                   </form>
                 </div>
-              </div>
-
-              {/* Adding decorative element similar to the one in hero section */}
-              <div style={{
-                position: 'absolute',
-                top: '100px',
-                left: '100px',
-                width: '80px',
-                height: '80px',
-                opacity: '0.5',
-                zIndex: '-1'
-              }}>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-                  <g fill="#4254f4">
-                    <circle cx="10" cy="10" r="3" />
-                    <circle cx="30" cy="10" r="3" />
-                    <circle cx="50" cy="10" r="3" />
-                    <circle cx="70" cy="10" r="3" />
-                    <circle cx="90" cy="10" r="3" />
-                    <circle cx="10" cy="30" r="3" />
-                    <circle cx="30" cy="30" r="3" />
-                    <circle cx="50" cy="30" r="3" />
-                    <circle cx="70" cy="30" r="3" />
-                    <circle cx="90" cy="30" r="3" />
-                    <circle cx="10" cy="50" r="3" />
-                    <circle cx="30" cy="50" r="3" />
-                    <circle cx="50" cy="50" r="3" />
-                    <circle cx="70" cy="50" r="3" />
-                    <circle cx="90" cy="50" r="3" />
-                    <circle cx="10" cy="70" r="3" />
-                    <circle cx="30" cy="70" r="3" />
-                    <circle cx="50" cy="70" r="3" />
-                    <circle cx="70" cy="70" r="3" />
-                    <circle cx="90" cy="70" r="3" />
-                    <circle cx="10" cy="90" r="3" />
-                    <circle cx="30" cy="90" r="3" />
-                    <circle cx="50" cy="90" r="3" />
-                    <circle cx="70" cy="90" r="3" />
-                    <circle cx="90" cy="90" r="3" />
-                  </g>
-                </svg>
-              </div>
-
-              {/* Adding a decorative element like the star in the hero section */}
-              <div style={{
-                position: 'absolute',
-                right: '150px',
-                top: '250px',
-                zIndex: '-1'
-              }}>
-                <svg width="30" height="30" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M15 0L18.5 11.5H30L20.5 18.5L24 30L15 23L6 30L9.5 18.5L0 11.5H11.5L15 0Z" fill="#4254f4" />
-                </svg>
               </div>
             </section>
 

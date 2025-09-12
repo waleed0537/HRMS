@@ -239,7 +239,7 @@ const HrRecentActivity = () => {
     
     if (message.includes('rejected') || message.includes('denied') || 
         message.includes('failed')) {
-      return <div className="status-indicator error" title="Rejected/Failed"></div>;
+      return <div className="status-indicator error1" title="Rejected/Failed"></div>;
     }
     
     return <div className="status-indicator pending" title="Pending"></div>;

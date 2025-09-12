@@ -1047,14 +1047,42 @@ app.delete('/api/employees/:id', authenticateToken, async (req, res) => {
 // Get Pending Requests (Admin Only)
 app.get('/api/pending-requests', authenticateToken, async (req, res) => {
   try {
+    const currentUser = await User.findById(req.user.id);
     
+    if (!currentUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-    const pendingRequests = await User.find({ status: 'pending' })
+    // Check if user has permission to view pending requests
+    if (!(currentUser.isAdmin || currentUser.role === 'hr_manager')) {
+      return res.status(403).json({ message: 'Admin or HR Manager access required' });
+    }
+
+    let query = { status: 'pending' };
+    
+    // For HR managers (who are not admins), filter by their branch
+    if (currentUser.role === 'hr_manager' && !currentUser.isAdmin) {
+      if (!currentUser.branchName) {
+        return res.status(400).json({ message: 'HR Manager branch not configured' });
+      }
+      
+      // Use case-insensitive regex match for branch filtering
+      query.branchName = { $regex: new RegExp('^' + currentUser.branchName + '$', 'i') };
+      
+      console.log(`HR Manager ${currentUser.email} requesting pending requests for branch: ${currentUser.branchName}`);
+    } else if (currentUser.isAdmin) {
+      console.log(`Admin ${currentUser.email} requesting all pending requests`);
+    }
+
+    const pendingRequests = await User.find(query)
       .select('-password')
       .sort({ createdAt: -1 });
 
+    console.log(`Found ${pendingRequests.length} pending requests for user ${currentUser.email} (${currentUser.role})`);
+
     res.json(pendingRequests);
   } catch (error) {
+    console.error('Error fetching pending requests:', error);
     res.status(500).json({ message: 'Error fetching requests', error: error.message });
   }
 });

@@ -200,11 +200,11 @@ const Sidebar = ({ user: propUser }) => {
             </NavLink>
           )}
           
-          <div className="section-divider">Finance</div>
+          {/* <div className="section-divider">Finance</div>
           <NavLink to="/accounts" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             <CircleDollarSign className="h-5 w-5" />
             <span>Accounts</span>
-          </NavLink>
+          </NavLink> */}
 
           <div className="section-divider">Additional Features</div>
           <NavLink to="/app" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>

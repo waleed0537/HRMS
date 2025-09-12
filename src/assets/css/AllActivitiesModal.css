@@ -1,3 +1,4 @@
+/* Add a specific namespace prefix to avoid conflicts */
 .activity-history-modal-overlay {
   position: fixed;
   top: 0;
@@ -105,7 +106,7 @@
 }
 
 .activity-history-search-input {
-    max-height: fit-content;
+  max-height: fit-content;
   width: 100%;
   padding: 8px 12px 8px 36px;
   border: 1px solid #e5e7eb;
@@ -191,7 +192,7 @@
 }
 
 .activity-history-date-input {
-    max-height: fit-content;
+  max-height: fit-content;
   padding: 6px 10px;
   border: 1px solid #e5e7eb;
   border-radius: 4px;
@@ -215,7 +216,7 @@
 
 .activity-history-status-select,
 .activity-history-branch-select {
-    max-height: fit-content;
+  max-height: fit-content;
   width: 100%;
   padding: 6px 10px;
   border: 1px solid #e5e7eb;
@@ -416,32 +417,59 @@
   margin-top: 4px;
 }
 
-.activity-history-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-transform: capitalize;
+/* FIXED STATUS STYLES - More specific selectors with !important to override conflicts */
+.activity-history-modal .activity-history-status {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 4px 8px !important;
+  border-radius: 9999px !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  text-transform: capitalize !important;
+  border: none !important;
+  min-width: fit-content !important;
 }
 
-.status-approved,
-.status-success {
-  background-color: rgba(16, 185, 129, 0.1);
-  color: #10b981;
+/* Success/Approved status - Green */
+.activity-history-modal .activity-history-status.status-approved,
+.activity-history-modal .activity-history-status.status-success {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  color: #10b981 !important;
 }
 
-.status-rejected,
-.status-error {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+/* Error/Rejected status - Red */
+.activity-history-modal .activity-history-status.status-rejected,
+.activity-history-modal .activity-history-status.status-error,
+.activity-history-modal .activity-history-status.status-rejected1,
+.activity-history-modal .activity-history-status.status-error1 {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  color: #ef4444 !important;
 }
 
-.status-pending {
-  background-color: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
+/* Pending status - Orange/Yellow */
+.activity-history-modal .activity-history-status.status-pending {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+  color: #f59e0b !important;
+}
+
+/* Status icons */
+.activity-history-modal .activity-history-status .status-icon {
+  width: 16px !important;
+  height: 16px !important;
+  flex-shrink: 0 !important;
+}
+
+.activity-history-modal .activity-history-status .status-icon.success {
+  color: #10b981 !important;
+}
+
+.activity-history-modal .activity-history-status .status-icon.error {
+  color: #ef4444 !important;
+}
+
+.activity-history-modal .activity-history-status .status-icon.pending {
+  color: #f59e0b !important;
 }
 
 .activity-history-pagination {
@@ -500,7 +528,7 @@
 }
 
 .activity-history-page-size-select {
-    max-height: fit-content;
+  max-height: fit-content;
   padding: 4px 8px;
   border-radius: 4px;
   border: 1px solid #e5e7eb;

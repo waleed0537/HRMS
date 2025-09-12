@@ -865,7 +865,7 @@ const getStatusIndicator = (notification) => {
                   <div className="activity-history-col activity-col">ACTIVITY</div>
                   <div className="activity-history-col details-col">DETAILS</div>
                   <div className="activity-history-col time-col">TIME</div>
-                  <div className="activity-history-col status-col">STATUS</div>
+               
                 </div>
                 <div className="activity-history-table-body">
                   {getCurrentPageItems().map((notification, index) => {
@@ -899,12 +899,7 @@ const getStatusIndicator = (notification) => {
                           <div className="activity-history-time">{timeAgo}</div>
                           <div className="activity-history-date">{getDisplayDate(notification.createdAt)}</div>
                         </div>
-                        <div className="activity-history-col status-col">
-                          <div className={`activity-history-status status-${status}`}>
-                            {getStatusIcon(status)}
-                            <span>{status}</span>
-                          </div>
-                        </div>
+                       
                       </div>
                     );
                   })}

@@ -647,8 +647,7 @@ const AdminDashboard = () => {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
   };
-
-  const handleCreateAnnouncement = async (announcementData) => {
+const handleCreateAnnouncement = async (announcementData) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/announcements`, {
       method: 'POST',
@@ -665,13 +664,15 @@ const AdminDashboard = () => {
       throw new Error(data.message || 'Failed to create announcement');
     }
 
-    // Use toast notification instead of custom banner
     success('Announcement created successfully!');
     setIsAnnouncementModalOpen(false);
-    setSelectedBranch(announcementData.branchId);
+    
+    // Trigger refresh by updating selectedBranch or use a refresh counter
+    setSelectedBranch(prev => prev === announcementData.branchId ? null : announcementData.branchId);
+    setTimeout(() => setSelectedBranch(announcementData.branchId), 100);
+    
   } catch (err) {
     console.error('Error details:', err);
-    // Use toast notification for errors
     error(err.message || 'Failed to create announcement. Please try again.');
   }
 };
@@ -1095,7 +1096,6 @@ const AdminDashboard = () => {
   <div className="admin-card-header">
     <h2>Branch Announcements</h2>
     <div className="announcement-controls">
-      
       <button
         className="create-btn"
         onClick={() => setIsAnnouncementModalOpen(true)}
@@ -1106,15 +1106,13 @@ const AdminDashboard = () => {
     </div>
   </div>
   <div className="card-body announcements-container">
-    {/* Use the EnhancedAnnouncementsList component */}
-    {!selectedBranch ? (
-      /* Show all announcements for admin */
-      <AnnouncementsList showAllForAdmin={true} />
-    ) : (
-      /* Show specific branch announcements */
-      <AnnouncementsList branchId={selectedBranch} />
-    )}
+    {/* Use the EnhancedAnnouncementsList component with proper props */}
+    <AnnouncementsList 
+      showAllForAdmin={true}
+      refreshTrigger={selectedBranch} // This will refresh when selectedBranch changes
+    />
   </div>
+
 </div>
         </div>
 

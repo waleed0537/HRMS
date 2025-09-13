@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Bell, ChevronDown, LogOut, Settings, User } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+
 import '../../assets/css/header.css';
 import NotificationDropdown from '../NotificationDropdown';
 import API_BASE_URL from '../../config/api.js';
@@ -15,6 +17,8 @@ const Header = ({ user: propUser, onLogout }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const location = useLocation();
+  const navigate = useNavigate();
+
   
   // This useEffect will ensure we always have the latest user data from localStorage
   useEffect(() => {
@@ -56,7 +60,9 @@ const Header = ({ user: propUser, onLogout }) => {
       window.removeEventListener('roleChange', handleRoleChange);
     };
   }, [propUser]);
-
+const handleViewProfile = () => {
+  navigate('/profile');
+};
   // Load avatar dynamically based on user profile pic
   useEffect(() => {
     const loadAvatar = async () => {
@@ -291,11 +297,12 @@ const Header = ({ user: propUser, onLogout }) => {
                   className="app-header__dropdown-overlay"
                   onClick={() => setShowProfileDropdown(false)}
                 ></div>
-                <div className="app-header__profile-dropdown">
+                <div className="app-header__profile-dropdown" onClick={handleViewProfile}>
                   <button className="app-header__dropdown-item">
                     <User size={18} />
                     My Profile
                   </button>
+              
                   <button className="app-header__dropdown-item">
                     <Settings size={18} />
                     Settings

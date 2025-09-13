@@ -538,35 +538,35 @@ const HrDashboard = () => {
 
   // Fix for HrDashboard.jsx handleCreateAnnouncement function
   const handleCreateAnnouncement = async (announcementData) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/announcements`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(announcementData)
-      });
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/announcements`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(announcementData)
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to create announcement');
-      }
-
-      // Use toast notification for success
-      success('Announcement created successfully!');
-      setIsAnnouncementModalOpen(false);
-
-      // If you want to refresh the announcements list after creating a new one
-      // Optionally call fetchDashboardData() instead of trying to use setSelectedBranch
-      fetchDashboardData();
-    } catch (err) {
-      console.error('Error details:', err);
-      // Use toastError instead of error1
-      toastError(err.message || 'Failed to create announcement. Please try again.');
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to create announcement');
     }
-  };
+
+    success('Announcement created successfully!');
+    setIsAnnouncementModalOpen(false);
+    
+    // Trigger refresh by toggling userBranch or using a refresh counter
+    const currentBranch = userBranch;
+    setUserBranch('');
+    setTimeout(() => setUserBranch(currentBranch), 100);
+    
+  } catch (err) {
+    console.error('Error details:', err);
+    toastError(err.message || 'Failed to create announcement. Please try again.');
+  }
+};
 
   const formatValue = (value, isCurrency = false, isPercentage = false) => {
     if (isCurrency) {
@@ -983,33 +983,44 @@ const HrDashboard = () => {
 
           {/* Announcements */}
           <div className="hr-chart-card announcements">
-            <div className="hr-card-header">
-              <h2>Branch Announcements</h2>
-              <button
-                className="hr-create-btn"
-                onClick={() => setIsAnnouncementModalOpen(true)}
-              >
-                <FilePlus size={16} />
-                Create
-              </button>
-            </div>
-            <div className="card-body announcements-container">
-              {branchId ? (
-                <AnnouncementsList branchId={branchId} />
-              ) : (
-                <div className="hr-empty-state">
-                  <AlertTriangle size={32} />
-                  <p>No branch selected for announcements</p>
-                  <button
-                    className="hr-create-announcement-btn"
-                    onClick={() => setIsAnnouncementModalOpen(true)}
-                  >
-                    Create your first announcement
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+  <div className="hr-card-header">
+    <h2>Branch Announcements</h2>
+    <div className="announcement-controls">
+      <button
+        className="hr-create-btn"
+        onClick={() => setIsAnnouncementModalOpen(true)}
+      >
+        <FilePlus size={16} />
+        Create
+      </button>
+    </div>
+  </div>
+  <div className="card-body announcements-container">
+    {branchId ? (
+      <AnnouncementsList 
+        branchId={branchId}
+        refreshTrigger={userBranch} // This will refresh when branch data changes
+      />
+    ) : (
+      <div className="hr-empty-state">
+        <AlertTriangle size={32} />
+        <p>Branch not loaded</p>
+        <span className="empty-subtitle">
+          Please wait while we load your branch information
+        </span>
+        <button
+          className="retry-button"
+          onClick={() => fetchUserBranch()}
+          style={{ marginTop: '12px' }}
+        >
+          <RefreshCw size={16} />
+          Retry
+        </button>
+      </div>
+    )}
+  </div>
+
+</div>
         </div>
 
         {/* Revenue and Projects Row */}

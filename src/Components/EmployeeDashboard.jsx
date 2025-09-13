@@ -13,28 +13,28 @@ import {
 } from 'lucide-react';
 import '../assets/css/EmployeeDashboard.css';
 import API_BASE_URL from '../config/api.js';
+import { useNavigate } from 'react-router-dom';
+
 
 const COLORS = ['#6dbfb8', '#be95be', '#71a3c1', '#75ba75', '#b3be62', '#fec76f', '#f5945c', '#f15bb5', '#00b4d8', '#0077b6'];
-// Define gradient colors for different performance levels
-const PERFORMANCE_GRADIENTS = {
-  poor: { from: '#FF4A55', to: '#FF7F7F' },
-  fair: { from: '#FF9700', to: '#FFB366' },
-  good: { from: '#66FF66', to: '#B3FFB3' },
-  excellent: { from: '#66B3FF', to: '#99CCFF' },
-};
 
 const EmployeeDashboard = () => {
+  // Removed announcementViewMode state - no longer needed
   const [announcements, setAnnouncements] = useState([]);
   const [leaveHistory, setLeaveHistory] = useState([]);
   const [profile, setProfile] = useState(null);
   const [userBranch, setUserBranch] = useState('');
+  const [userDepartment, setUserDepartment] = useState('');
   const [loading, setLoading] = useState(true);
+  const [announcementLoading, setAnnouncementLoading] = useState(true);
   const [error, setError] = useState(null);
   const [weeklyQuotas, setWeeklyQuotas] = useState({
     meetings: { total: 5, completed: 3 },
     tasks: { total: 15, completed: 10 },
     training: { total: 2, completed: 1 }
   });
+  const navigate = useNavigate();
+
   const [upcomingHolidays, setUpcomingHolidays] = useState([]);
   const [attendanceData, setAttendanceData] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
@@ -57,7 +57,11 @@ const EmployeeDashboard = () => {
   useEffect(() => {
     fetchData();
   }, []);
-  {/* Add this helper function to your component */ }
+const handleViewProfile = () => {
+  navigate('/profile');
+};
+  // Removed the announcementViewMode effect since we no longer have that functionality
+
   const getPerformanceLabel = (value) => {
     if (value >= 90) return "EXCELLENT";
     if (value >= 80) return "VERY GOOD";
@@ -82,24 +86,14 @@ const EmployeeDashboard = () => {
       const profileData = await profileRes.json();
       setProfile(profileData);
 
-      // Fetch branch data
-      const branchRes = await fetch(`${API_BASE_URL}/api/branches`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      // Set user branch and department
+      const branch = profileData.professionalDetails.branch;
+      const department = profileData.professionalDetails.department;
+      setUserBranch(branch);
+      setUserDepartment(department);
 
-      if (!branchRes.ok) throw new Error('Failed to fetch branches');
-      const branches = await branchRes.json();
-
-      // Find branch by name
-      const branch = branches.find(b => b.name === profileData.professionalDetails.branch);
-      if (branch) {
-        setUserBranch(branch.name);
-
-        // Fetch branch announcements
-        fetchBranchAnnouncements(branch._id);
-      }
+      // Fetch user-specific announcements (branch-wide and department-specific)
+      await fetchUserAnnouncements();
 
       // Fetch leave history
       fetchLeaveHistory(userData.email);
@@ -120,20 +114,29 @@ const EmployeeDashboard = () => {
     }
   };
 
-  // Existing functions - just including the essential ones
-  const fetchBranchAnnouncements = async (branchId) => {
+  // Updated to use the user-specific endpoint
+  const fetchUserAnnouncements = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/announcements/${branchId}`, {
+      setAnnouncementLoading(true);
+      console.log('Fetching user-specific announcements...');
+      
+      const response = await fetch(`${API_BASE_URL}/api/announcements/user/me`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 
       if (!response.ok) throw new Error('Failed to fetch announcements');
+
       const data = await response.json();
+      
+      console.log(`Received ${data.length} announcements for user`);
       setAnnouncements(data);
-    } catch (err) {
-      console.error('Error fetching announcements:', err);
+    } catch (error) {
+      console.error('Error fetching user announcements:', error);
+      setAnnouncements([]);
+    } finally {
+      setAnnouncementLoading(false);
     }
   };
 
@@ -153,6 +156,8 @@ const EmployeeDashboard = () => {
       console.error('Error fetching leave history:', err);
     }
   };
+
+  // Removed groupAnnouncementsByBranch function as it's no longer needed
 
   const generateMockData = (profileData) => {
     // Generate mock attendance data
@@ -299,18 +304,18 @@ const EmployeeDashboard = () => {
     if (score < 75) return 'good';
     return 'excellent';
   };
+
   const getPerformanceIcon = (key) => {
     // Placeholder for icon logic
     return '🏆';
   };
+
   const getPerformanceSummary = (value) => {
     if (value >= 90) return 'Excellent performance. Keep up the great work!';
     if (value >= 80) return 'Good performance. Continue improving.';
     if (value >= 70) return 'Average performance. Focus on key improvement areas.';
     return 'Performance needs improvement. Please schedule a meeting with your manager.';
   };
-
-
 
   // Get the gradient colors for the gauge needle based on performance
   const getGaugeColors = (value) => {
@@ -319,7 +324,6 @@ const EmployeeDashboard = () => {
     if (value >= 60) return { start: '#F59E0B', end: '#FBBF24' }; // Average - Yellow/Orange
     return { start: 'FF4A55', end: '#F87171' }; // Needs Improvement - Red
   };
-
 
   if (loading) return (
     <div className="emp-dashboard__loading">
@@ -388,9 +392,9 @@ const EmployeeDashboard = () => {
             </div>
           </div>
           <div className="emp-dashboard__card-footer">
-            <button className="emp-dashboard__view-profile-btn">
-              View Full Profile <ChevronRight size={16} />
-            </button>
+            <button className="emp-dashboard__view-profile-btn" onClick={handleViewProfile}>
+  View Full Profile <ChevronRight size={16} />
+</button>
           </div>
         </div>
 
@@ -486,8 +490,6 @@ const EmployeeDashboard = () => {
           </div>
         </div>
 
-
-
         {/* Performance Gauge */}
         <div className="emp-dashboard__performance-gauge-container">
           <div className="emp-dashboard__card-header">
@@ -524,24 +526,6 @@ const EmployeeDashboard = () => {
                     <span className="emp-dashboard__value-label emp-dashboard__value-100">100</span>
                   </div>
                 </div>
-
-                {/* Performance levels directly on gauge */}
-                {/* <div className="emp-dashboard__gauge-expectations">
-                  <div className="emp-dashboard__expectation emp-dashboard__expectation-below">
-                    BELOW<br />EXPECTATIONS
-                  </div>
-                  <div className="emp-dashboard__expectation emp-dashboard__expectation-exceeds">
-                    EXCEEDS<br />EXPECTATIONS
-                  </div>
-                </div> */}
-
-                {/* Performance keywords around the gauge */}
-                {/* <div className="emp-dashboard__gauge-keywords">
-                  <span className="emp-dashboard__keyword emp-dashboard__keyword-teamwork">TEAMWORK</span>
-                  <span className="emp-dashboard__keyword emp-dashboard__keyword-quality">QUALITY</span>
-                  <span className="emp-dashboard__keyword emp-dashboard__keyword-initiative">INITIATIVE</span>
-                  <span className="emp-dashboard__keyword emp-dashboard__keyword-productivity">PRODUCTIVITY</span>
-                </div> */}
 
                 {/* Gauge Fill - Set rotation based on performance score */}
                 <div
@@ -600,7 +584,6 @@ const EmployeeDashboard = () => {
           </div>
         </div>
 
-
         <div className="emp-dashboard__top-performers-card">
           <div className="emp-dashboard__card-header">
             <h3>Top Performers</h3>
@@ -658,7 +641,7 @@ const EmployeeDashboard = () => {
                         className="emp-dashboard__goal-progress-fill"
                         style={{
                           width: `${goal.progress}%`,
-                          background: `linear-gradient(90deg, ${PERFORMANCE_GRADIENTS[getPerformanceCategory(goal.progress)].from}, ${PERFORMANCE_GRADIENTS[getPerformanceCategory(goal.progress)].to})`
+                          background: `linear-gradient(90deg, ${getPerformanceCategory(goal.progress) === 'poor' ? '#ef4444' : getPerformanceCategory(goal.progress) === 'fair' ? '#f59e0b' : getPerformanceCategory(goal.progress) === 'good' ? '#10b981' : '#3b82f6'}, ${getPerformanceCategory(goal.progress) === 'poor' ? '#f87171' : getPerformanceCategory(goal.progress) === 'fair' ? '#fbbf24' : getPerformanceCategory(goal.progress) === 'good' ? '#34d399' : '#60a5fa'})`
                         }}
                       ></div>
                     </div>
@@ -734,29 +717,49 @@ const EmployeeDashboard = () => {
           </div>
         </div>
 
+        {/* Simplified Announcements Card - No selector, just user-specific announcements */}
         <div className="emp-dashboard__announcements-card">
           <div className="emp-dashboard__card-header">
-            <h3>Branch Announcements</h3>
-            {userBranch && (
-              <span className="emp-dashboard__branch-tag">{userBranch}</span>
-            )}
+            <h3>Announcements</h3>
+            <div className="emp-dashboard__announcement-info">
+              {userBranch && (
+                <span className="emp-dashboard__branch-tag">{userBranch} Branch</span>
+              )}
+              {userDepartment && (
+                <span className="emp-dashboard__department-tag">{userDepartment} Dept</span>
+              )}
+            </div>
           </div>
           <div className="emp-dashboard__announcements-list">
-            {announcements.length === 0 ? (
+            {announcementLoading ? (
+              <div className="emp-dashboard__loading">
+                <div className="emp-dashboard__loading-spinner"></div>
+                <p>Loading announcements...</p>
+              </div>
+            ) : announcements.length === 0 ? (
               <div className="emp-dashboard__empty-announcements">
                 <Bell size={24} />
-                <p>No announcements at this time</p>
+                <p>No announcements available</p>
+                <small>You will see branch-wide and department-specific announcements here</small>
               </div>
             ) : (
               announcements.map(announcement => (
                 <div className="emp-dashboard__announcement-item" key={announcement._id}>
                   <div className="emp-dashboard__announcement-priority">
                     <Circle size={8} fill={getStatusColor(announcement.priority)} />
-                    <span>{announcement.priority.charAt(0).toUpperCase() + announcement.priority.slice(1)}</span>
+                    <span>{announcement.priority ? announcement.priority.charAt(0).toUpperCase() + announcement.priority.slice(1) : 'Medium'}</span>
+                    {/* Show if it's department-specific */}
+                    {announcement.department && (
+                      <span className="emp-dashboard__department-indicator">
+                        {announcement.department} Dept
+                      </span>
+                    )}
                   </div>
                   <h4>{announcement.title}</h4>
                   <p>{announcement.content}</p>
                   <div className="emp-dashboard__announcement-footer">
+                    <span>By: {announcement.createdBy?.email || 'Unknown'}</span>
+                    <span> • </span>
                     <span>Expires: {formatDate(announcement.expiresAt)}</span>
                   </div>
                 </div>

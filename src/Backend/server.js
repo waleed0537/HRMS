@@ -1710,18 +1710,44 @@ app.put('/api/branches/:id/role', authenticateToken, async (req, res) => {
 
 app.post('/api/announcements', authenticateToken, async (req, res) => {
   try {
-    const { title, content, branchId, priority, expiresAt } = req.body;
+    const { title, content, branchId, department, targetType, priority, expiresAt } = req.body;
+
+    console.log('Creating announcement with data:', {
+      title,
+      branchId,
+      department,
+      targetType,
+      priority
+    });
 
     if (!title || !content || !branchId || !expiresAt) {
       return res.status(400).json({
-        message: 'Missing required fields'
+        message: 'Missing required fields: title, content, branchId, and expiresAt are required'
       });
     }
 
+    // Validate that if targetType is department, department must be provided
+    if (targetType === 'department' && !department) {
+      return res.status(400).json({
+        message: 'Department is required when target type is department'
+      });
+    }
+
+    // Verify branch exists
+    const branch = await Branch.findById(branchId);
+    if (!branch) {
+      return res.status(404).json({
+        message: 'Branch not found'
+      });
+    }
+
+    // Create announcement with department info
     const announcement = new Announcement({
       title,
       content,
-      branchId, // Store as ObjectId
+      branchId, 
+      department: targetType === 'department' ? department : null, // Only set department if targeting department
+      targetType: targetType || 'branch',
       createdBy: req.user.id,
       priority: priority || 'medium',
       expiresAt: new Date(expiresAt)
@@ -1729,6 +1755,83 @@ app.post('/api/announcements', authenticateToken, async (req, res) => {
 
     await announcement.save();
     console.log('Created announcement:', announcement);
+
+    // Create notifications based on target type
+    try {
+      let targetUsers = [];
+      let notificationMessage = '';
+
+      if (targetType === 'department' && department) {
+        // Find users in the specific department and branch
+        const departmentEmployees = await Employee.find({
+          'professionalDetails.branch': { $regex: new RegExp('^' + branch.name + '$', 'i') },
+          'professionalDetails.department': department
+        }).populate('userId');
+
+        targetUsers = departmentEmployees
+          .filter(emp => emp.userId && emp.userId.status === 'approved')
+          .map(emp => emp.userId);
+
+        notificationMessage = `New ${department} department announcement: ${title}`;
+
+        console.log(`Found ${targetUsers.length} users in ${department} department of ${branch.name} branch`);
+      } else {
+        // Find all users in the branch (branch-wide announcement)
+        const branchEmployees = await Employee.find({
+          'professionalDetails.branch': { $regex: new RegExp('^' + branch.name + '$', 'i') }
+        }).populate('userId');
+
+        targetUsers = branchEmployees
+          .filter(emp => emp.userId && emp.userId.status === 'approved')
+          .map(emp => emp.userId);
+
+        notificationMessage = `New branch announcement: ${title}`;
+
+        console.log(`Found ${targetUsers.length} users in ${branch.name} branch`);
+      }
+
+      // Also notify admins and HR managers
+      const adminUsers = await User.find({
+        isAdmin: true,
+        status: 'approved'
+      });
+
+      const hrManagers = await User.find({
+        role: 'hr_manager',
+        branchName: { $regex: new RegExp('^' + branch.name + '$', 'i') },
+        status: 'approved'
+      });
+
+      // Combine all target users and remove duplicates
+      const allTargetUsers = [...targetUsers, ...adminUsers, ...hrManagers];
+      const uniqueUsers = allTargetUsers.filter((user, index, self) => 
+        self.findIndex(u => u._id.toString() === user._id.toString()) === index
+      );
+
+      // Create notifications for all target users
+      const notifications = uniqueUsers.map(user => ({
+        userId: user._id,
+        title: 'New Announcement',
+        message: notificationMessage,
+        type: 'announcement',
+        metadata: {
+          branchName: branch.name,
+          branchId: branch._id,
+          department: department || null,
+          targetType: targetType || 'branch',
+          announcementId: announcement._id
+        }
+      }));
+
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+        console.log(`Created ${notifications.length} notifications for announcement`);
+      }
+
+    } catch (notifError) {
+      console.error('Error creating notifications for announcement:', notifError);
+      // Continue even if notifications fail
+    }
 
     res.status(201).json({
       message: 'Announcement created successfully',
@@ -1747,46 +1850,109 @@ app.post('/api/announcements', authenticateToken, async (req, res) => {
 app.get('/api/announcements/:branchId', authenticateToken, async (req, res) => {
   try {
     const branchId = req.params.branchId;
-    console.log('Received announcement request for branchId:', branchId);
+    const { department, targetType } = req.query;
+    
+    console.log('Fetching announcements for branch:', branchId, 'with filters:', {
+      department,
+      targetType
+    });
 
-    // First check if the branch exists
+    // Verify branch exists
     const branch = await Branch.findById(branchId);
-    console.log('Found branch:', branch);
+    if (!branch) {
+      return res.status(404).json({ message: 'Branch not found' });
+    }
+
+    console.log('Found branch:', branch.name);
 
     // Get current time for expiry check
     const now = new Date();
     console.log('Current time:', now);
 
-    // Get all announcements first
-    const allAnnouncements = await Announcement.find({ branchId: branchId });
-    console.log('All announcements before expiry filter:', allAnnouncements);
-
-    // Then get active ones
-    const activeAnnouncements = await Announcement.find({
+    // Build query
+    let query = {
       branchId: branchId,
       expiresAt: { $gt: now }
-    })
+    };
+
+    // Add department filter if specified
+    if (targetType === 'department' && department) {
+      query.department = department;
+    } else if (targetType === 'branch') {
+      query.department = { $exists: false };
+    }
+    
+    console.log('Using query:', JSON.stringify(query));
+
+    // Get announcements
+    const announcements = await Announcement.find(query)
       .populate('createdBy', 'email')
+      .populate('branchId', 'name')
       .sort({ createdAt: -1 });
 
-    console.log('Active announcements after expiry filter:', activeAnnouncements);
+    console.log(`Found ${announcements.length} active announcements`);
 
-    if (allAnnouncements.length === 0) {
-      console.log('No announcements found for branch');
-    } else if (activeAnnouncements.length === 0) {
-      console.log('All announcements have expired');
-      allAnnouncements.forEach(ann => {
-        console.log('Announcement expiry status:', {
-          title: ann.title,
-          expiresAt: ann.expiresAt,
-          isExpired: ann.expiresAt <= now
-        });
-      });
-    }
-
-    res.json(activeAnnouncements);
+    res.json(announcements);
   } catch (error) {
     console.error('Error fetching announcements:', error);
+    res.status(500).json({
+      message: 'Error fetching announcements',
+      error: error.message
+    });
+  }
+});
+
+app.get('/api/announcements/user/me', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get user's employee record to find their branch and department
+    const employee = await Employee.findOne({ userId }).populate('userId');
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee record not found' });
+    }
+
+    const userBranch = employee.professionalDetails.branch;
+    const userDepartment = employee.professionalDetails.department;
+
+    console.log(`Fetching announcements for user in ${userBranch} branch, ${userDepartment} department`);
+
+    // Find the branch document
+    const branch = await Branch.findOne({ 
+      name: { $regex: new RegExp('^' + userBranch + '$', 'i') } 
+    });
+    
+    if (!branch) {
+      return res.status(404).json({ message: 'User branch not found' });
+    }
+
+    const now = new Date();
+
+    // Get announcements that target this user
+    // 1. Branch-wide announcements (no department specified)
+    // 2. Department-specific announcements for user's department
+    const query = {
+      branchId: branch._id,
+      expiresAt: { $gt: now },
+      $or: [
+        { department: { $exists: false } }, // Branch-wide announcements
+        { department: null }, // Branch-wide announcements (explicit null)
+        { department: userDepartment } // Department-specific announcements
+      ]
+    };
+
+    console.log('User announcements query:', JSON.stringify(query, null, 2));
+
+    const announcements = await Announcement.find(query)
+      .populate('createdBy', 'email')
+      .populate('branchId', 'name')
+      .sort({ createdAt: -1 });
+
+    console.log(`Found ${announcements.length} announcements for user`);
+
+    res.json(announcements);
+  } catch (error) {
+    console.error('Error fetching user announcements:', error);
     res.status(500).json({
       message: 'Error fetching announcements',
       error: error.message
@@ -3937,6 +4103,237 @@ app.post('/api/contact', async (req, res) => {
     });
   }
 });
+
+
+app.get('/api/branches/:branchId/departments', authenticateToken, async (req, res) => {
+  try {
+    const { branchId } = req.params;
+    
+    // Find the branch to get its name
+    const branch = await Branch.findById(branchId);
+    if (!branch) {
+      return res.status(404).json({ message: 'Branch not found' });
+    }
+
+    console.log(`Fetching departments for branch: ${branch.name}`);
+
+    // Get unique departments from employees in this branch
+    const departments = await Employee.aggregate([
+      {
+        $match: {
+          'professionalDetails.branch': { 
+            $regex: new RegExp('^' + branch.name + '$', 'i') 
+          }
+        }
+      },
+      {
+        $group: {
+          _id: '$professionalDetails.department',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $match: {
+          _id: { $ne: null, $ne: '' }
+        }
+      },
+      {
+        $sort: { _id: 1 }
+      }
+    ]);
+
+    // Extract department names and add default departments if none exist
+    let departmentNames = departments.map(dept => dept._id);
+    
+    // Add common default departments if no departments found
+    if (departmentNames.length === 0) {
+      departmentNames = ['General', 'HR', 'IT', 'Sales', 'Marketing', 'Operations'];
+    } else {
+      // Ensure 'General' is always included
+      if (!departmentNames.includes('General')) {
+        departmentNames.unshift('General');
+      }
+    }
+
+    console.log(`Found departments for ${branch.name}:`, departmentNames);
+    
+    res.json(departmentNames);
+  } catch (error) {
+    console.error('Error fetching departments:', error);
+    res.status(500).json({ 
+      message: 'Error fetching departments', 
+      error: error.message 
+    });
+  }
+});
+
+// Get all departments across all branches (for admin use)
+app.get('/api/departments/all', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const departments = await Employee.aggregate([
+      {
+        $group: {
+          _id: '$professionalDetails.department',
+          branches: { $addToSet: '$professionalDetails.branch' },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $match: {
+          _id: { $ne: null, $ne: '' }
+        }
+      },
+      {
+        $sort: { _id: 1 }
+      }
+    ]);
+
+    res.json(departments.map(dept => ({
+      name: dept._id,
+      branches: dept.branches,
+      employeeCount: dept.count
+    })));
+  } catch (error) {
+    console.error('Error fetching all departments:', error);
+    res.status(500).json({ 
+      message: 'Error fetching departments', 
+      error: error.message 
+    });
+  }
+});
+
+
+// Add these new routes to your existing server.js file
+// Insert these after your existing announcement routes
+
+// Get department-specific announcements
+app.get('/api/announcements/department/:department', authenticateToken, async (req, res) => {
+  try {
+    const { department } = req.params;
+    const { branch } = req.query;
+    
+    console.log(`Fetching department announcements for: ${department} in branch: ${branch}`);
+    
+    // First get the branch ID
+    const branchDoc = await Branch.findOne({
+      name: { $regex: new RegExp('^' + branch + '$', 'i') }
+    });
+    
+    if (!branchDoc) {
+      return res.status(404).json({ message: 'Branch not found' });
+    }
+    
+    // Get current time for expiry check
+    const now = new Date();
+    
+    // Find announcements that are:
+    // 1. For this branch
+    // 2. Department-specific (either in title/content or has targetDepartment field)
+    // 3. Not expired
+    const departmentAnnouncements = await Announcement.find({
+      branchId: branchDoc._id,
+      expiresAt: { $gt: now },
+      $or: [
+        // Department mentioned in title (case-insensitive)
+        { title: { $regex: new RegExp(department, 'i') } },
+        // Department mentioned in content (case-insensitive)
+        { content: { $regex: new RegExp(department, 'i') } },
+        // Specific department field (if you add this to your schema later)
+        { targetDepartment: { $regex: new RegExp('^' + department + '$', 'i') } },
+        // Low/medium priority announcements are assumed to be department-specific
+        { priority: { $in: ['low', 'medium'] } }
+      ]
+    })
+    .populate('createdBy', 'email')
+    .sort({ createdAt: -1 });
+    
+    console.log(`Found ${departmentAnnouncements.length} department announcements for ${department}`);
+    
+    res.json(departmentAnnouncements);
+  } catch (error) {
+    console.error('Error fetching department announcements:', error);
+    res.status(500).json({
+      message: 'Error fetching department announcements',
+      error: error.message
+    });
+  }
+});
+
+// Get branch-wide announcements (from HR/Admin)
+app.get('/api/announcements/branch-wide/:branch', authenticateToken, async (req, res) => {
+  try {
+    const { branch } = req.params;
+    
+    console.log(`Fetching branch-wide announcements for: ${branch}`);
+    
+    // First get the branch ID
+    const branchDoc = await Branch.findOne({
+      name: { $regex: new RegExp('^' + branch + '$', 'i') }
+    });
+    
+    if (!branchDoc) {
+      return res.status(404).json({ message: 'Branch not found' });
+    }
+    
+    // Get current time for expiry check
+    const now = new Date();
+    
+    // Find announcements that are:
+    // 1. For this branch
+    // 2. High priority (assumed to be branch-wide) OR created by HR/Admin
+    // 3. Not expired
+    const branchWideAnnouncements = await Announcement.find({
+      branchId: branchDoc._id,
+      expiresAt: { $gt: now },
+      $or: [
+        // High priority announcements are assumed to be branch-wide
+        { priority: 'high' },
+        // Could also filter by creator role if we populate that data
+        // We'll also include any announcement that doesn't seem department-specific
+      ]
+    })
+    .populate('createdBy', 'email role isAdmin')
+    .sort({ createdAt: -1 });
+    
+    // Additional filtering: only show announcements from HR managers or admins
+    const filteredAnnouncements = branchWideAnnouncements.filter(announcement => {
+      const creator = announcement.createdBy;
+      return (
+        announcement.priority === 'high' || // High priority is always branch-wide
+        (creator && (creator.role === 'hr_manager' || creator.isAdmin)) // Or created by HR/Admin
+      );
+    });
+    
+    console.log(`Found ${filteredAnnouncements.length} branch-wide announcements for ${branch}`);
+    
+    res.json(filteredAnnouncements);
+  } catch (error) {
+    console.error('Error fetching branch-wide announcements:', error);
+    res.status(500).json({
+      message: 'Error fetching branch-wide announcements',
+      error: error.message
+    });
+  }
+});
+
+// Optional: Update the announcement creation endpoint to support department targeting
+// Add this modification to your existing POST /api/announcements route
+// Find your existing route and add these fields to the announcement creation:
+
+/*
+// In your existing POST /api/announcements route, modify the announcement creation like this:
+const announcement = new Announcement({
+  title,
+  content,
+  branchId,
+  createdBy: req.user.id,
+  priority: priority || 'medium',
+  expiresAt: new Date(expiresAt),
+  // Add these new optional fields:
+  targetDepartment: req.body.targetDepartment, // Optional: specific department
+  scope: req.body.scope || 'branch', // 'department' or 'branch'
+});
+*/
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

@@ -2,25 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { 
   Mail, Phone, MapPin, Building, Briefcase, ArrowLeft, Calendar, 
   FileText, Award, Clock, RefreshCw, User, GitBranch, FileCheck, 
-  ExternalLink, AlertTriangle, IdCard 
+  ExternalLink, AlertTriangle, CreditCard, Download, Eye, File,
+  Paperclip, CheckCircle
 } from 'lucide-react';
 import '../assets/css/EmployeeDetails.css';
 import API_BASE_URL from '../config/api.js';
 
 const EmployeeDetails = ({ employee, onClose }) => {
-  const [activeTab, setActiveTab] = useState('history'); // Default to history tab
+  const [activeTab, setActiveTab] = useState('history');
   const [employeeHistory, setEmployeeHistory] = useState([]);
+  const [employeeDocuments, setEmployeeDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [avatarError, setAvatarError] = useState(false);
+  const [downloadingDoc, setDownloadingDoc] = useState(null);
 
   useEffect(() => {
     if (employee?._id || employee?.personalDetails?._id) {
       const employeeId = employee._id || employee.personalDetails._id;
       fetchEmployeeHistory(employeeId);
+      fetchEmployeeDocuments(employeeId);
     }
     
-    // Reset avatar error state when employee changes
     setAvatarError(false);
   }, [employee]);
 
@@ -41,16 +45,13 @@ const EmployeeDetails = ({ employee, onClose }) => {
       const data = await response.json();
       console.log('History data received:', data);
       
-      // Check if data is an array directly (the API seems to be returning an array)
       if (Array.isArray(data)) {
         setEmployeeHistory(data);
         setError(null);
       } else if (data.history && Array.isArray(data.history)) {
-        // Handle if API returns an object with history array
         setEmployeeHistory(data.history);
         setError(null);
       } else {
-        // If no valid history data format is found
         setEmployeeHistory([]);
         setError('No valid history data found');
       }
@@ -60,6 +61,74 @@ const EmployeeDetails = ({ employee, onClose }) => {
       setEmployeeHistory([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchEmployeeDocuments = async (employeeId) => {
+    setDocumentsLoading(true);
+    try {
+      console.log(`Fetching documents for employee ID: ${employeeId}`);
+      const response = await fetch(`${API_BASE_URL}/api/employees/${employeeId}/documents`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch documents');
+      }
+
+      const documents = await response.json();
+      console.log('Documents data received:', documents);
+      setEmployeeDocuments(documents || []);
+    } catch (err) {
+      console.error('Error fetching documents:', err);
+      setEmployeeDocuments([]);
+    } finally {
+      setDocumentsLoading(false);
+    }
+  };
+
+  const downloadDocument = async (documentId, filename) => {
+    setDownloadingDoc(documentId);
+    try {
+      const employeeId = employee._id || employee.personalDetails._id;
+      console.log(`Downloading document ${documentId} for employee ${employeeId}`);
+      
+      const response = await fetch(
+        `${API_BASE_URL}/api/employees/${employeeId}/documents/${documentId}/download`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to download document');
+      }
+
+      // Create blob from response
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create download link
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      
+      console.log('Document downloaded successfully');
+    } catch (err) {
+      console.error('Error downloading document:', err);
+      alert('Failed to download document: ' + err.message);
+    } finally {
+      setDownloadingDoc(null);
     }
   };
 
@@ -75,7 +144,14 @@ const EmployeeDetails = ({ employee, onClose }) => {
     }
   };
 
-  // Format role names nicely
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   const formatRole = (role) => {
     if (!role) return '';
     return role
@@ -85,7 +161,6 @@ const EmployeeDetails = ({ employee, onClose }) => {
       .join(' ');
   };
 
-  // Get the icon for a specific history event type
   const getEventIcon = (item) => {
     if (item.type === 'role_change' || (item.change && item.change.toLowerCase().includes('role'))) {
       return <Briefcase size={20} />;
@@ -102,7 +177,6 @@ const EmployeeDetails = ({ employee, onClose }) => {
     }
   };
 
-  // Get a class for the event icon background based on event type
   const getEventIconClass = (item) => {
     if (item.type === 'role_change' || (item.change && item.change.toLowerCase().includes('role'))) {
       return 'event-icon role-change';
@@ -119,21 +193,18 @@ const EmployeeDetails = ({ employee, onClose }) => {
     }
   };
 
-  // Get a formatted date with relative time for recent events
   const getFormattedDate = (dateStr) => {
     try {
       const date = new Date(dateStr);
       const now = new Date();
       const diff = Math.floor((now - date) / (1000 * 60 * 60 * 24));
       
-      // Format the date
       const formatted = date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       });
       
-      // Add relative time for recent events
       if (diff === 0) {
         return `${formatted} (Today)`;
       } else if (diff === 1) {
@@ -155,11 +226,17 @@ const EmployeeDetails = ({ employee, onClose }) => {
     }
   };
 
+  const handleRefreshDocuments = () => {
+    if (employee?._id || employee?.personalDetails?._id) {
+      const employeeId = employee._id || employee.personalDetails._id;
+      fetchEmployeeDocuments(employeeId);
+    }
+  };
+
   const handleAvatarError = () => {
     setAvatarError(true);
   };
 
-  // Get initials for avatar fallback
   const getInitials = (name) => {
     if (!name) return 'U';
     return name
@@ -169,30 +246,37 @@ const EmployeeDetails = ({ employee, onClose }) => {
       .toUpperCase();
   };
 
-  // Get profile pic number from various possible sources
   const getProfilePicNumber = () => {
     if (employee.profilePic) return employee.profilePic;
     
-    // Try to get a consistent number based on email
     const email = employee.email || employee.personalDetails?.email;
     if (email) {
       return (email.charCodeAt(0) % 11) + 1;
     }
     
-    // Fallback to a random number
     return Math.floor(Math.random() * 11) + 1;
+  };
+
+  const getFileIcon = (mimetype) => {
+    if (mimetype?.includes('pdf')) {
+      return <File size={20} className="file-icon-pdf" />;
+    } else if (mimetype?.includes('image')) {
+      return <File size={20} className="file-icon-image" />;
+    } else if (mimetype?.includes('word') || mimetype?.includes('document')) {
+      return <File size={20} className="file-icon-doc" />;
+    } else {
+      return <FileText size={20} className="file-icon-default" />;
+    }
   };
 
   if (!employee) {
     return null;
   }
 
-  // Get the employee name
   const employeeName = employee.firstName 
     ? `${employee.firstName} ${employee.lastName || ''}`
     : employee.personalDetails?.name || 'Unknown';
 
-  // Get the user-entered USER ID from personalDetails.id
   const userId = employee.personalDetails?.id || 'N/A';
 
   return (
@@ -221,7 +305,7 @@ const EmployeeDetails = ({ employee, onClose }) => {
           <div className="employee-profile-info">
             <h2>{employeeName}</h2>
             <div className="employee-id-badge">
-              <IdCard size={16} className="id-badge-icon" />
+              <CreditCard size={16} className="id-badge-icon" />
               <span>ID: {userId}</span>
             </div>
             <p className="employee-role">
@@ -244,6 +328,16 @@ const EmployeeDetails = ({ employee, onClose }) => {
             <span>Employment History</span>
           </button>
           <button 
+            className={`tab-button ${activeTab === 'documents' ? 'active' : ''}`}
+            onClick={() => setActiveTab('documents')}
+          >
+            <FileText size={18} />
+            <span>Documents</span>
+            {employeeDocuments.length > 0 && (
+              <span className="document-count">{employeeDocuments.length}</span>
+            )}
+          </button>
+          <button 
             className={`tab-button ${activeTab === 'info' ? 'active' : ''}`}
             onClick={() => setActiveTab('info')}
           >
@@ -260,7 +354,7 @@ const EmployeeDetails = ({ employee, onClose }) => {
                 <div className="info-grid">
                   <div className="info-item">
                     <div className="info-label">
-                      <IdCard size={16} />
+                      <CreditCard size={16} />
                       <span>User ID</span>
                     </div>
                     <div className="info-value">
@@ -328,7 +422,7 @@ const EmployeeDetails = ({ employee, onClose }) => {
                   {employee.rating && (
                     <div className="info-item">
                       <div className="info-label">
-                        <span className="star-icon">★</span>
+                        <span className="star-icon">⭐</span>
                         <span>Performance Rating</span>
                       </div>
                       <div className="info-value">
@@ -355,6 +449,71 @@ const EmployeeDetails = ({ employee, onClose }) => {
                   )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'documents' && (
+            <div className="documents-section">
+              <div className="documents-header">
+                <h3 className="documents-title">Employee Documents</h3>
+                
+              </div>
+
+              {documentsLoading ? (
+                <div className="loading-state">
+                  <div className="spinner"></div>
+                  <p>Loading documents...</p>
+                </div>
+              ) : employeeDocuments && employeeDocuments.length > 0 ? (
+                <div className="documents-grid">
+                  {employeeDocuments.map((doc, index) => (
+                    <div key={doc._id || index} className="document-card">
+                      <div className="document-icon">
+                        {getFileIcon(doc.mimetype)}
+                      </div>
+                      <div className="document-info">
+                        <h4 className="document-name" title={doc.originalName || doc.name}>
+                          {doc.originalName || doc.name}
+                        </h4>
+                        <div className="document-meta">
+                          <span className="document-size">
+                            {formatFileSize(doc.size || 0)}
+                          </span>
+                          <span className="document-date">
+                            {formatDate(doc.uploadedAt)}
+                          </span>
+                        </div>
+                        {doc.hasData && (
+                          <div className="document-status">
+                            <CheckCircle size={14} className="has-data-icon" />
+                            <span>Available</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="document-actions">
+                        <button
+                          className="download-document-btn"
+                          onClick={() => downloadDocument(doc._id, doc.originalName || doc.name)}
+                          disabled={downloadingDoc === doc._id}
+                          title="Download document"
+                        >
+                          {downloadingDoc === doc._id ? (
+                            <RefreshCw size={16} className="spinning" />
+                          ) : (
+                            <Download size={16} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-documents-state">
+                  <Paperclip size={48} className="empty-icon" />
+                  <h3>No Documents Found</h3>
+                  <p>This employee has no documents uploaded yet.</p>
+                </div>
+              )}
             </div>
           )}
 
@@ -425,7 +584,6 @@ const EmployeeDetails = ({ employee, onClose }) => {
                   <p>There are no employment history records available for this employee.</p>
                   <div className="empty-state-actions">
                     <p className="empty-state-hint">Profile actions like role changes, branch transfers, and document uploads will appear here.</p>
-                    
                   </div>
                 </div>
               )}

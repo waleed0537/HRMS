@@ -200,7 +200,7 @@ const EnhancedAnnouncementsList = ({ branchId, showAllForAdmin = false, refreshT
         </div>
         
         <button 
-          className="delete-button" 
+          className="delete-button1" 
           onClick={() => handleDelete(announcement._id)}
           title="Delete announcement"
           aria-label="Delete announcement"

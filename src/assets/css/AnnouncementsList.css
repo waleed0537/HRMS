@@ -247,7 +247,7 @@
 }
 
 /* Delete button */
-.delete-button {
+.delete-button1 {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -265,17 +265,17 @@
   opacity: 1 !important;
 }
 
-.delete-button:hover {
+.delete-button1:hover {
   background-color: #fee2e2;
   color: #dc2626;
   transform: scale(1.05);
 }
 
-.delete-button:active {
+.delete-button1:active {
   transform: scale(0.95);
 }
 
-.delete-button svg {
+.delete-button1 svg {
   pointer-events: none;
 }
 
@@ -436,7 +436,7 @@
     gap: 8px;
   }
   
-  .delete-button {
+  .delete-button1 {
     align-self: flex-end;
     position: absolute;
     top: 12px;
@@ -480,7 +480,7 @@
 }
 
 /* Focus states for accessibility */
-.delete-button:focus {
+.delete-button1:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }

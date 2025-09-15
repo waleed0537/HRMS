@@ -79,6 +79,22 @@ async function removeEmailUniqueConstraint() {
     console.error('Error checking/removing email index:', error);
   }
 }
+const validateLeaveDocs = (req, res, next) => {
+  const maxSize = 16 * 1024 * 1024; // 16MB MongoDB document limit
+  
+  if (req.files) {
+    for (let file of req.files) {
+      if (file.size > maxSize) {
+        return res.status(400).json({
+          success: false,
+          message: `File ${file.originalname} is too large. Maximum size is 16MB.`
+        });
+      }
+    }
+  }
+  
+  next();
+};
 
 const csvUpload = multer({
   storage: csvStorage,
@@ -1295,14 +1311,10 @@ app.get('/api/leaves/filter/:employeeId', authenticateToken, async (req, res) =>
 });
 
 //Leave management endpoints 
-app.post('/api/leaves', authenticateToken, upload.array('documents', 5), async (req, res) => {
+app.post('/api/leaves', authenticateToken, validateLeaveDocs, upload.array('documents', 5), async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    const documents = req.files ? req.files.map(file => ({
-      name: file.originalname,
-      path: file.path
-    })) : [];
-
+    
     // Get employee data to determine their branch
     const employee = await Employee.findOne({ userId: req.user.id });
     if (!employee) {
@@ -1311,7 +1323,8 @@ app.post('/api/leaves', authenticateToken, upload.array('documents', 5), async (
 
     const branchName = employee.professionalDetails.branch;
 
-    const leaveRequest = new Leave({
+    // Create leave request object
+    const leaveRequestData = {
       employeeId: req.user.id,
       employeeName: user.name || user.email,
       employeeEmail: user.email,
@@ -1319,20 +1332,42 @@ app.post('/api/leaves', authenticateToken, upload.array('documents', 5), async (
       endDate: req.body.endDate,
       leaveType: req.body.leaveType,
       reason: req.body.reason,
-      documents: documents
-    });
+      documents: [] // Will be populated below
+    };
 
+    // Process uploaded documents - store in database
+    if (req.files && req.files.length > 0) {
+      console.log('Processing uploaded leave documents:', req.files.length);
+      
+      for (const file of req.files) {
+        console.log(`Processing document: ${file.originalname}, size: ${file.size} bytes`);
+
+        const documentData = {
+          name: file.originalname,
+          originalName: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          data: file.buffer, // Store file data in database
+          uploadedAt: new Date()
+        };
+
+        leaveRequestData.documents.push(documentData);
+      }
+    }
+
+    // Create and save leave request
+    const leaveRequest = new Leave(leaveRequestData);
     await leaveRequest.save();
 
-    // Create notifications for admins and HR managers
+    console.log('Leave request saved with', leaveRequestData.documents.length, 'documents');
+
+    // Create notifications for admins and HR managers (existing code)
     try {
-      // Find all admin users
       const adminUsers = await User.find({
         isAdmin: true,
         status: 'approved'
       });
 
-      // Find HR managers for this specific branch
       const hrManagers = await User.find({
         role: 'hr_manager',
         branchName: branchName,
@@ -1345,7 +1380,6 @@ app.post('/api/leaves', authenticateToken, upload.array('documents', 5), async (
       const diffTime = Math.abs(endDate - startDate);
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-      // Format dates for notifications
       const formattedStartDate = startDate.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
@@ -1385,13 +1419,22 @@ app.post('/api/leaves', authenticateToken, upload.array('documents', 5), async (
         console.log(`Created ${allNotifications.length} notifications for new leave request`);
       }
     } catch (notifError) {
-      // Log but don't fail the leave request submission
       console.error('Error creating notifications for leave request:', notifError);
     }
 
-    res.status(201).json(leaveRequest);
+    // Return leave request without large file data
+    const responseData = leaveRequest.toJSON(); // This will exclude file data automatically
+    
+    res.status(201).json({
+      ...responseData,
+      documentsUploaded: leaveRequestData.documents.length
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error creating leave request:', error);
+    res.status(500).json({ 
+      message: 'Error creating leave request',
+      error: error.message 
+    });
   }
 });
 
@@ -1436,9 +1479,178 @@ app.get('/api/leaves/:id', authenticateToken, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+app.get('/api/leaves/:id/documents', authenticateToken, async (req, res) => {
+  try {
+    const leave = await Leave.findById(req.params.id);
+    
+    if (!leave) {
+      return res.status(404).json({ message: 'Leave request not found' });
+    }
 
+    // Check if user has permission to view this request
+    const user = await User.findById(req.user.id);
+    const hasPermission = user.isAdmin || 
+                         user.role === 'hr_manager' || 
+                         leave.employeeId.toString() === req.user.id;
+
+    if (!hasPermission) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Return document metadata without the actual file data
+    const documentsList = leave.getDocumentsList();
+    res.json(documentsList);
+  } catch (error) {
+    console.error('Error fetching leave documents:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
 // Updated route for handling leave status updates in server.js
+app.get('/api/leaves/:id/documents/:documentId/download', authenticateToken, async (req, res) => {
+  try {
+    const { id, documentId } = req.params;
+    
+    console.log(`Downloading leave document ${documentId} for leave ${id}`);
+    
+    // Find leave request
+    const leave = await Leave.findById(id);
+    
+    if (!leave) {
+      return res.status(404).json({ message: 'Leave request not found' });
+    }
 
+    // Check if user has permission to download this document
+    const user = await User.findById(req.user.id);
+    const hasPermission = user.isAdmin || 
+                         user.role === 'hr_manager' || 
+                         user.role === 't1_member' ||
+                         leave.employeeId.toString() === req.user.id;
+
+    if (!hasPermission) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Find the specific document
+    const document = leave.documents.id(documentId);
+    
+    if (!document || !document.data) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+
+    console.log('Serving leave document from database:', {
+      filename: document.originalName || document.name,
+      mimetype: document.mimetype,
+      size: document.size
+    });
+
+    // Set appropriate headers for file download
+    res.set({
+      'Content-Type': document.mimetype,
+      'Content-Disposition': `attachment; filename="${document.originalName || document.name}"`,
+      'Content-Length': document.size
+    });
+
+    // Send the file data directly from database
+    res.send(document.data);
+    
+  } catch (error) {
+    console.error('Error downloading leave document:', error);
+    res.status(500).json({ 
+      message: 'Error downloading document',
+      error: error.message 
+    });
+  }
+});
+
+app.delete('/api/leaves/:id/documents/:documentId', authenticateToken, async (req, res) => {
+  try {
+    const { id, documentId } = req.params;
+    
+    console.log(`Deleting leave document ${documentId} for leave ${id}`);
+    
+    const leave = await Leave.findById(id);
+    if (!leave) {
+      return res.status(404).json({ message: 'Leave request not found' });
+    }
+
+    // Check if user has permission (only the employee who created the leave or admin/HR)
+    const user = await User.findById(req.user.id);
+    const hasPermission = user.isAdmin || 
+                         user.role === 'hr_manager' || 
+                         leave.employeeId.toString() === req.user.id;
+
+    if (!hasPermission) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const document = leave.documents.id(documentId);
+    if (!document) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+
+    const documentName = document.originalName || document.name;
+    
+    // Remove document from leave record (no file system cleanup needed)
+    leave.documents.pull(documentId);
+    await leave.save();
+
+    console.log(`Document ${documentName} deleted from database`);
+
+    res.json({ 
+      message: 'Document deleted successfully',
+      documentName: documentName
+    });
+  } catch (error) {
+    console.error('Error deleting leave document:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+app.post('/api/leaves/:id/documents', authenticateToken, validateLeaveDocs, upload.array('documents', 5), async (req, res) => {
+  try {
+    const leave = await Leave.findById(req.params.id);
+    
+    if (!leave) {
+      return res.status(404).json({ message: 'Leave request not found' });
+    }
+
+    // Check if user has permission (only the employee who created the leave)
+    if (leave.employeeId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Process uploaded documents
+    const processedDocuments = [];
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const documentData = {
+          name: file.originalname,
+          originalName: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          data: file.buffer,
+          uploadedAt: new Date()
+        };
+
+        leave.documents.push(documentData);
+        processedDocuments.push({
+          name: file.originalname,
+          size: file.size,
+          mimetype: file.mimetype
+        });
+      }
+
+      await leave.save();
+    }
+
+    res.json({
+      message: `${processedDocuments.length} document(s) added successfully`,
+      documentsAdded: processedDocuments
+    });
+  } catch (error) {
+    console.error('Error adding documents to leave:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
 app.put('/api/leaves/:id/status', authenticateToken, checkPermission, async (req, res) => {
   try {
     if (req.userRole !== 'admin' && req.userRole !== 'hr_manager') {

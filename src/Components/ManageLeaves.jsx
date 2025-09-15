@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Check, X, FileText, Download, Eye, Grid, List, LayoutGrid,
   FileSpreadsheet, Mail, Phone, Calendar, Filter, RefreshCw,
   Search, ChevronDown, AlertCircle, Clock, Calendar as CalendarIcon,
@@ -13,7 +13,7 @@ import { useToast } from '../Components/common/ToastContent';
 const ManageLeaves = () => {
   // Toast notification
   const toast = useToast();
-  
+
   // State management
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
@@ -22,7 +22,7 @@ const ManageLeaves = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [selectedLeave, setSelectedLeave] = useState(null);
-  
+
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -32,7 +32,7 @@ const ManageLeaves = () => {
     dateRange: 'all',
     employeeName: ''
   });
-  
+
   // View state
   const [viewMode, setViewMode] = useState('compact'); // 'grid', 'list', or 'compact'
   const [sortConfig, setSortConfig] = useState({
@@ -67,32 +67,32 @@ const ManageLeaves = () => {
       setLoading(true);
       const user = JSON.parse(localStorage.getItem('user'));
       const endpoint = user.role === 'hr_manager' ? '/api/hr/leaves' : '/api/leaves';
-      
+
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-  
+
       if (!response.ok) {
         throw new Error('Failed to fetch leave requests');
       }
-  
+
       const data = await response.json();
-      
+
       // Filter out the current user's leave requests
       const currentUserEmail = user.email;
       const filteredData = data.filter(leave => leave.employeeEmail !== currentUserEmail);
-      
+
       setLeaveRequests(filteredData);
-      
+
       // Extract unique values for filters
       const leaveTypes = [...new Set(filteredData.map(leave => leave.leaveType))];
       const employees = [...new Set(filteredData.map(leave => leave.employeeName))];
-      
+
       setUniqueLeaveTypes(leaveTypes);
       setUniqueEmployees(employees);
-      
+
       setLoading(false);
     } catch (error) {
       console.error('Error fetching leave requests:', error);
@@ -119,7 +119,7 @@ const ManageLeaves = () => {
     if (filters.dateRange !== 'all') {
       const now = new Date();
       const pastDate = new Date();
-      
+
       switch (filters.dateRange) {
         case 'today':
           result = result.filter(leave => {
@@ -154,7 +154,7 @@ const ManageLeaves = () => {
     // Apply search filter
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
-      result = result.filter(leave => 
+      result = result.filter(leave =>
         leave.employeeName.toLowerCase().includes(searchLower) ||
         leave.employeeEmail.toLowerCase().includes(searchLower) ||
         leave.leaveType.toLowerCase().includes(searchLower) ||
@@ -167,13 +167,13 @@ const ManageLeaves = () => {
       result.sort((a, b) => {
         let aValue = a[sortConfig.key];
         let bValue = b[sortConfig.key];
-        
+
         // Handle dates
         if (sortConfig.key === 'startDate' || sortConfig.key === 'endDate' || sortConfig.key === 'createdAt') {
           aValue = new Date(aValue);
           bValue = new Date(bValue);
         }
-        
+
         if (aValue < bValue) {
           return sortConfig.direction === 'asc' ? -1 : 1;
         }
@@ -190,11 +190,11 @@ const ManageLeaves = () => {
   // Handle sorting
   const handleSort = (key) => {
     let direction = 'asc';
-    
+
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
     }
-    
+
     setSortConfig({ key, direction });
   };
 
@@ -205,20 +205,20 @@ const ManageLeaves = () => {
       if (!token) {
         throw new Error('Authentication required');
       }
-  
+
       // Find the leave request before updating to get employee information
       const leaveRequest = leaveRequests.find(leave => leave._id === id);
       if (!leaveRequest) {
         throw new Error('Leave request not found');
       }
-  
+
       const response = await fetch(`${API_BASE_URL}/api/leaves/${id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status,
           // Include employee email for notification
           email: leaveRequest.employeeEmail,
@@ -228,22 +228,22 @@ const ManageLeaves = () => {
           endDate: leaveRequest.endDate
         })
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to update leave request status');
       }
-  
+
       // Update leave request in state
-      setLeaveRequests(prev => 
-        prev.map(leave => 
+      setLeaveRequests(prev =>
+        prev.map(leave =>
           leave._id === id ? { ...leave, status } : leave
         )
       );
-  
+
       // Show toast notification
       toast.success(`Leave request ${status} and email notification sent`, 3000);
-  
+
       // Close detail view if open
       if (selectedLeave && selectedLeave._id === id) {
         setSelectedLeave(null);
@@ -256,35 +256,61 @@ const ManageLeaves = () => {
 
   // Handle document view
   const handleDocumentView = (doc) => {
-    setSelectedDocument(doc);
+    // For documents stored in database, we can only download them
+    // If you want to implement preview, you'd need a separate preview endpoint
+    setSelectedDocument({
+      ...doc,
+      isPreviewAvailable: false, // Indicate that preview might not be available
+      message: 'Click download to save this document to your device'
+    });
   };
 
   // Download document
-  const downloadDocument = async (doc) => {
+  const downloadDocument = async (doc, leaveId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/${doc.path}`, {
+
+      // Use the new database download endpoint
+      const response = await fetch(`${API_BASE_URL}/api/leaves/${leaveId}/documents/${doc._id}/download`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      if (!response.ok) throw new Error('Failed to download document');
+      if (!response.ok) {
+        throw new Error(`Failed to download document: ${response.status} ${response.statusText}`);
+      }
 
+      // Get the filename from the response headers or use the document name
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = doc.originalName || doc.name || 'document';
+
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Convert response to blob
       const blob = await response.blob();
+
+      // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = doc.name;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
+
+      // Clean up
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
       toast.success('Document downloaded successfully', 3000);
     } catch (error) {
       console.error('Error downloading document:', error);
-      toast.error('Failed to download document', 3000);
+      toast.error(`Failed to download document: ${error.message}`, 5000);
     }
   };
 
@@ -347,7 +373,7 @@ const ManageLeaves = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       toast.success('CSV exported successfully', 3000);
     } catch (error) {
       console.error('Error exporting CSV:', error);
@@ -386,35 +412,35 @@ const ManageLeaves = () => {
       default: return <Clock size={16} className="status-icon-pending" />;
     }
   };
-  
+
   // Generate avatar with profile pic or fallback to initials
   const renderAvatar = (name, email) => {
     // Get initials for fallback
     const initial = name ? name.charAt(0).toUpperCase() : 'U';
-    
+
     // Generate a consistent profile pic number based on email
-    const profilePicNum = email ? 
-      (email.charCodeAt(0) % 11) + 1 : 
+    const profilePicNum = email ?
+      (email.charCodeAt(0) % 11) + 1 :
       Math.floor(Math.random() * 11) + 1;
-    
+
     return (
       <div className="manage-employee-avatar">
-        <img 
-  src={new URL(`../assets/avatars/avatar-${profilePicNum}.jpg`, import.meta.url).href}
-  alt={name || "Employee"}
-  style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-  onError={(e) => {
-    // If image fails to load, replace with initial
-    e.target.style.display = 'none';
-    e.target.parentNode.style.display = 'flex';
-    e.target.parentNode.style.alignItems = 'center';
-    e.target.parentNode.style.justifyContent = 'center';
-    e.target.parentNode.style.backgroundColor = '#474787';
-    e.target.parentNode.style.color = 'white';
-    e.target.parentNode.style.fontWeight = 'bold';
-    e.target.parentNode.innerText = initial;
-  }}
-/>
+        <img
+          src={new URL(`../assets/avatars/avatar-${profilePicNum}.jpg`, import.meta.url).href}
+          alt={name || "Employee"}
+          style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+          onError={(e) => {
+            // If image fails to load, replace with initial
+            e.target.style.display = 'none';
+            e.target.parentNode.style.display = 'flex';
+            e.target.parentNode.style.alignItems = 'center';
+            e.target.parentNode.style.justifyContent = 'center';
+            e.target.parentNode.style.backgroundColor = '#474787';
+            e.target.parentNode.style.color = 'white';
+            e.target.parentNode.style.fontWeight = 'bold';
+            e.target.parentNode.innerText = initial;
+          }}
+        />
       </div>
     );
   };
@@ -437,7 +463,7 @@ const ManageLeaves = () => {
               <span>{leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}</span>
             </div>
           </div>
-          
+
           <div className="manage-leave-card-body">
             <div className="manage-leave-details">
               <div className={`manage-leave-type ${getLeaveTypeClass(leave.leaveType)}`}>
@@ -452,12 +478,12 @@ const ManageLeaves = () => {
                 <span>{calculateDuration(leave.startDate, leave.endDate)}</span>
               </div>
             </div>
-            
+
             <div className="manage-leave-reason">
               <h4>Reason:</h4>
               <p>{leave.reason}</p>
             </div>
-            
+
             {leave.documents && leave.documents.length > 0 && (
               <div className="manage-leave-documents">
                 <h4>Documents:</h4>
@@ -475,26 +501,27 @@ const ManageLeaves = () => {
                           <Eye size={14} />
                         </button>
                         <button
-                          onClick={() => downloadDocument(doc)}
+                          onClick={() => downloadDocument(doc, leave._id)} // Pass leave ID
                           className="manage-doc-action-btn manage-download"
                           title="Download document"
                         >
                           <Download size={14} />
                         </button>
                       </div>
+
                     </div>
                   ))}
                 </div>
               </div>
             )}
           </div>
-          
+
           <div className="manage-leave-card-footer">
             <div className="manage-leave-submitted">
               <Calendar size={16} className="manage-icon" />
               <span>Submitted: {formatDate(leave.createdAt)}</span>
             </div>
-            
+
             {leave.status === 'pending' && (
               <div className="manage-leave-actions">
                 <button
@@ -551,7 +578,7 @@ const ManageLeaves = () => {
           <span>Actions</span>
         </div>
       </div>
-      
+
       {filteredRequests.map(leave => (
         <div key={leave._id} className="manage-leave-list-item">
           <div className="manage-leave-list-item-cell manage-employee">
@@ -563,13 +590,13 @@ const ManageLeaves = () => {
               <div className="manage-employee-email">{leave.employeeEmail}</div>
             </div>
           </div>
-          
+
           <div className="manage-leave-list-item-cell manage-type">
             <div className={`manage-leave-type-badge ${getLeaveTypeClass(leave.leaveType)}`}>
               {leave.leaveType}
             </div>
           </div>
-          
+
           <div className="manage-leave-list-item-cell manage-dates">
             <div className="manage-date-range">
               <div>{formatDate(leave.startDate)}</div>
@@ -580,14 +607,14 @@ const ManageLeaves = () => {
               {calculateDuration(leave.startDate, leave.endDate)}
             </div>
           </div>
-          
+
           <div className="manage-leave-list-item-cell manage-status">
             <div className={`manage-status-badge ${getStatusClass(leave.status)}`}>
               {getStatusIcon(leave.status)}
               <span>{leave.status}</span>
             </div>
           </div>
-          
+
           <div className="manage-leave-list-item-cell manage-actions">
             <button
               onClick={() => setSelectedLeave(leave)}
@@ -596,7 +623,7 @@ const ManageLeaves = () => {
             >
               <Eye size={16} />
             </button>
-            
+
             {leave.status === 'pending' && (
               <>
                 <button
@@ -615,7 +642,7 @@ const ManageLeaves = () => {
                 </button>
               </>
             )}
-            
+
             <button className="manage-list-action-btn manage-more-btn">
               <MoreVertical size={16} />
             </button>
@@ -638,7 +665,7 @@ const ManageLeaves = () => {
               {getStatusIcon(leave.status)}
             </div>
           </div>
-          
+
           <div className="manage-leave-compact-body">
             <h3 className="manage-compact-employee-name">{leave.employeeName}</h3>
             <div className={`manage-compact-leave-type ${getLeaveTypeClass(leave.leaveType)}`}>
@@ -648,17 +675,17 @@ const ManageLeaves = () => {
               {formatDate(leave.startDate)} — {formatDate(leave.endDate)}
             </div>
           </div>
-          
+
           <div className="manage-leave-compact-footer">
             {leave.status === 'pending' ? (
               <div className="manage-compact-actions">
-                <button 
+                <button
                   onClick={() => handleStatusUpdate(leave._id, 'approved')}
                   className="manage-compact-btn manage-approve"
                 >
                   Approve
                 </button>
-                <button 
+                <button
                   onClick={() => handleStatusUpdate(leave._id, 'rejected')}
                   className="manage-compact-btn manage-reject"
                 >
@@ -666,7 +693,7 @@ const ManageLeaves = () => {
                 </button>
               </div>
             ) : (
-              <button 
+              <button
                 onClick={() => setSelectedLeave(leave)}
                 className="manage-compact-btn manage-view"
               >
@@ -687,17 +714,17 @@ const ManageLeaves = () => {
           <h1>Manage Leave Requests</h1>
           <p>Review and manage employee leave requests</p>
         </div>
-        
+
         <div className="manage-leaves-actions">
-          <button 
+          <button
             className={`manage-refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
             onClick={refreshData}
             title="Refresh data"
           >
             <RefreshCw size={18} />
           </button>
-          
-          <button 
+
+          <button
             className="manage-export-btn"
             onClick={exportToCSV}
             title="Export to CSV"
@@ -707,25 +734,25 @@ const ManageLeaves = () => {
           </button>
         </div>
       </div>
-      
+
       {/* Filter and Search Bar */}
       <div className="manage-filters-bar">
         <div className="manage-view-toggle">
-          <button 
+          <button
             className={`manage-view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
             onClick={() => setViewMode('grid')}
             title="Grid view"
           >
             <Grid size={18} />
           </button>
-          <button 
+          <button
             className={`manage-view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
             onClick={() => setViewMode('list')}
             title="List view"
           >
             <List size={18} />
           </button>
-          <button 
+          <button
             className={`manage-view-toggle-btn ${viewMode === 'compact' ? 'active' : ''}`}
             onClick={() => setViewMode('compact')}
             title="Compact view"
@@ -733,7 +760,7 @@ const ManageLeaves = () => {
             <LayoutGrid size={18} />
           </button>
         </div>
-        
+
         <div className="manage-search-container">
           <Search className="manage-search-icon" size={18} />
           <input
@@ -744,8 +771,8 @@ const ManageLeaves = () => {
             className="manage-search-input"
           />
         </div>
-        
-        <button 
+
+        <button
           className={`manage-filter-btn ${showFilters ? 'active' : ''}`}
           onClick={() => setShowFilters(!showFilters)}
           title="Toggle filters"
@@ -755,7 +782,7 @@ const ManageLeaves = () => {
           <ChevronDown size={16} className={`manage-filter-chevron ${showFilters ? 'active' : ''}`} />
         </button>
       </div>
-      
+
       {/* Expandable Filters Panel */}
       {showFilters && (
         <div className="manage-filters-panel">
@@ -772,7 +799,7 @@ const ManageLeaves = () => {
               <option value="rejected">Rejected</option>
             </select>
           </div>
-          
+
           <div className="manage-filter-group">
             <label>Leave Type</label>
             <select
@@ -786,7 +813,7 @@ const ManageLeaves = () => {
               ))}
             </select>
           </div>
-          
+
           <div className="manage-filter-group">
             <label>Date Range</label>
             <select
@@ -800,7 +827,7 @@ const ManageLeaves = () => {
               <option value="month">Last 30 Days</option>
             </select>
           </div>
-          
+
           <div className="manage-filter-group">
             <label>Employee</label>
             <select
@@ -814,13 +841,13 @@ const ManageLeaves = () => {
               ))}
             </select>
           </div>
-          
+
           <button className="manage-reset-filters-btn" onClick={resetFilters}>
             Reset Filters
           </button>
         </div>
       )}
-      
+
       {/* Main Content */}
       <div className="manage-leaves-content">
         {loading ? (
@@ -854,52 +881,65 @@ const ManageLeaves = () => {
             <div className="manage-results-summary">
               <span>Showing {filteredRequests.length} of {leaveRequests.length} leave requests</span>
             </div>
-            
+
             {viewMode === 'grid' && renderGridView()}
             {viewMode === 'list' && renderListView()}
             {viewMode === 'compact' && renderCompactView()}
           </>
         )}
       </div>
-      
+
       {/* Document Preview Modal */}
       {selectedDocument && (
-        <div className="manage-document-modal" onClick={() => setSelectedDocument(null)}>
-          <div className="manage-modal-overlay"></div>
-          <div className="manage-document-modal-content">
-            <button className="manage-close-modal" onClick={() => setSelectedDocument(null)}>
-              <X size={24} />
-            </button>
-            
-            <div className="manage-document-preview">
-              {selectedDocument.path.match(/\.(jpg|jpeg|png|gif)$/i) ? (
-                <img
-                  src={`${API_BASE_URL}/${selectedDocument.path}`}
-                  alt="Document preview"
-                  className="manage-document-image"
-                />
-              ) : (
-                <div className="manage-document-fallback">
-                  <FileText size={64} />
-                  <p>Document preview not available</p>
-                  <p className="manage-document-name">{selectedDocument.name}</p>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      downloadDocument(selectedDocument);
-                    }}
-                    className="manage-download-document-btn"
-                  >
-                    <Download size={18} />
-                    Download Document
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+  <div className="manage-document-modal" onClick={() => setSelectedDocument(null)}>
+    <div className="manage-modal-overlay"></div>
+    <div className="manage-document-modal-content">
+      <button className="manage-close-modal" onClick={() => setSelectedDocument(null)}>
+        <X size={24} />
+      </button>
       
+      <div className="manage-document-preview">
+        {selectedDocument.mimetype && selectedDocument.mimetype.startsWith('image/') ? (
+          // For images, you could implement a preview endpoint
+          <div className="manage-document-fallback">
+            <FileText size={64} />
+            <p>Image preview not available for database-stored documents</p>
+            <p className="manage-document-name">{selectedDocument.originalName || selectedDocument.name}</p>
+          </div>
+        ) : (
+          <div className="manage-document-fallback">
+            <FileText size={64} />
+            <p>Document preview not available</p>
+            <p className="manage-document-name">{selectedDocument.originalName || selectedDocument.name}</p>
+            <p className="manage-document-info">
+              Size: {(selectedDocument.size / 1024).toFixed(1)} KB<br/>
+              Type: {selectedDocument.mimetype}
+            </p>
+          </div>
+        )}
+        
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            // You'll need to pass the leave ID here too
+            // This might require storing it in selectedDocument or getting it from context
+            const currentLeave = filteredRequests.find(leave => 
+              leave.documents.some(doc => doc._id === selectedDocument._id)
+            );
+            if (currentLeave) {
+              downloadDocument(selectedDocument, currentLeave._id);
+            }
+          }}
+          className="manage-download-document-btn"
+        >
+          <Download size={18} />
+          Download Document
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
       {/* Leave Detail Modal */}
       {selectedLeave && (
         <div className="manage-leave-detail-modal">
@@ -908,7 +948,7 @@ const ManageLeaves = () => {
             <button className="manage-close-modal" onClick={() => setSelectedLeave(null)}>
               <X size={24} />
             </button>
-            
+
             <div className="manage-leave-detail-header">
               <div className="manage-detail-employee-info">
                 <div className="manage-detail-avatar">
@@ -919,13 +959,13 @@ const ManageLeaves = () => {
                   <p className="manage-detail-email">{selectedLeave.employeeEmail}</p>
                 </div>
               </div>
-              
+
               <div className={`manage-detail-status ${getStatusClass(selectedLeave.status)}`}>
                 {getStatusIcon(selectedLeave.status)}
                 <span>{selectedLeave.status.charAt(0).toUpperCase() + selectedLeave.status.slice(1)}</span>
               </div>
             </div>
-            
+
             <div className="manage-leave-detail-body">
               <div className="manage-detail-section">
                 <h3>Leave Details</h3>
@@ -936,34 +976,34 @@ const ManageLeaves = () => {
                       {selectedLeave.leaveType.charAt(0).toUpperCase() + selectedLeave.leaveType.slice(1)} Leave
                     </div>
                   </div>
-                  
+
                   <div className="manage-detail-item">
                     <label>Duration</label>
                     <p>{calculateDuration(selectedLeave.startDate, selectedLeave.endDate)}</p>
                   </div>
-                  
+
                   <div className="manage-detail-item">
                     <label>Start Date</label>
                     <p>{formatDate(selectedLeave.startDate)}</p>
                   </div>
-                  
+
                   <div className="manage-detail-item">
                     <label>End Date</label>
                     <p>{formatDate(selectedLeave.endDate)}</p>
                   </div>
-                  
+
                   <div className="manage-detail-item">
                     <label>Submitted On</label>
                     <p>{formatDate(selectedLeave.createdAt)}</p>
                   </div>
                 </div>
               </div>
-              
+
               <div className="manage-detail-section manage-reason-section">
                 <h3>Reason for Leave</h3>
                 <p className="manage-detail-reason">{selectedLeave.reason}</p>
               </div>
-              
+
               {selectedLeave.documents && selectedLeave.documents.length > 0 && (
                 <div className="manage-detail-section">
                   <h3>Supporting Documents</h3>
@@ -981,7 +1021,7 @@ const ManageLeaves = () => {
                             View
                           </button>
                           <button
-                            onClick={() => downloadDocument(doc)}
+                            onClick={() => downloadDocument(doc, selectedLeave._id)} // Pass leave ID
                             className="manage-detail-doc-btn manage-download"
                           >
                             <Download size={16} />
@@ -994,7 +1034,7 @@ const ManageLeaves = () => {
                 </div>
               )}
             </div>
-            
+
             <div className="manage-leave-detail-footer">
               {selectedLeave.status === 'pending' ? (
                 <div className="manage-detail-actions">

@@ -31,14 +31,7 @@ if (!fs.existsSync('./uploads/resumes')) {
 }
 
 
-const csvStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, './uploads/attendance-csv/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, 'attendance-' + Date.now() + path.extname(file.originalname));
-  }
-});
+const csvStorage = multer.memoryStorage(); 
 
 // Check if directory exists, if not create it
 if (!fs.existsSync('./uploads/attendance-csv')) {
@@ -95,19 +88,23 @@ const csvUpload = multer({
     } else {
       cb(new Error('Only CSV files are allowed'));
     }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit for CSV files
+  }
+});
+const resumeStorage = multer.memoryStorage();
+// Configure multer for resume uploads
+const documentStorage = multer.memoryStorage(); // Changed from diskStorage
+
+const upload = multer({
+  storage: documentStorage,
+  limits: { fileSize: 10000000 }, // 10MB limit
+  fileFilter: function (req, file, cb) {
+    checkFileType(file, cb);
   }
 });
 
-// Configure multer for resume uploads
-const resumeStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, './uploads/resumes/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'resume-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
@@ -152,7 +149,7 @@ const resumeUpload = multer({
     }
   },
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB max file size
+    fileSize: 10 * 1024 * 1024 // Increased to 10MB max file size for database storage
   }
 });
 app.get('/', (req, res) => {
@@ -175,13 +172,6 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 10000000 }, // 10MB limit
-  fileFilter: function (req, file, cb) {
-    checkFileType(file, cb);
-  }
-});
 
 const checkPermission = async (req, res, next) => {
   try {
@@ -595,20 +585,39 @@ app.get('/api/employees/:id', authenticateToken, async (req, res) => {
 
 // Update this in your server.js file
 // Add this to your server.js file
-app.put('/api/employees/:id', authenticateToken, upload.array('documents', 5), async (req, res) => {
+const validateFileSizeForDB = (req, res, next) => {
+  const maxSize = 16 * 1024 * 1024; // 16MB MongoDB document limit
+  
+  if (req.file && req.file.size > maxSize) {
+    return res.status(400).json({
+      success: false,
+      message: `File ${req.file.originalname} is too large. Maximum size is 16MB.`
+    });
+  }
+  
+  if (req.files) {
+    for (let file of req.files) {
+      if (file.size > maxSize) {
+        return res.status(400).json({
+          success: false,
+          message: `File ${file.originalname} is too large. Maximum size is 16MB.`
+        });
+      }
+    }
+  }
+  
+  next();
+};
+app.put('/api/employees/:id',validateFileSizeForDB,  authenticateToken, upload.array('documents', 5), async (req, res) => {
   try {
     const updateData = JSON.parse(req.body.employeeData);
     console.log('Employee update received:', {
       id: req.params.id,
       hasMilestones: !!updateData.milestones,
-      milestoneCount: updateData.milestones ? updateData.milestones.length : 0
+      milestoneCount: updateData.milestones ? updateData.milestones.length : 0,
+      hasFiles: !!req.files,
+      fileCount: req.files ? req.files.length : 0
     });
-
-    const documents = req.files ? req.files.map(file => ({
-      name: file.originalname,
-      path: file.path,
-      uploadedAt: new Date()
-    })) : [];
 
     // Find employee
     const employee = await Employee.findById(req.params.id);
@@ -652,13 +661,54 @@ app.put('/api/employees/:id', authenticateToken, upload.array('documents', 5), a
       updatedAt: new Date()
     };
 
-    // Handle documents and milestones with $push operator
-    const pushOperations = {};
+    // Handle uploaded documents - store in database instead of file system
+    const processedDocuments = [];
+    if (req.files && req.files.length > 0) {
+      console.log('Processing uploaded documents:', req.files.length);
+      
+      for (const file of req.files) {
+        // Validate file size (MongoDB document limit is 16MB)
+        if (file.size > 16 * 1024 * 1024) {
+          return res.status(400).json({
+            success: false,
+            message: `File ${file.originalname} is too large. Maximum size is 16MB.`
+          });
+        }
+
+        const documentData = {
+          name: file.originalname,
+          originalName: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          data: file.buffer, // Store file data in database
+          uploadedAt: new Date()
+        };
+
+        processedDocuments.push(documentData);
+        console.log(`Processed document: ${file.originalname}, size: ${file.size} bytes`);
+      }
+    }
+
+    // Initialize milestones if needed
+    if (!updateData.milestones) {
+      updateData.milestones = [];
+    }
+
+    // Add milestones for document uploads
+    if (processedDocuments.length > 0) {
+      processedDocuments.forEach(doc => {
+        updateData.milestones.push({
+          title: 'Document Uploaded',
+          description: `New document uploaded: ${doc.name}`,
+          date: new Date().toISOString().split('T')[0],
+          branch: updateData.professionalDetails.branch,
+          type: 'document_upload'
+        });
+      });
+    }
 
     // Check for existing milestone types to avoid duplicates
     const existingMilestoneTypes = new Set();
-
-    // First collect existing milestone types from the database
     if (employee.milestones && Array.isArray(employee.milestones)) {
       for (const milestone of employee.milestones) {
         if (milestone.type) {
@@ -667,42 +717,7 @@ app.put('/api/employees/:id', authenticateToken, upload.array('documents', 5), a
       }
     }
 
-    // Then check incoming milestones from the update
-    if (updateData.milestones && Array.isArray(updateData.milestones)) {
-      for (const milestone of updateData.milestones) {
-        if (milestone.type) {
-          existingMilestoneTypes.add(milestone.type);
-        }
-      }
-    }
-
-    // Add uploaded documents
-    if (documents.length > 0) {
-      pushOperations.documents = { $each: documents };
-
-      // Initialize milestones array if it doesn't exist
-      if (!updateData.milestones) {
-        updateData.milestones = [];
-      }
-
-      // Add milestone for each document upload
-      for (const doc of documents) {
-        updateData.milestones.push({
-          title: 'Document Uploaded',
-          description: `New document uploaded: ${doc.name}`,
-          date: new Date().toISOString().split('T')[0],
-          branch: updateData.professionalDetails.branch,
-          type: 'document_upload'
-        });
-      }
-    }
-
-    // Initialize milestones array if it doesn't exist
-    if (!updateData.milestones) {
-      updateData.milestones = [];
-    }
-
-    // Add role change milestone if needed and not already present
+    // Add role change milestone if needed
     if (!existingMilestoneTypes.has('role_change') && originalRole !== updateData.professionalDetails.role) {
       updateData.milestones.push({
         title: `Role changed to ${formatRole(updateData.professionalDetails.role)}`,
@@ -714,7 +729,7 @@ app.put('/api/employees/:id', authenticateToken, upload.array('documents', 5), a
       });
     }
 
-    // Add branch transfer milestone if needed and not already present
+    // Add branch transfer milestone if needed
     if (!existingMilestoneTypes.has('branch_transfer') && originalBranch !== updateData.professionalDetails.branch) {
       updateData.milestones.push({
         title: `Transferred to ${updateData.professionalDetails.branch} branch`,
@@ -726,7 +741,7 @@ app.put('/api/employees/:id', authenticateToken, upload.array('documents', 5), a
       });
     }
 
-    // Add status change milestone if needed and not already present
+    // Add status change milestone if needed
     if (!existingMilestoneTypes.has('status_change') && originalStatus !== updateData.professionalDetails.status) {
       const statusText = updateData.professionalDetails.status.replace('_', ' ');
       updateData.milestones.push({
@@ -739,30 +754,32 @@ app.put('/api/employees/:id', authenticateToken, upload.array('documents', 5), a
       });
     }
 
-    // Process all milestones if any exist
-    if (updateData.milestones && updateData.milestones.length > 0) {
-      console.log(`Processing ${updateData.milestones.length} milestones`);
+    // Apply push operations for documents and milestones
+    const pushOperations = {};
 
-      // Ensure each milestone has a date and type
+    if (processedDocuments.length > 0) {
+      pushOperations.documents = { $each: processedDocuments };
+    }
+
+    if (updateData.milestones && updateData.milestones.length > 0) {
       const processedMilestones = updateData.milestones.map(milestone => ({
         ...milestone,
         date: milestone.date || new Date().toISOString().split('T')[0],
         type: milestone.type || 'milestone'
       }));
 
-      // Add to push operations
       pushOperations.milestones = { $each: processedMilestones };
     }
 
-    // Apply push operations if any
     if (Object.keys(pushOperations).length > 0) {
       updates.$push = pushOperations;
     }
 
-    console.log('Applying updates with the following operations:', {
+    console.log('Applying updates with operations:', {
       basicUpdates: Object.keys(updates).filter(k => k !== '$push'),
       pushOperations: updates.$push ? Object.keys(updates.$push) : 'none',
-      milestoneCount: updates.$push?.milestones?.$each.length || 0
+      documentsCount: pushOperations.documents?.$each.length || 0,
+      milestoneCount: pushOperations.milestones?.$each.length || 0
     });
 
     const updatedEmployee = await Employee.findByIdAndUpdate(
@@ -770,48 +787,42 @@ app.put('/api/employees/:id', authenticateToken, upload.array('documents', 5), a
       updates,
       { new: true }
     );
+
+    // Create notification for employee
     const updatingUser = await User.findById(req.user.id);
     const updaterName = updatingUser ?
       (updatingUser.name || updatingUser.email.split('@')[0]) :
       'An administrator';
 
-    // Only create notification if employee has a userId (linked user account)
     if (employee.userId) {
-      // Build notification message based on what was updated
       let updatedItems = [];
 
       if (updateData.personalDetails) updatedItems.push('personal details');
       if (updateData.professionalDetails) updatedItems.push('professional details');
 
-      // Check for role changes specifically
       if (updateData.professionalDetails &&
         employee.professionalDetails?.role !== updateData.professionalDetails.role) {
         updatedItems.push(`role changed to ${formatRole(updateData.professionalDetails.role)}`);
       }
 
-      // Check for branch transfers
       if (updateData.professionalDetails &&
         employee.professionalDetails?.branch !== updateData.professionalDetails.branch) {
         updatedItems.push(`branch changed to ${updateData.professionalDetails.branch}`);
       }
 
-      // Check for documents
-      if (documents && documents.length > 0) {
-        updatedItems.push(`${documents.length} document(s) added`);
+      if (processedDocuments.length > 0) {
+        updatedItems.push(`${processedDocuments.length} document(s) added`);
       }
 
-      // Check for milestones
       if (updateData.milestones && updateData.milestones.length > 0) {
         updatedItems.push(`${updateData.milestones.length} milestone(s) added`);
       }
 
-      // Create the notification message
       let notificationMessage = `${updaterName} updated your profile`;
       if (updatedItems.length > 0) {
         notificationMessage += `: ${updatedItems.join(', ')}`;
       }
 
-      // Create and save the notification
       try {
         const notification = new Notification({
           userId: employee.userId,
@@ -825,20 +836,18 @@ app.put('/api/employees/:id', authenticateToken, upload.array('documents', 5), a
         });
 
         await notification.save();
-        console.log(`Notification created for user ${employee.userId} about profile update`);
+        console.log(`Notification created for user ${employee.userId}`);
       } catch (notifError) {
-        // Log but don't fail the update if notification creation fails
         console.error('Error creating profile update notification:', notifError);
       }
     }
-
 
     res.json({
       success: true,
       message: 'Employee updated successfully',
       employee: updatedEmployee,
-      historyUpdated: !!updates.$push?.milestones,
-      milestonesAdded: updates.$push?.milestones?.$each.length || 0
+      documentsAdded: processedDocuments.length,
+      milestonesAdded: pushOperations.milestones?.$each.length || 0
     });
 
   } catch (error) {
@@ -849,6 +858,7 @@ app.put('/api/employees/:id', authenticateToken, upload.array('documents', 5), a
     });
   }
 });
+
 
 // Helper function to format role names
 function formatRole(role) {
@@ -979,14 +989,73 @@ app.get('/api/employees/:id/history', authenticateToken, async (req, res) => {
 });
 app.get('/api/employees/:id/documents', authenticateToken, async (req, res) => {
   try {
-    const employee = await Employee.findById(req.params.id);
+    const employee = await Employee.findById(req.params.id)
+      .select('documents.name documents.originalName documents.mimetype documents.size documents.uploadedAt documents._id');
+    
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
     }
 
-    res.json(employee.documents);
+    // Return document metadata without the actual file data
+    const documentsList = employee.documents.map(doc => ({
+      _id: doc._id,
+      name: doc.name,
+      originalName: doc.originalName,
+      mimetype: doc.mimetype,
+      size: doc.size,
+      uploadedAt: doc.uploadedAt,
+      hasData: true // We know it exists if it's in the array
+    }));
+
+    res.json(documentsList);
   } catch (error) {
+    console.error('Error fetching employee documents:', error);
     res.status(500).json({ message: error.message });
+  }
+});
+
+app.get('/api/employees/:id/documents/:documentId/download', authenticateToken, async (req, res) => {
+  try {
+    const { id, documentId } = req.params;
+    
+    console.log(`Downloading document ${documentId} for employee ${id}`);
+    
+    // Find employee with specific document
+    const employee = await Employee.findById(id);
+    
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    // Find the specific document
+    const document = employee.documents.id(documentId);
+    
+    if (!document || !document.data) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+
+    console.log('Serving document from database:', {
+      filename: document.originalName || document.name,
+      mimetype: document.mimetype,
+      size: document.size
+    });
+
+    // Set appropriate headers for file download
+    res.set({
+      'Content-Type': document.mimetype,
+      'Content-Disposition': `attachment; filename="${document.originalName || document.name}"`,
+      'Content-Length': document.size
+    });
+
+    // Send the file data directly from database
+    res.send(document.data);
+    
+  } catch (error) {
+    console.error('Error downloading employee document:', error);
+    res.status(500).json({ 
+      message: 'Error downloading document',
+      error: error.message 
+    });
   }
 });
 
@@ -1004,32 +1073,50 @@ app.get('/api/employees/:id/milestones', authenticateToken, async (req, res) => 
 });
 
 
+// Delete employee document from database
 app.delete('/api/employees/:id/documents/:documentId', authenticateToken, async (req, res) => {
   try {
-    const employee = await Employee.findById(req.params.id);
+    const { id, documentId } = req.params;
+    
+    console.log(`Deleting document ${documentId} for employee ${id}`);
+    
+    const employee = await Employee.findById(id);
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
     }
 
-    const document = employee.documents.id(req.params.documentId);
+    const document = employee.documents.id(documentId);
     if (!document) {
       return res.status(404).json({ message: 'Document not found' });
     }
 
-    // Delete file from storage
-    if (fs.existsSync(document.path)) {
-      fs.unlinkSync(document.path);
-    }
-
-    // Remove document from employee record
-    employee.documents.pull(req.params.documentId);
+    const documentName = document.originalName || document.name;
+    
+    // Remove document from employee record (no file system cleanup needed)
+    employee.documents.pull(documentId);
     await employee.save();
 
-    res.json({ message: 'Document deleted successfully' });
+    console.log(`Document ${documentName} deleted from database`);
+
+    res.json({ 
+      message: 'Document deleted successfully',
+      documentName: documentName
+    });
   } catch (error) {
+    console.error('Error deleting employee document:', error);
     res.status(500).json({ message: error.message });
   }
 });
+function formatRole(role) {
+  if (!role) return 'Unknown';
+  return role
+    .replace(/_/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+
 
 // Delete employee
 app.delete('/api/employees/:id', authenticateToken, async (req, res) => {
@@ -2567,10 +2654,30 @@ if (!fs.existsSync('./uploads/resumes')) {
 //     });
 //   }
 // });
+const checkFileSizeForDB = (req, res, next) => {
+  if (req.file && req.file.size > 16 * 1024 * 1024) { // 16MB MongoDB document limit
+    return res.status(400).json({
+      success: false,
+      message: 'File too large for database storage. Maximum size is 16MB.'
+    });
+  }
+  
+  if (req.files) {
+    for (let file of req.files) {
+      if (file.size > 16 * 1024 * 1024) {
+        return res.status(400).json({
+          success: false,
+          message: 'One or more files are too large for database storage. Maximum size is 16MB per file.'
+        });
+      }
+    }
+  }
+  
+  next();
+};
 
 
-
-app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
+app.post('/api/applicants', checkFileSizeForDB,resumeUpload.single('resume'), async (req, res) => {
   try {
     console.log('Starting application submission');
     console.log('Request body personal details:', req.body.personalDetails);
@@ -2579,7 +2686,7 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
     const personalDetails = JSON.parse(req.body.personalDetails);
     const jobDetails = JSON.parse(req.body.jobDetails);
     
-    // CRITICAL FIX: Extract branch name consistently, checking all possible locations
+    // Extract branch name consistently
     const branchName = 
       req.body.branchName || 
       jobDetails.branch || 
@@ -2600,7 +2707,7 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
 
     console.log('Found branch:', branch);
 
-    // CRITICAL FIX: Ensure both branch and branchName are stored in jobDetails
+    // Ensure branch name is stored properly
     if (jobDetails) {
       jobDetails.branch = branch.name;
       jobDetails.branchName = branch.name;
@@ -2610,45 +2717,58 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
     const applicationTimestamp = new Date();
     const uniqueApplicationId = `${applicationTimestamp.getTime()}-${Math.random().toString(36).substring(2, 10)}`;
 
-    // Save applicant data with standardized branchName
+    // Prepare applicant data
     const applicantData = {
       personalDetails: new Map(Object.entries(personalDetails)),
       jobDetails: new Map(Object.entries(jobDetails)),
-      branchName: branch.name, // Store at top level for HR filtering
+      branchName: branch.name,
       status: 'pending',
       applicationId: uniqueApplicationId,
       applicationTimestamp: applicationTimestamp
     };
 
+    // Handle resume file - store in database instead of file system
     if (req.file) {
+      console.log('Processing uploaded resume:', {
+        originalName: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size
+      });
+
+      // Store file data directly in database
       applicantData.resume = {
-        filename: req.file.originalname,
-        path: req.file.path,
+        filename: `resume-${uniqueApplicationId}-${req.file.originalname}`,
+        originalName: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        data: req.file.buffer, // Store the actual file data
         uploadedAt: new Date()
       };
+
+      console.log('Resume stored in database, size:', req.file.buffer.length, 'bytes');
     }
 
+    // Save applicant to database
     const applicant = new Applicant(applicantData);
     await applicant.save();
 
-    // Extract applicant name with fallbacks
+    console.log('Applicant saved successfully with ID:', applicant._id);
+
+    // Extract applicant info for notifications
     const applicantName = 
       personalDetails.name || 
       personalDetails.fullname || 
       personalDetails.fullName || 
       'Applicant';
 
-    // Improved position extraction with case-insensitive searching
+    // Extract position
     let jobPosition = 'a position';
-    
-    // First check if position exists in jobDetails
     if (jobDetails.position) {
       jobPosition = jobDetails.position;
     } else if (personalDetails.position) {
-      // Check if it's in personal details (old form format)
       jobPosition = personalDetails.position;
     } else {
-      // Try to find any field containing "position" in its name, case-insensitive
+      // Try to find any field containing "position"
       for (const key of Object.keys(jobDetails)) {
         if (key.toLowerCase().includes('position') && jobDetails[key]) {
           jobPosition = jobDetails[key];
@@ -2656,7 +2776,6 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
         }
       }
       
-      // If that fails, try other common field names
       if (jobPosition === 'a position') {
         jobPosition = 
           jobDetails.title || 
@@ -2671,9 +2790,7 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
     console.log('Extracted name:', applicantName);
     console.log('Extracted position:', jobPosition);
 
-    // *** FIXED APPROACH: Get ALL users that should be notified ***
-    
-    // Construct the notification message once
+    // Create notifications for relevant users
     const notificationMessage = `New application received from ${applicantName} for ${jobPosition} in ${branch.name} branch`;
     const notificationMetadata = {
       branchId: branch._id,
@@ -2682,34 +2799,29 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
       isSharedNotification: true
     };
     
-    // Find ALL users that should be notified (not just one representative)
+    // Find ALL users that should be notified
     const [branchHRManagers, admins, t1Members] = await Promise.all([
-      // Get ALL HR managers for this branch
       User.find({
         role: 'hr_manager',
         branchName: { $regex: new RegExp('^' + branch.name + '$', 'i') },
         status: 'approved'
       }),
-      // Get ALL admins
       User.find({
         isAdmin: true,
         status: 'approved'
       }),
-      // Get ALL T1 members
       User.find({
         role: 't1_member',
         status: 'approved'
       })
     ]);
     
-    console.log(`Found ${branchHRManagers.length} HR managers for ${branch.name} branch`);
-    console.log(`Found ${admins.length} admins`);
-    console.log(`Found ${t1Members.length} T1 members`);
+    console.log(`Found ${branchHRManagers.length} HR managers, ${admins.length} admins, ${t1Members.length} T1 members`);
     
-    // Create notifications for ALL relevant users
+    // Create notifications for all relevant users
     const notificationPromises = [];
     
-    // Create notifications for ALL HR managers in the branch
+    // HR managers
     branchHRManagers.forEach(hrManager => {
       notificationPromises.push(
         new Notification({
@@ -2717,15 +2829,12 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
           title: 'New Job Application',
           message: notificationMessage,
           type: 'application',
-          metadata: {
-            ...notificationMetadata,
-            forRole: 'hr_manager'
-          }
+          metadata: { ...notificationMetadata, forRole: 'hr_manager' }
         }).save()
       );
     });
     
-    // Create notifications for ALL admins
+    // Admins
     admins.forEach(admin => {
       notificationPromises.push(
         new Notification({
@@ -2733,15 +2842,12 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
           title: 'New Job Application',
           message: notificationMessage,
           type: 'application',
-          metadata: {
-            ...notificationMetadata,
-            forRole: 'admin'
-          }
+          metadata: { ...notificationMetadata, forRole: 'admin' }
         }).save()
       );
     });
     
-    // Create notifications for ALL T1 members
+    // T1 members
     t1Members.forEach(t1Member => {
       notificationPromises.push(
         new Notification({
@@ -2749,10 +2855,7 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
           title: 'New Job Application',
           message: notificationMessage,
           type: 'application',
-          metadata: {
-            ...notificationMetadata,
-            forRole: 't1_member'
-          }
+          metadata: { ...notificationMetadata, forRole: 't1_member' }
         }).save()
       );
     });
@@ -2760,15 +2863,11 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
     // Save all notifications
     if (notificationPromises.length > 0) {
       await Promise.all(notificationPromises);
-      console.log(`Created ${notificationPromises.length} notifications for application ${uniqueApplicationId}`);
-    } else {
-      console.log('No users found to notify about new application');
+      console.log(`Created ${notificationPromises.length} notifications`);
     }
     
-    // Send email notifications to ALL branch HR managers
+    // Send email notifications to HR managers
     let emailsSent = 0;
-    const emailPromises = [];
-    
     if (branchHRManagers.length > 0) {
       const subject = `New Job Application for ${branch.name} Branch`;
       
@@ -2787,6 +2886,7 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
             <p><strong>Position:</strong> ${jobPosition}</p>
             <p><strong>Application Date:</strong> ${new Date().toLocaleDateString()}</p>
             <p><strong>Application ID:</strong> ${uniqueApplicationId}</p>
+            <p><strong>Resume:</strong> ${req.file ? '✅ Included' : '❌ Not provided'}</p>
           </div>
           
           <p>To review this application, please log in to the HR Management System and check the Applicants section.</p>
@@ -2797,29 +2897,19 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
         </div>
       `;
       
-      // Send email to each HR manager
-      branchHRManagers.forEach(hrManager => {
-        emailPromises.push(
-          sendEmail(hrManager.email, subject, emailContent)
-            .then((result) => {
-              if (result) {
-                console.log(`Email notification sent to HR manager: ${hrManager.email}`);
-                return 1; // Count successful email
-              }
-              return 0;
-            })
-            .catch((emailError) => {
-              console.error(`Failed to send email to HR manager ${hrManager.email}:`, emailError);
-              return 0; // Count failed email as 0
-            })
-        );
-      });
+      const emailPromises = branchHRManagers.map(hrManager =>
+        sendEmail(hrManager.email, subject, emailContent)
+          .then(result => result ? 1 : 0)
+          .catch(error => {
+            console.error(`Email failed for ${hrManager.email}:`, error);
+            return 0;
+          })
+      );
       
-      // Wait for all emails to be sent
       const emailResults = await Promise.all(emailPromises);
       emailsSent = emailResults.reduce((sum, result) => sum + result, 0);
       
-      console.log(`Successfully sent ${emailsSent} out of ${branchHRManagers.length} emails to HR managers`);
+      console.log(`Successfully sent ${emailsSent} out of ${branchHRManagers.length} emails`);
     }
 
     res.status(201).json({
@@ -2829,7 +2919,8 @@ app.post('/api/applicants', resumeUpload.single('resume'), async (req, res) => {
       notificationsCreated: notificationPromises.length,
       emailsSent: emailsSent,
       totalHRManagers: branchHRManagers.length,
-      branchName: branch.name
+      branchName: branch.name,
+      resumeStored: !!req.file
     });
 
   } catch (error) {
@@ -2852,11 +2943,17 @@ app.get('/api/applicants', authenticateToken, async (req, res) => {
     if (position) query['jobDetails.position'] = position;
     if (branch) query.branchName = branch;
 
-    const applicants = await Applicant.find(query).sort({ createdAt: -1 });
+    console.log('Fetching applicants with query:', query);
 
-    // Transform the data to include all fields
+    // Fetch applicants but exclude the large file data from the initial query
+    const applicants = await Applicant.find(query)
+      .select('-resume.data -documents.data') // Exclude file data for performance
+      .sort({ createdAt: -1 });
+
+    console.log(`Found ${applicants.length} applicants`);
+
+    // Transform the data for response
     const transformedApplicants = applicants.map(applicant => {
-      // Convert Maps to regular objects and preserve all fields
       const personalDetails = applicant.personalDetails instanceof Map ?
         Object.fromEntries(applicant.personalDetails) :
         (applicant.personalDetails || {});
@@ -2865,22 +2962,31 @@ app.get('/api/applicants', authenticateToken, async (req, res) => {
         Object.fromEntries(applicant.jobDetails) :
         (applicant.jobDetails || {});
 
-      // Collect any additional fields that don't fit in the main categories
-      const additionalDetails = {};
-      Object.entries(applicant.toObject()).forEach(([key, value]) => {
-        if (!['_id', 'personalDetails', 'jobDetails', 'status', 'resume', 'createdAt', 'updatedAt'].includes(key)) {
-          additionalDetails[key] = value;
-        }
-      });
-
       return {
         _id: applicant._id,
-        personalDetails,
-        jobDetails,
+        personalDetails: {
+          name: personalDetails.name || personalDetails['First Name'] || 'Not provided',
+          email: personalDetails.email || personalDetails.Email || 'Not provided',
+          phone: personalDetails.phone || personalDetails.Phone || 'Not provided',
+          gender: personalDetails.gender || personalDetails.Gender || 'Not provided',
+          ...personalDetails
+        },
+        jobDetails: {
+          position: jobDetails.position || jobDetails.Position || 'Not provided',
+          branch: jobDetails.branch || jobDetails.Branch || 'Not provided',
+          ...jobDetails
+        },
         status: applicant.status || 'pending',
-        resume: applicant.resume,
+        resume: applicant.resume ? {
+          filename: applicant.resume.filename,
+          originalName: applicant.resume.originalName,
+          mimetype: applicant.resume.mimetype,
+          size: applicant.resume.size,
+          uploadedAt: applicant.resume.uploadedAt,
+          hasData: true // We know it has data since resume object exists
+        } : null,
         createdAt: applicant.createdAt,
-        additionalDetails: Object.keys(additionalDetails).length > 0 ? additionalDetails : null
+        applicationId: applicant.applicationId
       };
     });
 
@@ -3094,34 +3200,16 @@ app.put('/api/applicants/:id/status', authenticateToken, async (req, res) => {
 // Add this to your server.js
 app.get('/api/applicants/:id', authenticateToken, async (req, res) => {
   try {
-    const applicant = await Applicant.findById(req.params.id);
+    // Get applicant without file data for performance
+    const applicant = await Applicant.findById(req.params.id)
+      .select('-resume.data -documents.data');
 
     if (!applicant) {
       return res.status(404).json({ message: 'Applicant not found' });
     }
 
-    // Transform the data
-    const processedData = {
-      _id: applicant._id,
-      personalDetails: applicant.personalDetails instanceof Map ?
-        Object.fromEntries(applicant.personalDetails) :
-        applicant.personalDetails,
-      jobDetails: applicant.jobDetails instanceof Map ?
-        Object.fromEntries(applicant.jobDetails) :
-        applicant.jobDetails,
-      status: applicant.status,
-      resume: applicant.resume,
-      createdAt: applicant.createdAt,
-      additionalFields: {}
-    };
-
-    // Add any additional fields that don't fit in the main categories
-    const rawData = applicant.toObject();
-    Object.keys(rawData).forEach(key => {
-      if (!['_id', 'personalDetails', 'jobDetails', 'status', 'resume', 'createdAt', 'updatedAt', '__v'].includes(key)) {
-        processedData.additionalFields[key] = rawData[key];
-      }
-    });
+    // Use the existing getAllDetails method but ensure we indicate file presence
+    const processedData = applicant.getAllDetails();
 
     res.json(processedData);
   } catch (error) {
@@ -3133,6 +3221,8 @@ app.get('/api/applicants/:id', authenticateToken, async (req, res) => {
   }
 });
 
+
+
 // Download resume
 app.get('/api/applicants/:id/resume', authenticateToken, async (req, res) => {
   try {
@@ -3142,23 +3232,44 @@ app.get('/api/applicants/:id/resume', authenticateToken, async (req, res) => {
     }
 
     const { id } = req.params;
+    console.log('Fetching resume for applicant:', id);
+    
+    // Find applicant with resume data
     const applicant = await Applicant.findById(id);
 
-    if (!applicant || !applicant.resume) {
+    if (!applicant) {
+      return res.status(404).json({ message: 'Applicant not found' });
+    }
+
+    if (!applicant.resume || !applicant.resume.data) {
       return res.status(404).json({ message: 'Resume not found' });
     }
 
-    // Check if file exists
-    if (!fs.existsSync(applicant.resume.path)) {
-      return res.status(404).json({ message: 'Resume file not found' });
-    }
+    console.log('Serving resume from database:', {
+      filename: applicant.resume.originalName,
+      mimetype: applicant.resume.mimetype,
+      size: applicant.resume.size
+    });
 
-    res.download(applicant.resume.path, applicant.resume.filename);
+    // Set appropriate headers for file download
+    res.set({
+      'Content-Type': applicant.resume.mimetype,
+      'Content-Disposition': `attachment; filename="${applicant.resume.originalName}"`,
+      'Content-Length': applicant.resume.size
+    });
+
+    // Send the file data directly from database
+    res.send(applicant.resume.data);
+    
   } catch (error) {
-    console.error('Error downloading resume:', error);
-    res.status(500).json({ message: error.message });
+    console.error('Error downloading resume from database:', error);
+    res.status(500).json({ 
+      message: 'Error downloading resume',
+      error: error.message 
+    });
   }
 });
+
 
 // Admin routes for managing form fields (protected)
 app.get('/api/admin/form-fields', authenticateToken, checkFormFieldsAccess, async (req, res) => {

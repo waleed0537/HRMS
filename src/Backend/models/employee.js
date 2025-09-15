@@ -1,4 +1,4 @@
-// models/employee.js
+// models/employee.js - Updated to store documents in database
 const mongoose = require('mongoose');
 
 // Define milestone schema for employment history tracking
@@ -25,6 +25,19 @@ const milestoneSchema = new mongoose.Schema({
     type: String, 
     enum: ['milestone', 'role_change', 'branch_transfer', 'status_change', 'document_upload'],
     default: 'milestone'
+  }
+});
+
+// Updated document schema to store files in database
+const documentSchema = new mongoose.Schema({
+  name: String,
+  originalName: String,
+  mimetype: String,
+  size: Number,
+  data: Buffer, // Store actual file data in database
+  uploadedAt: { 
+    type: Date, 
+    default: Date.now 
   }
 });
 
@@ -55,17 +68,14 @@ const employeeSchema = new mongoose.Schema({
       default: 'active'
     }
   },
-  documents: [{
-    name: String,
-    path: String,
-    uploadedAt: { type: Date, default: Date.now }
-  }],
+  // Updated documents array to store files in database
+  documents: [documentSchema],
   // Add milestones array to track employment history
   milestones: [milestoneSchema],
   rating: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
-}, { timestamps: true }); // Enable automatic timestamps handling
+}, { timestamps: true });
 
 // Create indexes for efficient queries
 employeeSchema.index({ userId: 1 });
@@ -75,6 +85,49 @@ employeeSchema.index({ 'personalDetails.email': 1 });
 employeeSchema.methods.addMilestone = function(milestone) {
   this.milestones.push(milestone);
   return this.save();
+};
+
+// Method to add document with file data
+employeeSchema.methods.addDocument = function(fileData) {
+  const document = {
+    name: fileData.filename || fileData.originalname,
+    originalName: fileData.originalname,
+    mimetype: fileData.mimetype,
+    size: fileData.size,
+    data: fileData.buffer, // Store file buffer in database
+    uploadedAt: new Date()
+  };
+  
+  this.documents.push(document);
+  return this.save();
+};
+
+// Method to get document for download
+employeeSchema.methods.getDocumentForDownload = function(documentId) {
+  const document = this.documents.id(documentId);
+  if (!document || !document.data) {
+    return null;
+  }
+  
+  return {
+    data: document.data,
+    filename: document.originalName || document.name,
+    mimetype: document.mimetype,
+    size: document.size
+  };
+};
+
+// Method to get documents list without data for performance
+employeeSchema.methods.getDocumentsList = function() {
+  return this.documents.map(doc => ({
+    _id: doc._id,
+    name: doc.name,
+    originalName: doc.originalName,
+    mimetype: doc.mimetype,
+    size: doc.size,
+    uploadedAt: doc.uploadedAt,
+    hasData: !!doc.data
+  }));
 };
 
 // Add method to record role changes
@@ -126,6 +179,26 @@ employeeSchema.methods.recordDocumentUpload = function(documentName) {
     type: 'document_upload'
   };
   return this.addMilestone(milestone);
+};
+
+// Override toJSON to exclude large file data by default
+employeeSchema.methods.toJSON = function() {
+  const obj = this.toObject();
+  
+  // Replace document data with metadata only
+  if (obj.documents) {
+    obj.documents = obj.documents.map(doc => ({
+      _id: doc._id,
+      name: doc.name,
+      originalName: doc.originalName,
+      mimetype: doc.mimetype,
+      size: doc.size,
+      uploadedAt: doc.uploadedAt,
+      hasData: !!doc.data
+    }));
+  }
+  
+  return obj;
 };
 
 // Helper function to format role names

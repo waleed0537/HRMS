@@ -9,7 +9,9 @@
 //   : 'http://localhost:5000';
 
 // export default API_BASE_URL;
-
-const API_BASE_URL = 'http://157.180.123.32:5000';  // Always use server IP for now
+// src/config/api.js - For domain access with SSL
+const API_BASE_URL = import.meta.env.PROD 
+  ? 'https://api.hrrive.com'  // Your API subdomain with SSL
+  : 'http://localhost:5000';
 
 export default API_BASE_URL;

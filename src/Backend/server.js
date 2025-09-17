@@ -259,11 +259,14 @@ function checkFileType(file, cb) {
 // server.js - Fix for current setup
 app.use(cors({
   origin: [
-    'http://157.180.123.32:5173',   // Your dev server
-    'http://157.180.123.32:5000',   // Your backend
-    'http://157.180.123.32',        // Your server IP
+    'https://hrrive.com',           // Your main domain with SSL
+    'https://www.hrrive.com',       // With www and SSL
+    'https://api.hrrive.com',       // API domain with SSL
+    'http://hrrive.com',            // HTTP fallback
+    'http://www.hrrive.com',        // HTTP www fallback
+    'http://157.180.123.32',        // IP access
     'http://localhost:5173',        // Local development
-    'http://localhost:5000'         // Local backend
+    'http://localhost:3000'         // Alternative local
   ],
   credentials: true
 }));

@@ -10,8 +10,9 @@
 
 // export default API_BASE_URL;
 // src/config/api.js - For domain access with SSL
+// src/config/api.js - Use nginx proxy (recommended for HTTPS)
 const API_BASE_URL = import.meta.env.PROD 
-  ? 'https://api.hrrive.com'  // Your API subdomain with SSL
+  ? (typeof window !== 'undefined' ? window.location.origin + '/api' : '/api')  // Use nginx proxy
   : 'http://localhost:5000';
 
 export default API_BASE_URL;

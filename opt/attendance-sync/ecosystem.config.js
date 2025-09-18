@@ -78,7 +78,7 @@ module.exports = {
     // Main HRMS Backend Server
     {
       name: 'hrms-backend',
-      script: '../../src/Backend/server.js',  // Path from attendance-sync folder to server.js
+      script: '/home/hrms/backend/HRMS/src/Backend/server.js',  // Path from attendance-sync folder to server.js
       cwd: '/home/hrms/backend/HRMS',         // Working directory
       instances: 1,
       autorestart: true,

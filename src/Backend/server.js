@@ -293,8 +293,7 @@ const authenticateToken = (req, res, next) => {
 };
 
 // MongoDB Connection
-mongoose.connect('mongodb+srv://hrmsmongo:YWCuBGMkletJv65z@cluster0.hrtxh.mongodb.net/hrms', {
-  useNewUrlParser: true,
+mongoose.connect('mongodb://hrmsmongo:YWCuBGMkletJv65z@localhost:27017/hrms', {  useNewUrlParser: true,
   useUnifiedTopology: true,
 })
   .then(() => {
